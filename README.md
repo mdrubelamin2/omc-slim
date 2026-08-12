@@ -2,7 +2,7 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Eleven agents, five skills, two hooks, two MCP servers. **~2,774 tokens of
+Eleven agents, five skills, two hooks, two MCP servers. **~2,803 tokens of
 static context** and **zero bytes injected on the tool-call path.**
 
 Slim by construction, and it **adapts to whatever your project already has** —
@@ -106,8 +106,8 @@ capability classes are the guard, not an exhaustive list.
 Three ideas, each of which cost something to learn.
 
 **Delegation over accumulation.** The main thread plans and reconciles;
-specialists do the work on cheaper tiers. The orchestrator prompt is ~1,420
-tokens — 69% smaller than the one it derives from — because everything Claude
+specialists do the work on cheaper tiers. The orchestrator prompt is ~1,448
+tokens — 68% smaller than the one it derives from — because everything Claude
 Code already provides was deleted rather than described.
 
 **Nothing injects on the tool-call path.** The dominant cost in comparable
@@ -118,6 +118,34 @@ There is no `Stop` hook here and no `PostToolUse` hook, deliberately.
 what a subagent returns to its parent — `PostToolUse` is purely additive.
 The only lever is the agent's own output contract, so `explorer`, `observer`,
 `fixer` and `librarian` each have one, with hard caps.
+
+## How it behaves
+
+Not configurable, and deliberately so — a house style you can rely on rather
+than a setting to tune.
+
+**It writes like a busy senior engineer.** Answer first. No preamble, no
+restating your question, no "great question", no narrating routine work. Errors
+quote the shortest decisive line rather than dumping a log. Measured against the
+same question without the plugin, replies run roughly half the length with no
+loss of substance.
+
+**It reaches for the smallest thing that works.** Does this need to exist? Is it
+already in the codebase, the standard library, a native platform feature, or a
+dependency you already have? Only then new code. No abstraction with one
+implementation, no config for a value that never changes.
+
+**It fixes causes, not symptoms.** Given a bug report naming one call site, it
+greps every caller and fixes the shared function — one diff instead of three,
+and no sibling left broken.
+
+**It leaves a runnable check behind.** Non-trivial logic gets the smallest thing
+that fails if the logic breaks — an assert-based check, no framework — and says
+plainly when it could not run it rather than implying it passed.
+
+**Laziness has floors.** Input validation at trust boundaries, error handling
+that prevents data loss, security controls, accessibility basics and anything you
+explicitly asked for are never simplified away.
 
 ## Honest limitations
 
@@ -145,14 +173,14 @@ enabled. Disabling the plugin reverts it.
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at **identical cost** |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at **+43% cost** |
-| **omc-slim** |  **~2,774 tok** | **untested** |
+| **omc-slim** | **~2,803 tok** | **untested** |
 | Agent Skills (24 skills) | ~1,826 tok | **−1.10pp** |
 
 Source: [orcabot.com/benchmarks](https://orcabot.com/benchmarks), July 2026.
 
 In that dataset **sophistication correlates negatively with results.** The
 smallest pack won on efficiency; the largest lost to doing nothing at all.
-omc-slim costs 4.7× Karpathy's static footprint — and ~100 tokens more than
+omc-slim costs 4.7× Karpathy's static footprint — and ~130 tokens more than
 oh-my-claudecode, which is the price of the adaptivity described above — and has
 not yet shown it buys anything. The hypothesis under test is that delegation to
 cheaper tiers pays for a prompt Karpathy does not need. That is plausible and

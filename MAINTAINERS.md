@@ -214,3 +214,41 @@ system prompt. That is correct here, since the orchestrator *is* the main thread
 - **No per-agent `temperature`.** Upstream ran `designer` at 0.7 deliberately.
   Compensated for in prose, which is not the same thing.
 - **Council seats share a provider.** See the caveat in `README.md`.
+
+---
+
+## Tone (v0.2.0)
+
+A terse-senior-engineer register and a laziness-with-floors engineering stance
+are baked into the output style and agent bodies. **Not configurable**, and no
+external tone plugin is named or required — the behaviour is described directly.
+
+Placement matters and got it wrong once. The build ladder went into `fixer.md`
+on the reasoning that the orchestrator delegates building. But the orchestrator
+also handles small fixes *itself*, so "leave one runnable check behind" never
+fired for its own work — caught by a live test that produced a correct fix with
+no test file. A compact version now lives in the output style too, marked
+"applies to work you do yourself, not only to what you delegate."
+
+### Testing tone is contamination-prone
+
+The first tone tests were run in a session with the `caveman` and `ponytail`
+plugins active as SessionStart hooks. Output was terse — but that proved nothing,
+and one run leaked a literal `// ponytail:` comment prefix that this plugin never
+mentions.
+
+**Disable ambient tone plugins before testing register:**
+
+```
+CAVEMAN_DEFAULT_MODE=off PONYTAIL_DEFAULT_MODE=off claude --plugin-dir . -p "..."
+```
+
+Then run the same prompt with and without `--plugin-dir` and compare. With the
+ambient plugins off, the same question produced a preamble, bold headers and a
+bulleted list at baseline, versus two direct paragraphs with omc-slim — roughly
+half the length.
+
+This is the second contamination of the same kind (the first was testing
+adaptivity with a vendor the prompt named). The rule generalises: **before
+believing a capability test, check whether the environment already supplies the
+capability.**

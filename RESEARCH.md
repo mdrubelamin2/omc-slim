@@ -1609,3 +1609,73 @@ asked "is it correct?" and missed that the shape was wrong. Section 12 answered
 "is it adaptive?" with a test that could not fail. **A test whose subject appears
 in the thing being tested is not evidence.** The habit to keep: before believing
 a capability test, grep the artefact for the test's own subject.
+
+---
+
+## 14. v0.2.0 — tone baked in (2026-08-13)
+
+Requested: a default, non-configurable terse register plus lazy-engineering
+discipline, adapted rather than referenced — no external tone plugin named
+anywhere in the artefact.
+
+### What was added
+
+Distilled to behaviour, not branding:
+
+- **Register**: answer first, no preamble or flattery, no decorative tables or
+  emoji, shortest decisive error line, verbatim identifiers, no invented
+  abbreviations, cut the explanation if it exceeds the code.
+- **Build ladder**: exist at all? → already here? → stdlib? → native platform? →
+  installed dependency? → one line? → minimum code.
+- **Causes not symptoms**: grep every caller before editing the shared function.
+- **Floors**: validation at trust boundaries, error handling preventing data
+  loss, security, accessibility, anything requested — never simplified away.
+- **One runnable check** behind non-trivial logic; name the ceiling and upgrade
+  path when knowingly cutting a corner.
+
+### It got *cheaper*
+
+| | orchestrator | total |
+|---|---|---|
+| v0.1.0 | 1,419 tok | 2,774 |
+| v0.2.0 first draft | 1,736 tok | 3,091 |
+| **v0.2.0 shipped** | **1,448 tok** | **2,803** |
+
+The draft was +317. Two moves recovered it: rewriting the prompt in the terse
+register it is meant to produce (prompt register is imitated, so this both
+demonstrates and enforces), and moving the detailed build procedure into
+`fixer.md`, where it is paid on invoke rather than every turn. Net cost of the
+whole tone layer: **+29 tokens**.
+
+### Verified by running, ambient tone plugins disabled
+
+Both `caveman` and `ponytail` were active in the test environment as SessionStart
+hooks, so the first results were worthless — one run even emitted a literal
+`// ponytail:` prefix this plugin never mentions. Re-run with
+`CAVEMAN_DEFAULT_MODE=off PONYTAIL_DEFAULT_MODE=off`:
+
+| Behaviour | Result |
+|---|---|
+| Register | baseline: preamble + bold headers + bullets. omc-slim: two direct paragraphs, ~half the length |
+| Root cause | fixed `slugify` in the shared module, explicitly noting all three callers were fixed by one diff |
+| Surgical | caller files untouched |
+| Honest verification | *"I have not run them — `node` needs approval and the request was declined twice"* |
+| Runnable check | `src/util.test.js`, 8 assertions incl. `../etc/passwd`, stdlib `node:assert`, **passes** |
+| YAGNI | skipped Unicode transliteration, *"nothing in the repo indicated non-ASCII titles"* |
+
+### A real gap the clean re-test exposed
+
+The first clean run produced a correct root-cause fix and **no test file**. Cause:
+the check-leaving rule had been moved into `fixer.md`, but the orchestrator
+handles small fixes itself, so the rule never applied to its own work. Fixed by
+restoring a compact version to the output style, explicitly scoped to "work you
+do yourself, not only what you delegate". Re-tested: the check now appears, runs
+and passes.
+
+### Method note — same trap, third time
+
+Section 12's adaptivity test was contaminated by naming the vendor. Section 13
+fixed that. This section was contaminated by the *environment* already supplying
+the behaviour under test. Generalised rule now in `MAINTAINERS.md`: **before
+believing a capability test, check whether the environment already supplies the
+capability** — not just whether the artefact hints at the answer.
