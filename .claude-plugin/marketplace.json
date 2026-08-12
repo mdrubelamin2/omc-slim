@@ -1,0 +1,14 @@
+{
+  "name": "omc-slim",
+  "owner": {
+    "name": "Rubel Amin"
+  },
+  "plugins": [
+    {
+      "name": "omc-slim",
+      "source": "./",
+      "description": "A small pantheon of specialist agents for Claude Code. Delegation over accumulation."
+    }
+  ],
+  "description": "omc-slim — a small pantheon of specialist agents for Claude Code, built for cost-efficiency and measured against a plain session."
+}
