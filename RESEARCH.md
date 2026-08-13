@@ -1814,3 +1814,66 @@ with results. The defensible positioning is **not** "better than plain" — it i
 "close to plain cost, materially more verification, a fraction of a heavyweight
 discipline layer". If a multi-file benchmark does not show delegation paying, the
 correct response is to shrink toward Karpathy, not to add features.
+
+---
+
+## 17. The orchestrator never delegated (2026-08-13)
+
+Rubel asked whether the orchestrator knows its agents and how omo-slim invoked
+them. Answering it uncovered the project's most serious defect.
+
+### Answers to the question as asked
+
+**Does it know them?** Yes. Verified by asking a live session to quote the
+listing: it returns each agent's full description, cost tier and tool scope, and
+sees project-local skills unprompted. The D1 cut of omo-slim's 1,829-token
+`<Agents>` block was safe — Claude Code's built-in `Agent` tool description
+carries routing guidance of its own ("delegate when answering would mean reading
+across several files").
+
+**How did omo-slim invoke?** OpenCode's **built-in** `task(subagent_type,
+background: true)` — it shipped only `cancel-task` itself. Claude Code's built-in
+`Agent` is the direct analogue, `SendMessage` covers `task_id` session reuse.
+
+### The defect
+
+Knowing is not invoking. **Three clean runs produced 0 Agent invocations** on a
+task designed to demand them.
+
+Cause: this build instructs every session *"Do not call the AgentTool unless the
+user requested it."* Verified **not** from user settings, `CLAUDE.md`, project
+settings, managed settings, `disableWorkflows`, or this plugin — present with and
+without `--plugin-dir`.
+
+A standing authorisation added to the output style **did not work**. The model
+reads it and defers anyway: *"the session-level lines come last and are the more
+specific, situational instruction."* Prompt-level authorisation loses to the CLI
+default. The paragraph was trimmed to one line rather than kept as ~70 tokens of
+proven-ineffective text.
+
+| Prompt | Agent invocations |
+|---|---|
+| plain task | 0 |
+| task + "use your specialist subagents" | **2** (`omc-slim:fixer`, plus a reviewer) |
+
+So the pantheon is **gated, not broken**. One explicit request per session
+unlocks it.
+
+### Consequence for everything measured before this
+
+The benchmark in §16 measured omc-slim's **prompt layer only**. Every result in
+this document that involved subagents involved none. The §16 explanation — "no
+subagent ran because a single-file CLI cannot benefit from delegation" — was
+wrong; delegation was suppressed. Cost figures are unaffected; the interpretation
+is corrected in `docs/BENCHMARK.md`.
+
+The central bet is therefore **still** untested, now for a second and different
+reason.
+
+### One more thing worth noting
+
+With delegation unlocked, the router picked `caveman:cavecrew-reviewer` — a
+third-party agent from the environment — over this plugin's own `oracle` for the
+review lane. Evidence the adaptivity works, and a hint that `oracle`'s
+description may not signal "code review" as strongly as it should. Not yet
+investigated.

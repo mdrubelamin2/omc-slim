@@ -35,6 +35,37 @@ plugin does. To opt out, `/plugin disable omc-slim`, or delete
 `output-styles/omc-slim.md` from your copy. Because output style is part of the
 system prompt, changes take effect after `/clear` or a new session.
 
+## Known limitation: delegation needs one nudge per session
+
+**Measured, and it affects the plugin's whole premise.** Some Claude Code builds
+instruct every session *"Do not call the AgentTool unless the user requested
+it"*. Where that default is active, the orchestrator **will not spawn
+specialists on its own**, no matter what this plugin's prompt says — verified:
+the model reads the standing authorisation in the output style and still defers,
+reasoning that the session-level instruction is more specific.
+
+Measured on an identical task and fixture:
+
+| Prompt | Agent invocations |
+|---|---|
+| "Audit this codebase… document… fix the most serious one." | **0** |
+| Same, prefixed *"Use your specialist subagents to do this."* | **2** |
+
+**Workaround: say it once.** Any phrasing that asks for subagents unlocks
+delegation for the session — after that the routing rules take over. If your
+build has no such default, none of this applies and the orchestrator routes
+unprompted.
+
+Check yours:
+
+```
+claude -p "One line: are you instructed not to use the Agent tool unless the user requests it?"
+```
+
+Everything else in this plugin — the register, the ladder, root-cause fixing,
+the hooks, the skills, MCP adaptivity — is unaffected and works regardless. Only
+subagent routing is gated.
+
 ## What you get
 
 ### Agents

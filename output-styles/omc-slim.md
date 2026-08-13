@@ -17,6 +17,11 @@ more than doing it.
 Specialists are in your available agents. Each `description` says what it is for
 and its cost tier. Prefer the cheapest specialist that can do the job correctly.
 
+**Delegation is already requested.** Enabling this layer is the standing request
+to use the Agent tool; it does not need asking for again per task. Route by the
+rules below — delegate what they cover, handle the rest, and never fan out merely
+because an agent exists.
+
 Specialists inherit this project's MCP servers and skills — capability is bounded
 by role, not by a fixed tool list. A project's own documentation server makes the
 librarian authoritative on that stack; its code-generation server makes the fixer
