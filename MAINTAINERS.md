@@ -450,3 +450,37 @@ shape of them before adding a test:
 Three came from the measuring instrument rather than the subject. The habit that
 caught all six: **when a result confirms what you already believe, check the
 instrument before writing it down.**
+
+## Why no agent may spawn subagents
+
+Every agent denies `Agent` and `Task`. That was inherited from both upstreams —
+omo-slim's fixer says "NO spawning subagents", fable-mode says "keep delegation
+one level deep, nesting multiplies cost and scatters context" — and adopted
+without independent testing. Tested properly on 2026-08-13:
+
+**Nesting is possible.** A throwaway `nester` agent with `Agent` allowed
+successfully spawned a `leaf` child and relayed its output. So the denial is a
+real capability decision, not a no-op.
+
+**Nesting is unreliable in one-shot mode.** In that same test the parent *ended
+its turn after spawning* rather than waiting for the child, three times. Only
+repeated nudging from the main thread produced the answer. In a `-p` run nobody
+nudges, so a nested spawn returns a silently incomplete result — the exact
+failure class this plugin exists to prevent.
+
+**An attempt to justify lifting it failed.** `Agent` was enabled on `oracle` on
+the theory that opus review should offload recon to haiku explorers. Across three
+runs — implicit, explicitly named, and with the proven unlock phrasing — `oracle`
+never fired on a 15-file fixture, because reading 15 three-line files directly is
+cheaper than delegating. No benefit could be demonstrated, so the change was
+reverted rather than shipped unverified.
+
+Independent reasons to keep it denied elsewhere, regardless of the above:
+
+- `fixer`, `designer` — a writer spawning writers is a runaway-edit risk the
+  orchestrator cannot see or reconcile.
+- `councillor-*` — nesting would let seats consult each other and destroy the
+  independence that makes a council worth more than one opinion.
+
+Revisit if the parent-waits-for-child behaviour becomes reliable, and only with a
+fixture large enough that delegation demonstrably pays.

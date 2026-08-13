@@ -1939,3 +1939,69 @@ v0.2.0: 2,774 → 2,803 → 3,046 → 3,187 → 3,471 → **3,660**, now 6.2× K
 the anti-anxiety instruction, the skill roster — and they still sum. This is the
 same failure mode OMC was criticised for, arrived at one defensible step at a
 time.
+
+---
+
+## 19. Gap work: fixer routing, the central bet, and subagent nesting (2026-08-13)
+
+### Gap 1 — `fixer` routing: not a defect
+
+Four fixtures showed `fixer` never delegating. A fifth showed why the first four
+were wrong tests.
+
+| Fixture | Delegated? | Correct? |
+|---|---|---|
+| rename X to Y across the repo | no | yes — bulk edit beats briefing |
+| money fix + 4 dependents | no | yes — an unmade design decision, which fixer's description excludes |
+| 12 test files, 36 mechanical edits | no | yes — main thread did it for $0.37 |
+| **3 independent packages, non-overlapping scopes** | **3 parallel `fixer` calls** | **yes** |
+
+**The threshold is parallelism, not volume.** `fixer` fires when lanes can run
+concurrently and declines when a bulk edit is cheaper. Gap closed as
+working-as-designed; the earlier "defect" was four badly chosen fixtures.
+
+### Gap 4 — the central bet, finally measured
+
+Identical task and fixture, delegation permitted vs withheld. Output verified
+equivalent: 3 loggers, 3 test files, 12 handlers migrated in both.
+
+| | Delegated | Sequential |
+|---|---|---|
+| Cost | $1.67 | **$1.60** |
+| Turns | **7** | 10 |
+| Wall clock | **30 s** | 53 s |
+| Main-thread output tokens | **2,043** | 3,516 |
+
+**Delegation costs ~4% more, runs 1.8× faster, and keeps 42% more work out of the
+main thread.** So the "cheaper tiers save money" thesis does **not** hold at this
+size — briefing plus three subagent sessions offsets the sonnet-vs-opus saving.
+What delegation buys is *latency* and *main-context cleanliness*, not spend.
+
+n=1, and 4% is inside noise. The honest claim is cost-neutral, not cheaper.
+
+### Subagent nesting — tested, and kept disabled
+
+Every agent denies `Agent`/`Task`, inherited from both upstreams without
+independent testing. Tested:
+
+- **Nesting works** — a throwaway agent spawned a child and relayed its result.
+- **It is unreliable one-shot** — the parent ended its turn after spawning
+  rather than waiting, three times, needing nudges the `-p` path cannot supply.
+- **No benefit demonstrable** — `Agent` was enabled on `oracle`; across three
+  runs it never fired on a 15-file fixture, because reading 15 three-line files
+  beats delegating. Reverted rather than shipped unverified.
+
+Full reasoning, including the independent reasons `fixer`/`designer`/councillors
+stay denied, is in `MAINTAINERS.md`.
+
+### Gap status after this round
+
+| Gap | Status |
+|---|---|
+| 1 `fixer` multi-file routing | **closed** — working as designed |
+| 4 does delegation pay? | **answered** — latency and context, not cost |
+| Subagent nesting | **decided** — stays off, with evidence |
+| 2 `codemap` on a large repo | still untested |
+| 3 static context 2,774 → 3,660 | **still open, still the biggest risk** |
+| 5 skills dropped at scale | environment; we contribute 5 |
+| 6 `council` synthesiser flakiness | 1 fire, 1 miss, unresolved |
