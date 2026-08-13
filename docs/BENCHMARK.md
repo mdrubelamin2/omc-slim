@@ -72,14 +72,18 @@ heavyweight discipline layer.**
   central claim — that routing work to cheaper tiers beats doing it all on the
   main model — is *untested here*, because nothing was delegated. A large
   multi-file task is where that claim lives or dies.
-- **No subagent was used by any arm — and the reason was not task size.**
-  Investigated after the fact: this build instructs every session *"Do not call
-  the AgentTool unless the user requested it"*, present with and without the
-  plugin. Three clean runs on a task built to demand delegation produced 0
-  invocations; the same task prefixed "use your specialist subagents" produced 2.
-  So **this benchmark measured omc-slim's prompt layer with the pantheon inert.**
-  The cost figures stand; the original explanation for zero delegation was wrong.
-  See the Known limitation section in the README.
+- **No subagent was used by any arm, and my first two explanations were both
+  wrong.** I said it was task size; then I said delegation was environmentally
+  gated and never fired. Neither held. Later testing showed **14 of 16 components
+  route automatically** on natural prompts, including `oracle`, `tracer`,
+  `librarian` and the full `council`. What actually distinguishes them is task
+  *shape*: investigative and advisory work delegates on its own, build-shaped
+  work tends not to — and a duplicate-file CLI is build-shaped throughout.
+
+  So this benchmark still measured the prompt layer with the pantheon idle, but
+  because the task never invited delegation, not because delegation was broken.
+  The cost figures are unaffected.
+
 - Karpathy Skills was not run as a fourth arm. It remains the efficiency
   benchmark to beat, and on this evidence a plain session already matches it.
 

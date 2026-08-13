@@ -8,6 +8,13 @@ static context** and **zero bytes injected on the tool-call path.**
 Slim by construction, and it **adapts to whatever your project already has** —
 every specialist inherits your MCP servers and skills.
 
+> **Status.** Working and installable. 14 of 16 components route automatically;
+> `fixer` and `codemap` do not (see below). Benchmarked once against a plain
+> session — it cost 10% more and produced an equivalent tool, so the case for it
+> is verification discipline, not raw efficiency. Every claim here was measured,
+> and the measurements that went against it are in
+> [`docs/BENCHMARK.md`](./docs/BENCHMARK.md) and [`RESEARCH.md`](./RESEARCH.md).
+
 Adapted from [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim),
 rebuilt native-first rather than ported.
 
@@ -26,14 +33,14 @@ Or load it without installing:
 claude --plugin-dir /path/to/omc-slim
 ```
 
-MIT. Requires no configuration, no API keys, and no dependencies — the two hooks
-are plain Node scripts and the two MCP servers are public HTTP endpoints.
+MIT. No configuration, no API keys, no dependencies — the single hook is a
+plain Node script and both MCP servers are public HTTP endpoints.
 
 **No further setup.** The orchestration output style applies automatically while
 the plugin is enabled (`force-for-plugin`), so the main thread works as a
 planner and reviewer rather than diving straight into implementation. Spawning
-specialists may need one nudge per session on some builds — see
-[Known limitation](#known-limitation-delegation-needs-one-nudge-per-session).
+14 of 16 components then route automatically — see
+[What invokes automatically](#what-invokes-automatically).
 
 That flag overrides your `outputStyle` setting — it is the one global thing this
 plugin does. To opt out, `/plugin disable omc-slim`, or delete
@@ -57,55 +64,57 @@ Expect `omc-slim:omc-slim`. If you get `default`, check `/plugin` shows the
 plugin enabled, then `/clear` or start a new session — output style is part of
 the system prompt and an already-running session will not pick it up.
 
-## Known limitation: agents and skills need one nudge per session
+## What invokes automatically
 
-**Measured, and it affects the plugin's whole premise.** Some Claude Code builds
-append two instructions to every session:
+Measured across 16 natural prompts that named no component and no plugin, with
+no instruction to delegate. **14 of 16 fire on their own.**
 
-> Do not call the AgentTool unless the user requested it
-> Do not use workflows or deep-research unless the user requested it
-
-Where those are active, the orchestrator **will not spawn specialists or invoke
-its own skills on its own initiative**, no matter what this plugin says. Verified:
-the model reads the standing authorisation in the output style and still defers,
-because the session-level instruction is later and more specific.
-
-It is not a matter of the task being too small or the descriptions being too
-narrow. Asked whether it would invoke `deepwork` for a phased 20-file migration,
-the model answered:
-
-> "That is exactly the shape of task it's built for, and absent that instruction
-> I'd reach for it. But 'migrate this service in phases' is a description of the
-> work, not a request for that workflow — so the instruction binds."
-
-Measured on an identical task and fixture:
-
-| Prompt | Agent invocations |
+| Fires unprompted | |
 |---|---|
-| "Audit this codebase… document… fix the most serious one." | **0** |
-| Same, prefixed *"Use your specialist subagents to do this."* | **2** |
+| `explorer` | "where is the retry logic?" |
+| `librarian` | "current recommended way to do X in <lib>?" — reached context7 itself |
+| `oracle` | "is this design going to hold up?" — ran `explorer` first, then reviewed |
+| `tracer` | "this bug keeps coming back, I've fixed it twice" |
+| `designer` | "this login form looks awful" |
+| `observer` | "what error is in error.pdf?" |
+| `council` + all 3 seats + synthesiser | "Postgres or DynamoDB? I want more than one opinion" |
+| `deepwork` | "migrate five services, in phases" |
+| `deep-interview` | "I want to build something, not sure what yet" |
+| `simplify` | "this file is a mess, clean it up" |
+| `verification-planning` | "how do I prove this refactor didn't break anything?" |
+| `gh_grep`, `context7` | reached through `librarian` |
 
-**Workaround: say it once, at the top of the session.**
+**Two do not, and one of them is arguably correct:**
+
+- **`fixer`** — on "rename X to Y across the codebase" the main thread did it
+  directly. That is the ladder working: isolated mechanical work should not pay
+  delegation overhead. But it also did not fire on a genuinely multi-file money
+  fix, which is a real routing gap and is unresolved.
+- **`codemap`** — did not fire on "help me get oriented" in a 15-file repo. Its
+  own framing is "expensive operation, unfamiliar repository", and reading 15
+  files is cheaper than mapping them. Unverified on a large repo.
+
+### If nothing delegates at all
+
+Some builds append `Do not call the AgentTool unless the user requested it` to
+every session. Check yours:
 
 ```
-Use your specialist subagents and skills for this session where they fit.
+claude -p "One line: are you instructed not to use the Agent tool unless the user requests it?"
 ```
 
-After that the routing rules take over for the rest of the session. Naming a
-skill directly (`/deepwork`, `/deep-interview`) always works regardless.
+If present, one imperative sentence at the top of a session unlocks it for the
+rest of it — **"Use your specialist subagents."** Phrasing matters: a hedge like
+"where they fit" measured 0 invocations where the unconditional form measured 2.
 
-Check whether your build is affected:
+### A caveat about skills on crowded machines
 
-```
-claude -p "One line: are you instructed not to use the Agent tool or workflows unless the user requests it?"
-```
-
-If your build has no such default, none of this applies and the orchestrator
-routes unprompted.
-
-Everything else — the register, the ladder, root-cause fixing, the hooks, MCP
-adaptivity, the skills when invoked — is unaffected and works regardless. Only
-*automatic* routing is gated.
+On a machine with **103 skills installed, 24 had no description** in the model's
+listing — across four plugins, two of them ours. A skill with no description
+cannot be matched and will never auto-fire. This is why the orchestrator carries
+its own skill roster rather than trusting the listing, and it is a reason to be
+suspicious of any plugin that ships a large skill count. omc-slim ships five, and
+adding more would make this worse for everything you have installed.
 
 ## What you get
 
@@ -180,8 +189,8 @@ capability classes are the guard, not an exhaustive list.
 Three ideas, each of which cost something to learn.
 
 **Delegation over accumulation.** The main thread plans and reconciles;
-specialists do the work on cheaper tiers. The orchestrator prompt is ~1,788
-tokens — 60% smaller than the one it derives from — because everything Claude
+specialists do the work on cheaper tiers. The orchestrator prompt is ~2,261
+tokens — 50% smaller than the one it derives from — because everything Claude
 Code already provides was deleted rather than described.
 
 **Nothing injects on the tool-call path.** The dominant cost in comparable
@@ -192,9 +201,9 @@ pre-emptively dumps state "before running out", and never suggests compacting.
 That is the harness's job and it does it better.
 
 **Subagents return structures, not prose.** No hook in Claude Code can truncate
-what a subagent returns to its parent — `PostToolUse` is purely additive.
-The only lever is the agent's own output contract, so `explorer`, `observer`,
-`fixer` and `librarian` each have one, with hard caps.
+what a subagent returns to its parent — `PostToolUse` is purely additive — so the
+only lever is the agent's own output contract. `explorer`, `observer`, `fixer`
+and `librarian` each have one, with hard caps.
 
 ## How it behaves
 
@@ -320,8 +329,17 @@ For context on why that matters:
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
 July 2026. In that dataset **sophistication correlates negatively with results** —
 the smallest pack won on efficiency, the largest lost to doing nothing. Our own
-result is consistent with it. If further measurement holds this direction, the
-right response is to shrink toward Karpathy, not to add features.
+result is consistent with it.
+
+**omc-slim is the most expensive row in that table**, at 6.2× Karpathy and ~1,000
+tokens above oh-my-claudecode. Worse, it has grown every version: 2,774 → 2,803 →
+3,046 → 3,187 → 3,471 → 3,660. Each increase was individually justified — adopted
+behaviours, an anti-context-anxiety instruction, a skill roster the listing could
+not be trusted to provide — and they still sum. That is the exact failure mode
+oh-my-claudecode was criticised for, arrived at one defensible step at a time.
+
+If further measurement holds this direction, the right response is to shrink
+toward Karpathy, not to add features.
 
 ## Provenance — what was adopted, pinned exactly
 

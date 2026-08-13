@@ -1,9 +1,15 @@
 # omc-slim — research notes
 
-> **Status: v0.1.0 built 2026-08-13.** The plugin exists alongside this document.
-> See [`README.md`](./README.md). Build outcomes and the corrections they forced
-> are in section 10 at the end of this file — **read that before trusting the
-> numbers in sections 2b and 6d.**
+> **Status: v0.5.0, built and published 2026-08-13** —
+> <https://github.com/mdrubelamin2/omc-slim>. This file is an append-only research
+> log: later sections correct earlier ones and the earlier text is left standing
+> so the reasoning is auditable.
+>
+> **Read sections 16-18 first.** They contain the benchmark, the routing
+> measurements, and a regression audit that overturn several conclusions in
+> sections 2b, 6d and 10 — including "delegation is gated" (wrong: 14 of 16
+> components route automatically) and the static-context figures, which have
+> risen every version to ~3,660 tokens.
 
 Research date: **2026-08-13**. Everything below was verified on that date and will
 rot; the upstream projects move fast (OMC ships ~35 npm versions/month).

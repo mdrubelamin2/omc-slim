@@ -1,8 +1,10 @@
 # Maintainer notes
 
-Non-obvious decisions, each one bought with a failed test. Everything here was
-verified against a live Claude Code session on **2026-08-13**; re-verify before
-trusting it, because most of it is undocumented runtime behaviour.
+Undocumented Claude Code runtime behaviour discovered while building this, plus
+the design decisions that are not obvious from the code. Each entry cost a failed
+test. Verified against a live session on **2026-08-13**; re-verify before
+trusting any of it, because most is not in the public docs.
+
 
 This file exists so the rationale does **not** live inside prompt bodies. It
 originally did, and cost ~328 tokens of system prompt across three files —
@@ -428,3 +430,23 @@ Consequences worth holding onto:
 - It also explains an apparent interference result: our `designer` won a
   "design a pricing page" prompt over `ui-ux-pro-max`. That pack's `design`
   skill is one of the bare 24 — it was invisible, not out-competed.
+
+---
+
+## Reading the test history
+
+Six measurement errors were caught in this project, and it is worth knowing the
+shape of them before adding a test:
+
+| Error | Cause |
+|---|---|
+| "adaptivity works" | test used a vendor the prompt itself named |
+| "the terse register is ours" | ambient tone plugins were active in the session |
+| "delegation never fires" | three build-shaped tasks generalised into a blanket claim |
+| "its tests can't run" | the grader assumed pytest; the arm used stdlib unittest |
+| "designer/deepwork don't fire" | fixture contained no login form and no migration |
+| "the roster check passes" | the check was appended after the script's `exit` |
+
+Three came from the measuring instrument rather than the subject. The habit that
+caught all six: **when a result confirms what you already believe, check the
+instrument before writing it down.**
