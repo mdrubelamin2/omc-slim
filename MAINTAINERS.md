@@ -897,3 +897,42 @@ Fixture re-run after the fixes. `omc-slim:simplify` fired; the nested ternary
 became guard clauses; the formatter hierarchy collapsed and callers in the second
 file migrated; unused config deleted; the trust-boundary validator untouched.
 87/87 coverage rows pass. Static context unchanged at 3,629 tokens.
+
+---
+
+## v0.6.7 — simplify compressed 28%, and it got better
+
+`simplify` had grown to 2,746 words across six stacked edits. Compressed to
+**1,978 words (−28%)** with all 87 coverage rows still passing.
+
+Method: say each thing once. The prose had accumulated three layers of the same
+idea — YAGNI appeared in rung 1, the `yagni:` tag, Principle 4's tiebreaker, the
+named-principles list and a rationalization row. Bullet lists that restated
+adjacent prose were folded into it; `Red flags` became one dense middot-separated
+line; the two `When to use` lists became two sentences; each named principle went
+from a paragraph to one or two lines. No rule was dropped — the coverage manifest
+is the proof, and it is why that manifest exists.
+
+### Compression improved behaviour
+
+Same fixture, same prompt, before and after:
+
+| | v0.6.6 (2,746 words) | v0.6.7 (1,978 words) |
+|---|---|---|
+| Skill fired | yes | yes |
+| Nested ternary | guard clauses ✔ | guard clauses ✔ |
+| Formatter hierarchy | collapsed ✔ | collapsed ✔ |
+| Unused config | deleted ✔ | deleted ✔ |
+| Trust-boundary validator | untouched ✔ | untouched ✔ |
+| Forwarding wrapper | kept as an alias | **deleted, caller migrated to `structuredClone`** ✔ |
+| Cost | $0.71 | **$0.39** |
+
+The wrapper is the interesting one. Three runs on the verbose version declined to
+remove it; the compressed version deleted it and migrated the caller — which is
+what `Finish the deletion` asks for. Two things changed together: the rule gained
+its internal-versus-exported branch in v0.6.6, and the surrounding prose thinned.
+Not separable from one run each, but the direction is clear enough to record:
+**more words diluted the instruction rather than reinforcing it.**
+
+Worth carrying to the rest of the plugin. `deepwork` absorbed four rounds of added
+wording and never fired once; nobody tried removing words.
