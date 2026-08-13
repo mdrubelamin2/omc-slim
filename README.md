@@ -16,8 +16,8 @@ rebuilt native-first rather than ported.
 ## Install
 
 ```
-/plugin marketplace add /path/to/omc-slim
-/plugin install omc-slim
+/plugin marketplace add mdrubelamin2/omc-slim
+/plugin install omc-slim@omc-slim
 ```
 
 Or load it without installing:
@@ -26,9 +26,14 @@ Or load it without installing:
 claude --plugin-dir /path/to/omc-slim
 ```
 
+MIT. Requires no configuration, no API keys, and no dependencies — the two hooks
+are plain Node scripts and the two MCP servers are public HTTP endpoints.
+
 **No further setup.** The orchestration output style applies automatically while
-the plugin is enabled (`force-for-plugin`), so the main thread starts planning
-and delegating on first run rather than implementing everything itself.
+the plugin is enabled (`force-for-plugin`), so the main thread works as a
+planner and reviewer rather than diving straight into implementation. Spawning
+specialists may need one nudge per session on some builds — see
+[Known limitation](#known-limitation-delegation-needs-one-nudge-per-session).
 
 That flag overrides your `outputStyle` setting — it is the one global thing this
 plugin does. To opt out, `/plugin disable omc-slim`, or delete

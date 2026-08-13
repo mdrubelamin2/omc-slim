@@ -4,7 +4,8 @@
   "version": "0.4.2",
   "description": "A small pantheon of specialist agents for Claude Code. Delegation over accumulation: eleven specialists, five skills, two advisory hooks, no runtime injection on the tool-call path, and a terse senior-engineer register by default.",
   "author": {
-    "name": "Rubel Amin"
+    "name": "Md Rubel Amin",
+    "url": "https://github.com/mdrubelamin2"
   },
   "license": "MIT",
   "keywords": [
@@ -14,5 +15,6 @@
     "code-review",
     "cost-efficiency"
   ],
-  "repository": "https://github.com/rubel-amin/omc-slim"
+  "homepage": "https://github.com/mdrubelamin2/omc-slim",
+  "repository": "https://github.com/mdrubelamin2/omc-slim"
 }

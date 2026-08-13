@@ -1,14 +1,25 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "omc-slim",
+  "description": "omc-slim — a small pantheon of specialist agents for Claude Code, built for cost-efficiency and measured against a plain session.",
   "owner": {
-    "name": "Rubel Amin"
+    "name": "Md Rubel Amin",
+    "url": "https://github.com/mdrubelamin2"
   },
   "plugins": [
     {
       "name": "omc-slim",
       "source": "./",
-      "description": "A small pantheon of specialist agents for Claude Code. Delegation over accumulation."
+      "description": "A small pantheon of specialist agents for Claude Code. Delegation over accumulation: eleven specialists, five skills, two advisory hooks, and no runtime injection on the tool-call path.",
+      "license": "MIT",
+      "keywords": [
+        "orchestration",
+        "subagents",
+        "delegation",
+        "cost-efficiency",
+        "code-review"
+      ],
+      "homepage": "https://github.com/mdrubelamin2/omc-slim"
     }
-  ],
-  "description": "omc-slim — a small pantheon of specialist agents for Claude Code, built for cost-efficiency and measured against a plain session."
+  ]
 }
