@@ -37,11 +37,43 @@ while IFS=$'\t' read -r kind name pin source; do
         moved=$((moved + 1))
       fi
       ;;
+    archived)
+      # Fully adopted, then deleted from the machine on purpose — the plugin
+      # replaces it. There is no live source to track any more, so the snapshot
+      # in docs/upstream/ IS the record. Verify the snapshot is intact, and if
+      # the original happens to still exist, say whether it has drifted since
+      # adoption.
+      snap="$ROOT/docs/upstream/$name.snapshot"
+      if [ ! -f "$snap" ]; then
+        printf '  %-22s SNAPSHOT LOST  %s\n' "$name" "docs/upstream/$name.snapshot"
+        moved=$((moved + 1)); continue
+      fi
+      snaphash="$(shasum -a 256 "$snap" | cut -d' ' -f1)"
+      if [ "$snaphash" != "$pin" ]; then
+        printf '  %-22s SNAPSHOT ALTERED  expected %s got %s\n' \
+               "$name" "${pin:0:12}" "${snaphash:0:12}"
+        moved=$((moved + 1)); continue
+      fi
+      path="${source/#\~/$HOME}"
+      if [ ! -f "$path" ]; then
+        printf '  %-22s archived     %s (source retired, snapshot intact)\n' \
+               "$name" "${pin:0:12}"
+      elif [ "$(shasum -a 256 "$path" | cut -d' ' -f1)" = "$pin" ]; then
+        printf '  %-22s archived     %s (source still present, unchanged)\n' \
+               "$name" "${pin:0:12}"
+      else
+        printf '  %-22s archived     %s (source still present and DRIFTED)\n' \
+               "$name" "${pin:0:12}"
+        printf '  %-22s   review before deleting: diff -u %s %s\n' \
+               "" "docs/upstream/$name.snapshot" "$source"
+      fi
+      ;;
     file)
-      # Unversioned local file. Compare against the snapshot's hash.
+      # Unversioned local file still being tracked as a live source.
       path="${source/#\~/$HOME}"
       if [ ! -f "$path" ]; then
         printf '  %-22s GONE         %s\n' "$name" "$source"
+        moved=$((moved + 1))
         continue
       fi
       now="$(shasum -a 256 "$path" | cut -d' ' -f1)"

@@ -1,0 +1,37 @@
+# Behaviours adopted from sources that will be deleted after adoption.
+# Each row asserts a rule still lives somewhere in the plugin.
+# Checked by scripts/check-coverage.sh. Patterns are FIXED SUBSTRINGS, not regex.
+# Whitespace is normalised first, so line-wrapped prose still matches.
+#
+# origin	rule	where	pattern
+CLAUDE.md	ownership-no-exits	output-styles	descriptions, never exits
+CLAUDE.md	no-early-stop	output-styles	good stopping point
+CLAUDE.md	no-permission-to-continue	output-styles	permission to continue
+CLAUDE.md	looks-right-is-not-a-check	output-styles	"Looks right" is not a check
+CLAUDE.md	read-artefact-not-memory	output-styles	assumption stated as a finding
+CLAUDE.md	surgical-edits	output-styles	unrequested
+CLAUDE.md	finish-agreed-scope	output-styles	ships whole
+CLAUDE.md	research-before-edit	output-styles	Read the artefact first
+CLAUDE.md	no-shallow-reasoning	output-styles	Brevity applies to solutions, never to reading
+fable-mode	stage-map-first	deepwork	Write the stage map before touching anything
+fable-mode	one-artefact-per-stage	deepwork	Every stage produces one verifiable artefact
+fable-mode	merge-uncheckable-stages	deepwork	produces nothing checkable, merge it
+fable-mode	delegate-independent-work	deepwork	dispatch them in one message
+fable-mode	one-level-delegation	deepwork	Keep delegation one level deep
+fable-mode	failable-check-per-stage	deepwork	check that can fail
+fable-mode	introspection-is-not-a-check	deepwork	pass its own introspection
+fable-mode	mark-unverified-stages	deepwork	mark its output unverified
+fable-mode	backward-rerun	deepwork	invalidates an earlier stage
+fable-mode	self-critique-least-confident	deepwork	least confident
+fable-mode	self-critique-unknown-unknown	deepwork	biggest thing you are missing
+fable-mode	no-manufactured-weakness	deepwork	manufacture a weakness
+fable-mode	warning-threshold	deepwork	At three, stop and surface
+fable-mode	verify-before-flagging	deepwork	Absence of evidence is not the finding
+fable-mode	find-replace-word-boundaries	deepwork	Anchor on word boundaries
+fable-mode	domain-variations	deepwork	Domain variations
+fable-mode	when-not-to-use	deepwork	When NOT to use this
+fable-mode	not-a-capability-transplant	deepwork	does not make the underlying reasoning better
+fable-mode	verify-before-flagging	verification-planning	Absence of evidence is not the finding
+fable-mode	verify-before-flagging	oracle	Absence of evidence is not the finding
+fable-mode	verify-before-flagging	tracer	Absence of evidence is not the finding
+fable-mode	find-replace-word-boundaries	fixer	word boundaries

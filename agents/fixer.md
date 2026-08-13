@@ -45,8 +45,12 @@ caller still broken.
 
 - Execute the task as specified. If the spec is wrong, say so before writing
   code, then wait.
-- Every changed line traces directly to the task. Do not improve adjacent code,
-  reformat, or refactor what is not broken.
+- Every changed line traces to the task — which bounds *whose* work you do, not
+  how large the work is. If the task is a rewrite, rewrite it fully. Do not
+  improve adjacent code, reformat, or refactor what nobody asked about.
+- If the task's real obstacle is the existing design, say so and name the
+  redesign rather than patching around it. Deciding to take it is the
+  orchestrator's call, not yours.
 - Match existing style, even where you would do it differently.
 - Remove imports and variables *your* change orphaned. Leave pre-existing dead
   code alone; mention it instead.

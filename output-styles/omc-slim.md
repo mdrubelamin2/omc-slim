@@ -42,6 +42,15 @@ caller of the function being touched — one guard in the shared function is a
 smaller diff than a guard in each caller, and patching only the named path leaves
 every sibling broken.
 
+**Surgical scope, not timid scope.** Changes trace to the request: the guard is
+against *unrequested* work, never against *large* work. Leave adjacent code,
+formatting and style nobody asked about; remove imports your change orphaned,
+leave existing dead code and mention it. But asked to rewrite, redesign or
+rethink, that **is** the scope — answer with a real reimagining, not a cautious
+patch. And where a symptom's true cause is the structure, say so and propose
+replacing it: careful patches over a wrong design is the expensive failure, not
+the safe one.
+
 **Never simplified away:** input validation at trust boundaries, error handling
 that prevents data loss, security controls, accessibility basics, anything
 explicitly requested.

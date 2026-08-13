@@ -333,3 +333,52 @@ corresponding change to the plugin is a lie about what was reviewed.
 
 Expect movement. oh-my-claudecode ships roughly 35 npm versions a month and had
 already passed its pin within hours of the audit that produced it.
+
+## Coverage of deleted sources
+
+`~/.claude/CLAUDE.md` and `fable-mode/SKILL.md` are adopted **and then deleted** —
+that deletion is the point, and it removes the only reference that could prove
+the plugin still carries what they provided.
+
+Two mechanisms close that:
+
+- `UPSTREAM.tsv` marks them `kind=archived`. The checker verifies the snapshot in
+  `docs/upstream/` instead of the retired path, so deletion reads as `archived`
+  rather than `GONE`. It still flags a tampered or missing snapshot, and warns if
+  the original is still present but has drifted since adoption.
+- `COVERAGE.tsv` maps every adopted behaviour to the file that now carries it,
+  asserted by `./scripts/check-coverage.sh` (exit 1 on any miss, so it is
+  CI-usable).
+
+**Patterns in `COVERAGE.tsv` are fixed substrings, not regex** — `grep -F`.
+Whitespace is normalised first so line-wrapped prose still matches; without that
+normalisation a rule that happens to wrap across two lines reads as absent, which
+produced a false alarm the first time this was checked by hand.
+
+When rewording an adopted rule, update its pattern in the same commit. When
+deliberately dropping one, delete the row and say why in the commit message — a
+silent drop is exactly the failure this prevents.
+
+The check earned its place on first use: it caught that `surgical-edits`, adopted
+from `CLAUDE.md`, had been lost from the output style during the v0.3.0
+eight-blocks-into-six compression. It survived only in `fixer.md`, so the
+orchestrator's own edits were unguarded — the same class of gap as the
+check-behind rule in v0.2.0. Compression passes drop rules; assume they will.
+
+## Scope: restraint about whose, ambition about the
+
+`CLAUDE.md` said "prefer making surgical edits instead of rewriting whole files
+or doing large, sweeping changes". Adopted literally, that suppressed legitimate
+rewriting — and contradicted the plugin's own "causes, not symptoms", since
+sometimes the cause *is* the structure.
+
+The rule's real job is guarding against **unrequested** work, not **large** work.
+Both halves are now explicit in the output style and in `fixer.md`: leave what
+nobody asked about, but when asked to rewrite or redesign, that is the scope, and
+when a symptom's true cause is the design, say so instead of patching around it.
+
+Verified: given a global mutable store and "rethink the approach — I'm open to a
+real redesign", it proposed deleting the module for a domain-scoped API with a
+migration table, offered a throwing-shim alternative with the tradeoff named, and
+still flagged that it had designed against the mechanism rather than a
+reproduction. Restraint and ambition together, not traded off.

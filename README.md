@@ -255,6 +255,42 @@ directly, so nothing depends on those packs being installed.
 Benchmark figures come from [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
 July 2026 run, page last updated 2026-08-08.
 
+### Safe to delete the sources this replaces
+
+`~/.claude/CLAUDE.md` and the `fable-mode` skill are meant to be **deleted** once
+this plugin is installed — that is the ~2,700 tokens per task it buys back. Two
+checks make that safe.
+
+**1. The pins survive deletion.** Those two entries are marked `archived` in
+`UPSTREAM.tsv`: fully adopted, source retired on purpose. The verbatim copies in
+[`docs/upstream/`](./docs/upstream) become the record, and the checker verifies
+*those* rather than reporting a permanent false alarm:
+
+```
+CLAUDE.md            archived   e1894ef55a06 (source retired, snapshot intact)
+fable-mode.SKILL.md  archived   c48cbc5cf0c9 (source retired, snapshot intact)
+```
+
+It also detects a tampered or missing snapshot, and — if you have not deleted the
+original yet — tells you whether it drifted since adoption, so you can review
+before deleting.
+
+**2. Coverage is asserted, not assumed.** With the originals gone, nothing else
+would catch a later edit quietly dropping an adopted rule.
+[`COVERAGE.tsv`](./COVERAGE.tsv) maps all 31 adopted behaviours to where they now
+live:
+
+```bash
+./scripts/check-coverage.sh
+# 31/31 adopted behaviours present.
+# Safe to delete the adopted sources; the plugin covers them.
+```
+
+Exits non-zero if any behaviour goes missing, so it works in CI or a pre-commit
+hook. It has been verified to actually fail: rewording or deleting a rule turns
+it red, and it earned its keep immediately — it caught that `surgical-edits` had
+been lost from the output style during an earlier compression pass.
+
 ### Checking for upstream changes
 
 ```bash
@@ -264,10 +300,6 @@ July 2026 run, page last updated 2026-08-08.
 
 Read-only. It queries each remote and hashes each local file, then prints the
 exact `git diff` or `diff -u` command for anything that moved.
-
-The two local files have no upstream to fetch, so verbatim copies live in
-[`docs/upstream/`](./docs/upstream). A hash tells you *that* something changed; a
-snapshot tells you *what*.
 
 Upstream moves fast — oh-my-claudecode ships roughly 35 npm versions a month, and
 had already moved past its pin within hours of being audited. Expect the checker
