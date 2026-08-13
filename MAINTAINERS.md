@@ -978,3 +978,64 @@ when it hit a `--max-turns 13` cap in the harness. That is a test-harness limit,
 not a skill failure, and it is the third time in this session that a turn cap has
 produced a false negative. Content preservation is covered by the manifest;
 end-to-end behaviour on a large repo is not.
+
+---
+
+## v0.6.9 — orchestrator compressed, and one clause proved load-bearing
+
+The orchestrator is the only file loaded on **every** request, so it is where
+compression actually pays. Body **2,052 → ~1,860 words**; static context
+**3,612 → 3,362 tokens (−250, −6.9%)**.
+
+### The manifest earned its keep twice
+
+First it caught a dropped rule: rewriting the `deepwork` roster line lost the
+pinned phrase "across several subsystems at once". Restored.
+
+Then it failed to catch something, which is the more useful finding.
+
+### Compression has a floor, and reinforcement is invisible to the manifest
+
+`COVERAGE.tsv` pins *rules*. It cannot pin **reinforcement** — the sentences that
+make a rule actually fire. Compression dropped this clause as redundant:
+
+> On a crowded machine yours compete with dozens of near-synonyms: pick by what
+> the work needs, not by what surfaces first.
+
+All 87 rows still passed. The measured behaviour did not:
+
+| Same fixture | v0.6.7 | compressed | clause restored |
+|---|---|---|---|
+| `simplify` fired | yes | **no** | **yes** |
+| Nested ternary | guard clauses | **untouched** | guard clauses |
+| `deepClone` wrapper | deleted, caller migrated | alias only | deleted, caller migrated |
+
+~25 tokens bought one skill invocation and two quality behaviours. Now pinned so
+a later pass cannot repeat this.
+
+**The general lesson:** a green coverage run proves no rule was *deleted*. It does
+not prove the remaining rules still *fire*. Behavioural tests are the only thing
+that shows the difference, and this is the second time this session that words
+which looked redundant were carrying the load — the first was
+"invoking the right one beats improvising the same procedure worse", weakened in
+v0.6.0 and restored in v0.6.2.
+
+### Regression check
+
+| Behaviour | Before | After |
+|---|---|---|
+| `oracle` on an architecture question | fires turn 1 | **fires turn 2** ✔ |
+| `simplify` on an over-engineered fixture | fires, full quality | **fires, full quality** ✔ |
+| Trivial one-line fix | handled directly | **handled directly** ✔ |
+| External-fact question | delegated to `librarian`, $0.89 | **not delegated** — main thread used `ToolSearch` → `WebSearch`, current sourced answer, $0.51 |
+
+The last row is a routing change, not a quality failure: the anti-staleness rule
+held, the answer was current and sourced, and it cost 43% less. n=1 either way,
+so variance is not excluded.
+
+### Method note
+
+One test in this round was invalid because the fixture was shrunk while a
+different variable was under test — the apparent `simplify` regression vanished
+under a like-for-like rerun, then reappeared for the real reason above. Rebuild
+the fixture exactly, or the comparison means nothing.

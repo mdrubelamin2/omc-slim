@@ -98,3 +98,4 @@ audit	finish-the-deletion	simplify	Finish the deletion
 audit	name-blast-radius	simplify	blast radius stated
 audit	abstraction-pays-rent-now	simplify	pays rent when a second
 audit	exported-wrapper-is-api	simplify	deleting it is an API change
+audit	skills-compete-with-synonyms	output-styles	compete with dozens of near-synonyms
