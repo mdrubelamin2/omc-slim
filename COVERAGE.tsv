@@ -67,3 +67,14 @@ audit	invoke-beats-improvising	output-styles	beats improvising the same procedur
 audit	plan-before-first-edit	output-styles	Plan before the first edit, not after it
 audit	discovery-covers-both-scopes	output-styles	arrive from **two scopes**
 audit	discovery-covers-both-scopes	librarian	never assume the repository is the whole inventory
+omc-official	no-hardcoded-project-dialect	simplify	Conventions come from the repository
+addy	chestertons-fence	simplify	Chesterton's Fence
+addy	git-blame-for-intent	simplify	git blame
+addy	tests-changed-means-behaviour-changed	simplify	you changed behaviour
+addy	comments-why-not-what	simplify	keep comments that explain why
+addy	rule-of-500	simplify	stop hand-editing
+addy	separate-refactor-commits	simplify	separate from feature and bug-fix commits
+addy	red-flags	simplify	Red flags
+addy	refuse-rationalizations	simplify	Rationalizations to refuse
+omo-slim	bisect-on-failure	simplify	bisect them rather than guessing
+audit	honour-do-not-simplify-marker	simplify	do-not-touch marker

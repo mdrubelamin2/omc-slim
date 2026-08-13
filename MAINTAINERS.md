@@ -722,3 +722,75 @@ only the repository misses nearly everything.
 **Left alone deliberately:** "run the cheapest check the project already has" and
 "run the project's own check once against the merged result". Those are correctly
 project-scoped — a build or test suite belongs to the repository, not the user.
+
+---
+
+## v0.6.4 — simplify, merged from four sources
+
+The four are one lineage, not four opinions: the official `code-simplifier`
+agent → addyosmani's `code-simplification` skill (which credits it) →
+oh-my-opencode-slim's `simplify` → ours. Most content already overlapped. Only
+what was genuinely absent was taken.
+
+### Adopted
+
+| From | What | Why it earned space |
+|---|---|---|
+| addy | **A test had to change ⇒ you changed behaviour** | The sharpest rule in any of the four, and we had nothing like it. Editing the test destroys the only evidence behaviour was preserved. |
+| addy | **Chesterton's Fence**, named, plus `git blame` | We said "understand why it exists" without saying how. The commit message is often the whole answer and costs one command. |
+| addy | **Pattern tables** — structure, naming, redundancy | Replaced a flat list of nine words ("Deep nesting", "Dead code"…) with Pattern → Simplification rows. Same coverage, actionable instead of evocative. |
+| addy | **Rule of 500** | Above ~500 lines, hand-editing is the wrong tool; use a codemod and verify it on a sample. Nothing else said this. |
+| addy | **Comments: delete "what", keep "why"** | We only implied comment removal, which risks deleting the intent comments that matter most. |
+| addy | **Red flags** and **Rationalizations to refuse** | The anti-laziness half. Condensed from 7+7 rows to 7+5, dropping the weak ones. |
+| addy | **Separate refactor commits from feature commits** | Ours said "whenever possible". Made unconditional. |
+| official | Conventions come from the repository | Kept the *principle* while rejecting its hardcoded dialect (below). |
+| ours | **Bisect on failure** | Resolves a genuine contradiction — see below. |
+| new | **Honour an explicit do-not-touch marker** | The one idea worth keeping from addy's `simplify-ignore` hook, at zero runtime cost. |
+
+### The one real contradiction
+
+addy runs the **full test suite after every single simplification**. omo-slim
+and ours use **proportionate final-state verification** instead. These conflict
+directly.
+
+Neither is simply right. Per-change testing buys *attribution* — knowing which
+change broke it — and pays a full suite run per edit. Final-state verification is
+cheap and loses attribution.
+
+Resolved by naming what per-change testing was actually for: **batch only what you
+can attribute, and bisect when a batch fails.** That keeps attribution without
+paying for it on every edit.
+
+### Rejected, with reasons
+
+- **Language-specific example blocks** (TS/JS, Python, React — roughly a third of
+  addy's skill). v0.6.0 removed a hardcoded "prefer straightforward TypeScript"
+  from this very file because it is wrong on a Python repo. Re-adding three
+  languages of examples reintroduces that bias and triples the length. The
+  underlying patterns are kept, language-neutral, in the tables.
+- **Hardcoded project standards** from the official agent and OMC — "use ES
+  modules", "prefer `function` over arrow functions", "explicit return type
+  annotations", "`.js` extensions". These describe *one* repository. Shipping them
+  as universal makes the skill fight every project that disagrees, which is the
+  churn the skill's own second principle forbids.
+- **The `simplify-ignore` PreToolUse hook.** It rewrites file contents on every
+  `Read` to blank out protected blocks. That is runtime injection on the tool-call
+  path — the specific OMC failure this plugin was built to avoid, and it would
+  break every other consumer of `Read` in the session. The intent is kept as a
+  prompt rule instead.
+- **"Operate autonomously and proactively, refining code immediately after it is
+  written"** (official agent). Directly contradicts *Surgical scope, not timid
+  scope*: changes must trace to the request. An agent that refactors unrequested
+  after every edit is the definition of unrequested work.
+- **`level: 3` and XML prompt structure** (OMC). Formatting, no content.
+- **"Work ALONE. Do not spawn sub-agents."** (OMC). Already enforced by the
+  denylists; a prompt sentence would be weaker and redundant.
+
+### Regression check
+
+Diffed old against new line by line. Every dropped line is a rewording or a
+strengthening — the five principles, all four process steps, the verification
+list, `Defaults` and `Final-state verification` all survive, as do the v0.6.0
+additions ("that **is** the scope", "name the restructure"). Static context is
+unchanged at 3,568 tokens because the skill's description did not move; the body
+grew 821 → 1,523 words and loads only on invocation.
