@@ -157,17 +157,24 @@ nothing — precisely the case most worth flagging.
 `tool_use` has a matching `tool_result` whose `is_error` is not `true`. A
 `tool_use` with no result at all (agent died mid-call) also counts as no write.
 
-### Context window must be inferred, not assumed
+### Do not police the context window (spawn-preflight, removed)
 
-`spawn-preflight` originally hardcoded a 200K window. On a 1M-context session,
-160K tokens is 16% used, not 80% — it would have warned on a nearly empty
-context every single time an agent was spawned. A guard that cries wolf gets
-ignored, which is the same as not shipping it.
+A `spawn-preflight` PreToolUse hook used to warn before fanning out at high
+context. **Removed.** Capacity is the harness's job; a plugin that narrates it
+causes the model to truncate real work over an imagined limit.
 
-It now picks the smallest of `[200_000, 1_000_000]` that could hold the observed
-token count, with `OMC_SLIM_CONTEXT_WINDOW` as an override. When the transcript
-records no usage figure at all it returns **null and stays silent** rather than
-falling back to a transcript-size guess, which cannot distinguish window sizes.
+Kept here because the failure mode generalises: it originally hardcoded a 200K
+window, so on a 1M-context session 160K read as 80% used rather than 16% and it
+would have warned on a nearly empty context every time. If anything like it is
+ever reintroduced, infer the window rather than assuming one, and stay silent
+when the signal is unreadable instead of guessing.
+
+The same reasoning removed scarcity framing from agent prompts ("keeps bytes out
+of the main context", "your caller pays for every token"). Note the line: telling
+the model *why delegating is the right call* is routing logic and belongs;
+telling it *you are running low on room* is anxiety and does not. Over-correcting
+past that line broke `observer` routing once — its reason to exist disappeared
+along with the framing.
 
 ### Both hooks are advisory and fail open
 

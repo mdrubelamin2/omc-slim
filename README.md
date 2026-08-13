@@ -2,7 +2,7 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Eleven agents, five skills, one hook, two MCP servers. **~3,471 tokens of
+Eleven agents, five skills, one hook, two MCP servers. **~3,660 tokens of
 static context** and **zero bytes injected on the tool-call path.**
 
 Slim by construction, and it **adapts to whatever your project already has** —
@@ -314,7 +314,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~3,471 tok** | see above |
+| **omc-slim** | **~3,660 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),

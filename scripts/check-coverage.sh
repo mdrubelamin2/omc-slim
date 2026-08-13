@@ -54,6 +54,27 @@ while IFS=$'\t' read -r origin rule where pattern; do
   fi
 done < "$MANIFEST"
 
+# --- roster drift ---------------------------------------------------------
+# The output style names each skill explicitly, because skill descriptions get
+# dropped on machines with many plugins installed. That roster can silently
+# drift from the real skill set: a renamed skill leaves the orchestrator
+# invoking a name that no longer exists, and a new skill stays invisible.
+python3 - "$ROOT" <<'PY' || exit 1
+import re, glob, os, sys
+root = sys.argv[1]
+style = open(os.path.join(root, 'output-styles/omc-slim.md')).read()
+listed = set(re.findall(r'^- \*\*([a-z-]+)\*\* —', style, re.M))
+actual = {os.path.basename(os.path.dirname(f))
+          for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))}
+missing, ghost = sorted(actual - listed), sorted(listed - actual)
+if missing or ghost:
+    for m in missing: print(f'  UNLISTED      {m} exists but the orchestrator roster omits it')
+    for g in ghost:   print(f'  GHOST         roster names {g}, which is not a skill')
+    print('\nFix output-styles/omc-slim.md, then re-run.')
+    raise SystemExit(1)
+print(f'{len(actual)}/{len(actual)} skills present in the orchestrator roster.')
+PY
+
 echo
 if [ "$missing" -eq 0 ]; then
   echo "$checked/$checked adopted behaviours present."

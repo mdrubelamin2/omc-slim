@@ -1877,3 +1877,59 @@ third-party agent from the environment — over this plugin's own `oracle` for t
 review lane. Evidence the adaptivity works, and a hint that `oracle`'s
 description may not signal "code review" as strongly as it should. Not yet
 investigated.
+
+---
+
+## 18. Regression audit after the context-anxiety fix (2026-08-13)
+
+Audited every change since v0.4.2. Four real defects found, three of them
+self-inflicted by the fixes themselves.
+
+### Defects found and fixed
+
+| # | Defect | Origin |
+|---|---|---|
+| 1 | `observer` stopped auto-firing — its routing rationale was deleted along with the scarcity framing | **mine, this session** |
+| 2 | `MAINTAINERS.md` still documented `spawn-preflight` as a shipping hook after it was removed | **mine** |
+| 3 | The roster-drift check was appended *after* the script's `exit`, so it was unreachable dead code | **mine** |
+| 4 | Observer's description was mangled ("even\neven if") by an overlapping string replace | **mine** |
+
+Defect 1 is the instructive one. Removing "keeps large image and PDF bytes out of
+the main context" also removed the *reason to delegate at all*, so the main
+thread began reading PDFs directly. **The line to hold: telling the model why
+delegating is the right call is routing logic and belongs; telling it that it is
+running low on room is anxiety and does not.** The fix restores the routing
+reason ("returns exact extracted text, never a paraphrase of an error") without
+restoring the budget language.
+
+### New guard
+
+`check-coverage.sh` now also verifies the orchestrator's skill roster matches the
+real skill set, catching both a renamed skill leaving a ghost name and a new
+skill going unlisted. Proven to fail on both cases and to exit 1.
+
+This guards a hazard **introduced by the roster fix itself**: hardcoding skill
+names into the output style makes them a second source of truth that can drift.
+
+### OMC issues re-audited after removing the pre-spawn hook
+
+| Issue | Status |
+|---|---|
+| #2652, #2542, #959 (Stop-hook family) | safe — no Stop hook, and now no context policing at all |
+| per-tool-call injection | **improved** — zero hooks on the tool-call path |
+| two divergent hook copies | safe — one hook file |
+| #3095 default-off enforcement | n/a |
+| **#1373 agent results flood** | **guard removed** — accepted |
+| **#2577 static-context bloat** | **trending wrong: 2,774 → 3,660 tok** |
+
+**#1373:** the pre-spawn guard is gone. It only ever warned, and no hook can
+truncate a subagent's return anyway, so the real mitigation was always the output
+contracts — still present in `explorer`, `fixer` and `observer` with hard caps.
+Accepted deliberately, but it is one fewer net.
+
+**#2577 is the honest concern.** Standing context has risen every version since
+v0.2.0: 2,774 → 2,803 → 3,046 → 3,187 → 3,471 → **3,660**, now 6.2× Karpathy and
+~1,000 above OMC. Every increase was individually justified — adopted behaviours,
+the anti-anxiety instruction, the skill roster — and they still sum. This is the
+same failure mode OMC was criticised for, arrived at one defensible step at a
+time.

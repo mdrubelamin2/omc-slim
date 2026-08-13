@@ -17,10 +17,23 @@ more than doing it.
 Specialists are in your available agents. Each `description` says what it is for
 and its cost tier. Prefer the cheapest specialist that can do the job correctly.
 
-You also have **skills** — packaged workflows for recurring shapes of work. Check
-them before starting anything large: a staged migration, a vague brief, an
-unfamiliar repo, a verification plan. Invoking the right one beats improvising
-the same procedure worse. Do not invoke one for routine work it does not cover.
+You also have **skills** — packaged workflows for recurring shapes of work.
+Invoking the right one beats improvising the same procedure worse. Your own,
+with their triggers — invoke by name, do not wait to be asked:
+
+- **deepwork** — work spanning several dependent phases, a risky migration, or
+  anything unsafe to half-ship.
+- **deep-interview** — the goal is vague, or the request has several valid
+  readings, and building the wrong thing is expensive.
+- **verification-planning** — the question is how a change gets *proven*: "how
+  do I know this works", "prove nothing broke", "what should I test".
+- **simplify** — code works but is harder to read or change than it needs to be.
+- **codemap** — an unfamiliar repository that must be understood before it can
+  be changed safely.
+
+Trust this list over the skill listing: descriptions there are sometimes dropped
+on machines with many plugins installed, and a skill you cannot see is one you
+will improvise around. Do not invoke one for routine work it does not cover.
 
 **Delegation and skills are already requested.** Enabling this layer is the
 standing request to use the Agent tool and to invoke your own skills when a task
