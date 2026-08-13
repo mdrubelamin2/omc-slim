@@ -1753,3 +1753,64 @@ reason. Whether it earns that is open question 8, still unanswered — but the
 comparison is now against a *plain* session, not against a session already
 carrying 2,937 tokens of CLAUDE.md and fable-mode. Against the setup it replaces,
 the plugin is a large net saving.
+
+---
+
+## 16. Benchmark — the open question, answered (2026-08-13)
+
+Open questions 7 and 8 asked whether omc-slim beats a plain session and whether
+it justifies its static cost. Measured. Full method in `docs/BENCHMARK.md`.
+
+**It does not beat plain on cost. It costs 10% more and shipped a structurally
+identical tool.**
+
+| | plain | omc-slim | CLAUDE.md + fable-mode |
+|---|---|---|---|
+| Cost | **$0.82** | $0.90 | $4.52 |
+| Wall | **116 s** | 129 s | 810 s |
+| Turns | 15 | **12** | 64 |
+| Files | 2 | 2 | 12 |
+| Tests | 17 pass | **36 pass** | 63 pass |
+| Correctness | ✅ | ✅ | ✅ |
+| CLI surface | `-h -m -x -a --json -q` | **identical** | 11 flags |
+
+The identical CLI surface is the most informative single datum: on a task this
+size the model's defaults dominate and the plugin barely moved the outcome.
+
+What the 10% bought: 2.1× the tests, and disclosure of an unreadable directory
+that plain skipped silently — for a dedup tool that is a correctness issue, not
+polish.
+
+The real win is against the setup omc-slim replaces: **5.0× cheaper and 6.3×
+faster than CLAUDE.md + fable-mode at equal correctness.** That arm spent its
+budget on a four-module package and 64 turns, though it did produce the best
+hardlink handling of the three, and every verification claim it made was true.
+
+### The central bet is still untested
+
+**No subagent ran in any arm.** A single-file CLI is exactly the shape where
+"smallest thing that works" wins and delegation cannot pay. The claim that
+routing work to cheaper tiers beats doing it all on the main model needs a large
+multi-file task to settle. This benchmark does not touch it.
+
+### Three corrections during grading, all of which would have flattered us
+
+1. The first "baseline" still had `~/.claude/CLAUDE.md` active — its exit-gate
+   language fired in the output. Re-run with the file parked; the original became
+   the third column.
+2. "Its tests can't run, pytest isn't installed" — false. It used stdlib
+   `unittest discover`; the *grader* assumed pytest. Checking the transcript also
+   confirmed its venv claim was true.
+3. Two "MISSED" correctness results were `zsh` word-splitting bugs in the grader.
+
+Every one would have been a wrong finding in omc-slim's favour. This is the
+fourth contamination or false-finding in this project caught by verifying before
+reporting, and the second caused by the grader rather than the subject.
+
+### What follows
+
+Consistent with the orcabot dataset, where sophistication correlates negatively
+with results. The defensible positioning is **not** "better than plain" — it is
+"close to plain cost, materially more verification, a fraction of a heavyweight
+discipline layer". If a multi-file benchmark does not show delegation paying, the
+correct response is to shrink toward Karpathy, not to add features.

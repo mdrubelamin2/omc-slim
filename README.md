@@ -2,7 +2,7 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Eleven agents, five skills, two hooks, two MCP servers. **~3,046 tokens of
+Eleven agents, five skills, two hooks, two MCP servers. **~3,187 tokens of
 static context** and **zero bytes injected on the tool-call path.**
 
 Slim by construction, and it **adapts to whatever your project already has** —
@@ -106,8 +106,8 @@ capability classes are the guard, not an exhaustive list.
 Three ideas, each of which cost something to learn.
 
 **Delegation over accumulation.** The main thread plans and reconciles;
-specialists do the work on cheaper tiers. The orchestrator prompt is ~1,647
-tokens — 64% smaller than the one it derives from — because everything Claude
+specialists do the work on cheaper tiers. The orchestrator prompt is ~1,788
+tokens — 60% smaller than the one it derives from — because everything Claude
 Code already provides was deleted rather than described.
 
 **Nothing injects on the tool-call path.** The dominant cost in comparable
@@ -127,7 +127,7 @@ than a setting to tune.
 **It writes like a busy senior engineer.** Answer first. No preamble, no
 restating your question, no "great question", no narrating routine work. Errors
 quote the shortest decisive line rather than dumping a log. Measured against the
-same question without the plugin, replies run roughly half the length with no
+same question with no plugin, replies run roughly half the length with no
 loss of substance.
 
 **It reaches for the smallest thing that works.** Does this need to exist? Is it
@@ -204,27 +204,47 @@ Claude Code has no equivalent, so structural queries fall back to `Grep`. The
 side effect: `force-for-plugin` overrides your `outputStyle` while omc-slim is
 enabled. Disabling the plugin reverts it.
 
-**This is not measured yet.** The honest state of the evidence:
+**Measured once, honestly.** Full method and caveats in
+[`docs/BENCHMARK.md`](./docs/BENCHMARK.md). One prompt naming no technology
+("build a CLI that finds duplicate files"), three arms, held-out grading fixture,
+measures fixed before running. **n=1 — directional, not settled.**
 
-| | Static context | Measured vs baseline |
+| | Cost | Tests | Correct | Notes |
+|---|---|---|---|---|
+| plain session | **$0.82** | 17 | ✅ | silently skips unreadable dirs |
+| **omc-slim** | $0.90 | **36** | ✅ | discloses skips; *identical CLI surface to plain* |
+| CLAUDE.md + fable-mode | $4.52 | 63 | ✅ | 12 files, 64 turns, best hardlink handling |
+
+**omc-slim cost 10% more than a plain session and shipped a structurally
+identical tool** — same file count, near-identical LOC, the same flags. The 10%
+bought 2.1× the tests and disclosure of an unreadable directory that plain
+skipped in silence, which for a dedup tool is a correctness issue, not polish.
+
+The large win is against the setup this replaces, not against plain: **5.0×
+cheaper and 6.3× faster than CLAUDE.md + fable-mode**, at equal correctness.
+
+So the honest claim is not "better than plain". It is *close to plain cost, with
+materially more verification, at a fraction of a heavyweight discipline layer.*
+
+What it does **not** show: the central bet. A single-file CLI is exactly where
+"smallest thing that works" wins and delegation cannot pay — **no subagent ran in
+any arm.** Whether routing work to cheaper tiers beats doing it all on the main
+model is still untested, and needs a large multi-file task to settle.
+
+For context on why that matters:
+
+| | Static context | Independent benchmark |
 |---|---|---|
-| Karpathy Skills | ~589 tok | +0.96pp at **identical cost** |
-| oh-my-claudecode | ~2,671 tok | +1.65pp at **+43% cost** |
-| **omc-slim** | **~3,046 tok** | **untested** |
-| Agent Skills (24 skills) | ~1,826 tok | **−1.10pp** |
+| Karpathy Skills | ~589 tok | +0.96pp at identical cost |
+| oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
+| **omc-slim** | **~3,187 tok** | see above |
+| Agent Skills | ~1,826 tok | −1.10pp |
 
-Source: [orcabot.com/benchmarks](https://orcabot.com/benchmarks), July 2026.
-
-In that dataset **sophistication correlates negatively with results.** The
-smallest pack won on efficiency; the largest lost to doing nothing at all.
-omc-slim costs 5.2× Karpathy's static footprint — and ~375 tokens more than
-oh-my-claudecode, which is the price of the adaptivity described above — and has
-not yet shown it buys anything. The hypothesis under test is that delegation to
-cheaper tiers pays for a prompt Karpathy does not need. That is plausible and
-unproven.
-
-If measurement does not support it, the correct response is to shrink toward
-Karpathy — not to add features.
+Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
+July 2026. In that dataset **sophistication correlates negatively with results** —
+the smallest pack won on efficiency, the largest lost to doing nothing. Our own
+result is consistent with it. If further measurement holds this direction, the
+right response is to shrink toward Karpathy, not to add features.
 
 ## Provenance — what was adopted, pinned exactly
 
