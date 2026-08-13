@@ -196,6 +196,12 @@ radius small.
 Output styles apply to the **main conversation only** — subagents run their own
 system prompt. That is correct here, since the orchestrator *is* the main thread.
 
+**It does not write the `outputStyle` setting.** `force-for-plugin` overrides at
+runtime only, so `/config` keeps displaying whatever was stored — `default` for
+most users — while the plugin is active. Verified: setting unset, plugin enabled,
+effective style `omc-slim:omc-slim`. Expect this to be the most common "is it
+even working?" report; the README answers it with a one-line check.
+
 ---
 
 ## Things that are fine, checked anyway

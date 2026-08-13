@@ -40,6 +40,23 @@ plugin does. To opt out, `/plugin disable omc-slim`, or delete
 `output-styles/omc-slim.md` from your copy. Because output style is part of the
 system prompt, changes take effect after `/clear` or a new session.
 
+### `/config` will still say "default" — that is expected
+
+`force-for-plugin` supersedes your output style **at runtime without writing the
+`outputStyle` setting**. `/config` reads the stored setting, so it keeps showing
+`default` while omc-slim is active. Verified: setting unset, plugin enabled,
+effective style `omc-slim:omc-slim`.
+
+Don't trust the picker — ask:
+
+```
+claude -p "One line: which output style is active?"
+```
+
+Expect `omc-slim:omc-slim`. If you get `default`, check `/plugin` shows the
+plugin enabled, then `/clear` or start a new session — output style is part of
+the system prompt and an already-running session will not pick it up.
+
 ## Known limitation: delegation needs one nudge per session
 
 **Measured, and it affects the plugin's whole premise.** Some Claude Code builds
