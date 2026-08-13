@@ -936,3 +936,45 @@ Not separable from one run each, but the direction is clear enough to record:
 
 Worth carrying to the rest of the plugin. `deepwork` absorbed four rounds of added
 wording and never fired once; nobody tried removing words.
+
+---
+
+## v0.6.8 — deepwork compressed
+
+Same treatment as `simplify`. Much less to gain: `deepwork` was already tight, so
+the body went **1,376 → 1,234 words (−10%)** against simplify's −28%. All 87
+coverage rows pass.
+
+The body only loads on invocation, so that cut buys sharpness, not standing
+tokens. The part that *is* always loaded is the description, and it was doing
+half its job:
+
+> ~~Staged execution discipline for large, high-risk or multi-phase work — a
+> written stage plan, parallel delegation, a failable check at every stage,
+> review gates, and a skeptical self-review before delivery. Use when…~~
+
+The first sentence described the *mechanism*, which cannot match anything a user
+types. Rewritten around vocabulary people actually use — "migrations", "rewrites",
+"cross-cutting refactors", "unsafe to half-ship" — and shortened. Static context
+3,629 → **3,612**.
+
+### It still does not auto-fire
+
+Sixth attempt, same 41k-LOC cancellation task. Neither the compression nor the
+retargeted description changed it. The `simplify` result had suggested trigger
+vocabulary was the lever; that does not transfer here.
+
+Standing conclusion is unchanged and already in the README: **deepwork is
+invoked, not inferred.** The plausible reason remains that `codemap` and
+`simplify` match unmistakable task *shapes* — "map this repo", "this is
+over-engineered" — while deepwork asks for a judgement about whether work is hard
+enough to stage, and that judgement resolves toward "I can handle this".
+
+### Not verified
+
+Whether the compressed skill runs correctly end to end when invoked explicitly.
+The run fired `omc-slim:deepwork`, dispatched an `explorer`, and was still working
+when it hit a `--max-turns 13` cap in the harness. That is a test-harness limit,
+not a skill failure, and it is the third time in this session that a turn cap has
+produced a false negative. Content preservation is covered by the manifest;
+end-to-end behaviour on a large repo is not.
