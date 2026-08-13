@@ -1,6 +1,6 @@
 ---
 name: verification-planning
-description: Verification planning for non-trivial coding work. Use before implementing a feature, bug fix, refactor, cross-system change, or high-confidence behavior change that needs a credible project-specific evidence path.
+description: Plan how to prove a change works or broke nothing. Use for "how do I prove this did not break anything", "how do I know this works", "what should I test" - before or after the change.
 ---
 
 # Verification Planning

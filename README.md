@@ -57,14 +57,26 @@ Expect `omc-slim:omc-slim`. If you get `default`, check `/plugin` shows the
 plugin enabled, then `/clear` or start a new session — output style is part of
 the system prompt and an already-running session will not pick it up.
 
-## Known limitation: delegation needs one nudge per session
+## Known limitation: agents and skills need one nudge per session
 
 **Measured, and it affects the plugin's whole premise.** Some Claude Code builds
-instruct every session *"Do not call the AgentTool unless the user requested
-it"*. Where that default is active, the orchestrator **will not spawn
-specialists on its own**, no matter what this plugin's prompt says — verified:
+append two instructions to every session:
+
+> Do not call the AgentTool unless the user requested it
+> Do not use workflows or deep-research unless the user requested it
+
+Where those are active, the orchestrator **will not spawn specialists or invoke
+its own skills on its own initiative**, no matter what this plugin says. Verified:
 the model reads the standing authorisation in the output style and still defers,
-reasoning that the session-level instruction is more specific.
+because the session-level instruction is later and more specific.
+
+It is not a matter of the task being too small or the descriptions being too
+narrow. Asked whether it would invoke `deepwork` for a phased 20-file migration,
+the model answered:
+
+> "That is exactly the shape of task it's built for, and absent that instruction
+> I'd reach for it. But 'migrate this service in phases' is a description of the
+> work, not a request for that workflow — so the instruction binds."
 
 Measured on an identical task and fixture:
 
@@ -73,20 +85,27 @@ Measured on an identical task and fixture:
 | "Audit this codebase… document… fix the most serious one." | **0** |
 | Same, prefixed *"Use your specialist subagents to do this."* | **2** |
 
-**Workaround: say it once.** Any phrasing that asks for subagents unlocks
-delegation for the session — after that the routing rules take over. If your
-build has no such default, none of this applies and the orchestrator routes
-unprompted.
-
-Check yours:
+**Workaround: say it once, at the top of the session.**
 
 ```
-claude -p "One line: are you instructed not to use the Agent tool unless the user requests it?"
+Use your specialist subagents and skills for this session where they fit.
 ```
 
-Everything else in this plugin — the register, the ladder, root-cause fixing,
-the hooks, the skills, MCP adaptivity — is unaffected and works regardless. Only
-subagent routing is gated.
+After that the routing rules take over for the rest of the session. Naming a
+skill directly (`/deepwork`, `/deep-interview`) always works regardless.
+
+Check whether your build is affected:
+
+```
+claude -p "One line: are you instructed not to use the Agent tool or workflows unless the user requests it?"
+```
+
+If your build has no such default, none of this applies and the orchestrator
+routes unprompted.
+
+Everything else — the register, the ladder, root-cause fixing, the hooks, MCP
+adaptivity, the skills when invoked — is unaffected and works regardless. Only
+*automatic* routing is gated.
 
 ## What you get
 

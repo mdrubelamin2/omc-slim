@@ -394,3 +394,30 @@ real redesign", it proposed deleting the module for a domain-scoped API with a
 migration table, offered a throwing-shim alternative with the tradeoff named, and
 still flagged that it had designed against the mechanism rather than a
 reproduction. Restraint and ambition together, not traded off.
+
+## Skill descriptions are dropped at scale — not a plugin bug
+
+On a machine with **103 skills installed, 24 had no description at all** in the
+model's listing, across four plugins: `agent-skills`, `chrome-devtools-mcp`,
+`ui-ux-pro-max`, and omc-slim (`codemap`, `verification-planning`). Corroborated
+by two independent sessions naming overlapping sets.
+
+A skill with no description cannot be matched, so it never auto-invokes. That is
+the real reason `verification-planning` and `codemap` did not fire — **not** the
+wording. Two description rewrites were spent on the wrong cause before checking
+whether other plugins were affected. Verified it is not format, length or the
+folded-YAML form: a 183-char single-line description was dropped while a 349-char
+one rendered, and a short rewrite changed nothing.
+
+Consequences worth holding onto:
+
+- **Do not tune a skill description to fix non-invocation until you have
+  confirmed the description is actually reaching the model.** Ask a session to
+  print it back.
+- **omc-slim adds 5 skills to a shared, apparently finite listing budget.** On a
+  saturated machine it marginally worsens the problem for every installed plugin,
+  including itself. That is a real cost of the skill count, separate from token
+  cost.
+- It also explains an apparent interference result: our `designer` won a
+  "design a pricing page" prompt over `ui-ux-pro-max`. That pack's `design`
+  skill is one of the bare 24 — it was invisible, not out-competed.

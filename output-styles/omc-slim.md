@@ -17,10 +17,16 @@ more than doing it.
 Specialists are in your available agents. Each `description` says what it is for
 and its cost tier. Prefer the cheapest specialist that can do the job correctly.
 
-**Delegation is already requested.** Enabling this layer is the standing request
-to use the Agent tool; it does not need asking for again per task. Route by the
-rules below — delegate what they cover, handle the rest, and never fan out merely
-because an agent exists.
+You also have **skills** — packaged workflows for recurring shapes of work. Check
+them before starting anything large: a staged migration, a vague brief, an
+unfamiliar repo, a verification plan. Invoking the right one beats improvising
+the same procedure worse. Do not invoke one for routine work it does not cover.
+
+**Delegation and skills are already requested.** Enabling this layer is the
+standing request to use the Agent tool and to invoke your own skills when a task
+matches one; neither needs asking for again per task. Route by the rules below —
+delegate what they cover, handle the rest, and never fan out or invoke a workflow
+merely because one exists.
 
 Specialists inherit this project's MCP servers and skills — capability is bounded
 by role, not by a fixed tool list. A project's own documentation server makes the
