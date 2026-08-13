@@ -2,7 +2,7 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Eleven agents, five skills, one hook, two MCP servers. **~4,310 tokens of
+Ten agents, five skills, one hook, two MCP servers. **~4,310 tokens of
 static context** and **zero bytes injected on the tool-call path.**
 
 Slim by construction, and it **adapts to whatever your project already has** —
@@ -20,6 +20,11 @@ every specialist inherits your MCP servers and skills.
 > into firing on turn one, and a trivial one-line fix still gets handled directly
 > rather than delegated. It cost **+647 tokens of static context (+24%)**, which
 > is the honest price of the fix and the main thing to weigh before installing.
+>
+> **v0.6.1** removes the `observer` agent. Claude Code reads images and PDFs
+> natively in the main thread, so it never auto-fired; forced, it matched the
+> direct path on cost and fidelity while being unable to cross-reference the
+> repo. Upstream ships it disabled by default for the same reason.
 
 Adapted from [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim),
 rebuilt native-first rather than ported.
@@ -45,7 +50,7 @@ plain Node script and both MCP servers are public HTTP endpoints.
 **No further setup.** The orchestration output style applies automatically while
 the plugin is enabled (`force-for-plugin`), so the main thread works as a
 planner and reviewer rather than diving straight into implementation. Spawning
-14 of 16 components then route automatically — see
+14 of 15 components route automatically — see
 [What invokes automatically](#what-invokes-automatically).
 
 That flag overrides your `outputStyle` setting — it is the one global thing this
@@ -72,8 +77,8 @@ the system prompt and an already-running session will not pick it up.
 
 ## What invokes automatically
 
-Measured across 16 natural prompts that named no component and no plugin, with
-no instruction to delegate. **14 of 16 fire on their own.**
+Measured across natural prompts that named no component and no plugin, with no
+instruction to delegate. **14 of 15 fire on their own.**
 
 | Fires unprompted | |
 |---|---|
@@ -82,7 +87,6 @@ no instruction to delegate. **14 of 16 fire on their own.**
 | `oracle` | "is this design going to hold up?" — ran `explorer` first, then reviewed |
 | `tracer` | "this bug keeps coming back, I've fixed it twice" |
 | `designer` | "this login form looks awful" |
-| `observer` | "what error is in error.pdf?" |
 | `council` + all 3 seats + synthesiser | "Postgres or DynamoDB? I want more than one opinion" |
 | `deepwork` | "migrate five services, in phases" |
 | `deep-interview` | "I want to build something, not sure what yet" |
@@ -90,15 +94,21 @@ no instruction to delegate. **14 of 16 fire on their own.**
 | `verification-planning` | "how do I prove this refactor didn't break anything?" |
 | `gh_grep`, `context7` | reached through `librarian` |
 
-**Two do not, and one of them is arguably correct:**
+**One does not, and it is arguably correct:**
 
 - **`fixer`** — on "rename X to Y across the codebase" the main thread did it
   directly. That is the ladder working: isolated mechanical work should not pay
-  delegation overhead. But it also did not fire on a genuinely multi-file money
-  fix, which is a real routing gap and is unresolved.
-- **`codemap`** — did not fire on "help me get oriented" in a 15-file repo. Its
-  own framing is "expensive operation, unfamiliar repository", and reading 15
-  files is cheaper than mapping them. Unverified on a large repo.
+  delegation overhead. It *does* fire when the work splits into genuinely
+  parallel lanes — three non-overlapping packages produced three concurrent
+  `fixer` calls, cost-neutral and 1.8x faster than doing them in sequence. The
+  threshold is parallelism, not file count.
+- **`codemap`** — resolved. It correctly declined a 15-file toy and fired
+  unprompted on a 362-file, 41k-LOC repository, writing 26 `codemap.md` files
+  across 8 parallel `fixer` lanes for $6.09. Since v0.6.0 it must announce that
+  cost, and what it writes into your repo, before starting.
+
+`council` fires but not reliably — one hit, one miss across two attempts. Treat
+the synthesiser as unproven and dispatch it explicitly for anything that matters.
 
 ### If nothing delegates at all
 
@@ -134,7 +144,6 @@ adding more would make this worse for everything you have installed.
 | `tracer` | opus | Causal investigation when a first fix already failed |
 | `fixer` | sonnet | Bounded implementation from a spec |
 | `designer` | sonnet | Anything a user looks at |
-| `observer` | sonnet | Images, screenshots, PDFs — keeps the bytes out of your context |
 | `council` + 3 `councillor-*` seats | mixed | High-stakes decisions needing independent reads |
 
 ### Skills
@@ -208,8 +217,8 @@ That is the harness's job and it does it better.
 
 **Subagents return structures, not prose.** No hook in Claude Code can truncate
 what a subagent returns to its parent — `PostToolUse` is purely additive — so the
-only lever is the agent's own output contract. `explorer`, `observer`, `fixer`
-and `librarian` each have one, with hard caps.
+only lever is the agent's own output contract. `explorer`, `fixer` and
+`librarian` each have one, with hard caps.
 
 ## How it behaves
 

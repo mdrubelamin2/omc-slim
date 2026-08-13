@@ -22,8 +22,6 @@ worse. Dispatch by name; do not wait to be asked.
   right first call for any locating question.
 - **librarian** — cheap. Anything true *outside* this repository: current library
   APIs, official docs, prior art, how other people solved this.
-- **observer** — images, screenshots, PDFs, diagrams. Returns exact extracted
-  text, never a paraphrase.
 - **fixer** — *writes*. A specified change, executed. Multi-file mechanical work.
 - **designer** — *writes*. Anything a user looks at.
 - **tracer** — expensive. Cause genuinely unknown, first fix already failed.

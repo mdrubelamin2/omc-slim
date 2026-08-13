@@ -1509,7 +1509,7 @@ by **role**, not by an enumerated tool list:
 | Agents | Denied |
 |---|---|
 | explorer, oracle, tracer | `Edit, Write, NotebookEdit, Agent, Task` (Bash kept for diagnostics, as upstream) |
-| librarian, observer, council, all councillors | `Edit, Write, NotebookEdit, Bash, Agent, Task` |
+| librarian, council, all councillors | `Edit, Write, NotebookEdit, Bash, Agent, Task` |
 | fixer | `Agent, Task, WebSearch, WebFetch` |
 | designer | `Agent, Task` |
 

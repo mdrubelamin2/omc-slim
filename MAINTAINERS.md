@@ -570,3 +570,50 @@ undetected — the exact failure it was written to prevent, one level up. It now
 checks both, resolving the `councillor-alpha / -beta / -gamma` shorthand against
 the files on disk. Proven to fail on a renamed agent, an unlisted new skill, and
 a roster entry with no file behind it.
+
+---
+
+## v0.6.1 — observer removed
+
+`observer` was a port artifact. oh-my-opencode-slim targets OpenCode; Claude
+Code's `Read` handles images and PDFs natively in the main thread, so the agent
+solved a problem this runtime does not have.
+
+Measured on the same image (a rendered Python traceback):
+
+| | direct read | via `observer` |
+|---|---|---|
+| Fires on "look at err.png and tell me what is failing" | **yes** | **no** |
+| Traceback extracted verbatim | yes | yes |
+| Cost | $0.35 | $0.33 |
+| Cross-referenced the repo to prove the traceback was foreign | **yes** | structurally impossible |
+
+Four reasons, in order of weight:
+
+1. **It never auto-fired.** The main thread just read the image. An agent you
+   only get by naming it is the failure the roster exists to prevent.
+2. **Forced, it was equivalent — not better.** Same cost, and the relay was
+   lossless. A hypothesis that delegation would introduce paraphrase drift was
+   tested and **disproved**, so it is not recorded as a defect.
+3. **It was strictly less capable.** The direct path also grepped the repo and
+   established that the traceback came from a Python service absent from this
+   TypeScript codebase. `observer` cannot: no Bash, and its contract says "you
+   look; you do not investigate."
+4. **Its own selling point did not hold.** The description argued "delegate here
+   even if you can read images yourself... returns exact extracted text, never a
+   paraphrase." Direct reading is also exact. Both sides were verified.
+
+Corroborating: upstream ships `DEFAULT_DISABLED_AGENTS = ['observer']`
+(`RESEARCH.md:100`) — off by default there too.
+
+Recovered ~78 tokens of standing context (45-word description + 14-word roster
+line). The 266-word body only ever loaded on invocation, so it cost nothing.
+
+**Untested, and the reason to revert if it bites:** many or very large images,
+where sonnet-tier processing and context isolation could pay against an opus
+main thread. Nothing routed to it that way, so nothing measured it.
+
+The test that retired it generalises: **does it auto-fire, and is it better than
+the direct path?** `explorer`, `librarian`, `oracle`, `codemap` and `fixer` pass
+on measurement. `tracer`, `council`, `designer` and the five skills have not been
+re-measured since v0.6.0.
