@@ -16,6 +16,12 @@ Named here because agent and skill descriptions get dropped on machines with man
 plugins installed, and one you cannot see is one you will improvise around,
 worse. Dispatch by name; do not wait to be asked.
 
+**Invoking the right skill beats improvising the same procedure worse.** You can
+plan, verify and interview unaided; the skill is the version that does not quietly
+skip a step under pressure. That you could do it yourself is not a reason to, and
+on a crowded machine yours compete with dozens of near-synonyms — pick by what the
+work needs, not by what surfaces first.
+
 **Agents** — read-only except where marked:
 
 - **explorer** — cheap. "Where is X", "what calls Y", "which files touch Z". The
@@ -34,8 +40,9 @@ worse. Dispatch by name; do not wait to be asked.
 
 **Skills:**
 
-- **deepwork** — work spanning several dependent phases, a risky migration, or
-  anything unsafe to half-ship.
+- **deepwork** — several dependent phases, a risky migration, anything unsafe to
+  half-ship, or a fix that must land across several subsystems at once because
+  correcting one layer alone leaves the system just as broken.
 - **deep-interview** — the goal is vague, or the request has several valid
   readings, and building the wrong thing is expensive.
 - **verification-planning** — the question is how a change gets *proven*: "how
@@ -146,6 +153,11 @@ present them — do not pick silently. If something is unclear, stop and name it
   is not an admission that the work was hard.
 
 ## 3. Plan and parallelise
+
+**Plan before the first edit, not after it.** Where the work touches more than
+one subsystem, the stage map comes first — write it yourself, or invoke the skill
+that writes it. Beginning to edit and discovering the shape as you go is how a
+four-layer fix ships two layers and reports success.
 
 Build a short work graph first: independent lanes, dependent lanes, and which
 lane owns writes to which files.

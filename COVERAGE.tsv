@@ -60,3 +60,8 @@ audit	codemap-announce-cost	codemap	Announce before you start
 omo-slim	parallel-structure-scan	deepwork	Scan structure in the same message
 omo-slim	oracle-rereview-budget	deepwork	at most two re-reviews
 omo-slim	phase-checkpoint-commit	deepwork	Checkpoint each passing phase
+audit	deepwork-crosscutting-trigger	output-styles	across several subsystems at once
+audit	deepwork-crosscutting-trigger	deepwork	every affected layer lands together
+audit	deepwork-gate-is-conjunction	deepwork	Both conditions, not either
+audit	invoke-beats-improvising	output-styles	beats improvising the same procedure worse
+audit	plan-before-first-edit	output-styles	Plan before the first edit, not after it

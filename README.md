@@ -78,7 +78,7 @@ the system prompt and an already-running session will not pick it up.
 ## What invokes automatically
 
 Measured across natural prompts that named no component and no plugin, with no
-instruction to delegate. **14 of 15 fire on their own.**
+instruction to delegate. **13 of 15 fire on their own.**
 
 | Fires unprompted | |
 |---|---|
@@ -88,13 +88,12 @@ instruction to delegate. **14 of 15 fire on their own.**
 | `tracer` | "this bug keeps coming back, I've fixed it twice" |
 | `designer` | "this login form looks awful" |
 | `council` + all 3 seats + synthesiser | "Postgres or DynamoDB? I want more than one opinion" |
-| `deepwork` | "migrate five services, in phases" |
 | `deep-interview` | "I want to build something, not sure what yet" |
 | `simplify` | "this file is a mess, clean it up" |
 | `verification-planning` | "how do I prove this refactor didn't break anything?" |
 | `gh_grep`, `context7` | reached through `librarian` |
 
-**One does not, and it is arguably correct:**
+**Two do not:**
 
 - **`fixer`** — on "rename X to Y across the codebase" the main thread did it
   directly. That is the ladder working: isolated mechanical work should not pay
@@ -107,8 +106,40 @@ instruction to delegate. **14 of 15 fire on their own.**
   across 8 parallel `fixer` lanes for $6.09. Since v0.6.0 it must announce that
   cost, and what it writes into your repo, before starting.
 
+- **`deepwork`** — **invoke it yourself; it will not fire on its own.** See
+  below.
+
 `council` fires but not reliably — one hit, one miss across two attempts. Treat
 the synthesiser as unproven and dispatch it explicitly for anything that matters.
+
+### `deepwork` is manual
+
+Invoke it explicitly:
+
+```
+/omc-slim:deepwork migrate the auth service off sessions onto tokens
+```
+
+It was previously listed here as auto-firing. That rested on one prompt —
+*"migrate five services, **in phases**"* — which contains the trigger word, so it
+was really measuring the prompt, not the skill. Retested properly, it does not
+fire.
+
+Everything else was ruled out first. Effort level is not the cause: `opus`
+medium and high behave identically, and medium delegated *more*. No session
+suppression exists — probed directly. The skill is visible and listed. Blocked
+writes were not the cause either; with writes allowed it still did not fire.
+
+Asked point-blank whether deepwork applies to a four-subsystem cancellation bug,
+the orchestrator says **yes** and reasons correctly about why. Then, given the
+same task to actually do, it makes fourteen edits across three files without
+writing a stage map. **The gap is recognition to action, not recognition.**
+
+The plausible reason: the one skill that reliably self-invokes is `codemap`,
+which matches an unmistakable task *shape* — "map this repo". `deepwork` needs a
+judgement about whether work is hard enough to stage, and that judgement
+reliably resolves toward "I can handle this". Four rounds of trigger wording did
+not move it. If you want the staging discipline, ask for it.
 
 ### If nothing delegates at all
 
@@ -148,7 +179,8 @@ adding more would make this worse for everything you have installed.
 
 ### Skills
 
-`deep-interview` · `deepwork` · `verification-planning` · `simplify` · `codemap`
+`deep-interview` · `deepwork` *(manual)* · `verification-planning` · `simplify` ·
+`codemap`
 
 ### Hook — advisory, does not run per tool call
 

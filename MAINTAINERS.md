@@ -617,3 +617,69 @@ The test that retired it generalises: **does it auto-fire, and is it better than
 the direct path?** `explorer`, `librarian`, `oracle`, `codemap` and `fixer` pass
 on measurement. `tracer`, `council`, `designer` and the five skills have not been
 re-measured since v0.6.0.
+
+---
+
+## v0.6.2 — deepwork does not auto-invoke, and four wording fixes
+
+Reported: deepwork never fires. The suspicion was that `opus` at medium effort
+was too low to reach for a heavyweight planning skill.
+
+### What was ruled out
+
+| Hypothesis | Result |
+|---|---|
+| Medium effort is too low | **No.** Medium and high both fail. Medium delegated *more* (`explorer` + `oracle` vs nothing). n=1 each, so the difference is probably noise — but it rules out medium as the blocker. |
+| A session suppression blocks skills | **No.** Probed directly: "neither restriction exists in my instructions." |
+| The skill is not visible | **No.** It appears as `omc-slim:deepwork` among 105 installed skills. |
+| Writes were blocked, so it never reached execution | **No.** With `Edit,Write` allowed it still did not fire. |
+| The trigger was too narrow | **Recognition works, invocation does not.** See below. |
+
+### What is actually happening
+
+Asked point-blank whether deepwork applies to a four-subsystem cancellation bug,
+the orchestrator answers **yes** and quotes the new trigger almost verbatim:
+"spans several subsystems at once... fixing only one layer leaves the bug
+intact... that's exactly deepwork's case."
+
+Given the same task to *do*, it made **14 edits across 3 files** and hit the turn
+cap mid-work, with no stage map — the exact failure the skill prevents. The gap
+is recognition to action.
+
+Four rounds of prompt change did not move it. The likely reason: the only skill
+that reliably self-invokes is `codemap`, which matches an unmistakable task
+*shape*. `deepwork` requires a judgement about whether work is hard enough to
+stage, and that judgement resolves toward "I can handle this."
+
+**Documented as manual rather than patched further.** The README previously
+listed it as auto-firing on the strength of one prompt — "migrate five services,
+**in phases**" — which contains the trigger word. That was measuring the prompt,
+not the skill.
+
+### The four fixes, kept on their own merits
+
+1. **Cross-cutting trigger** in the roster and the skill description — a fix that
+   must land across several subsystems at once because correcting one layer alone
+   leaves the system just as broken. Verified to work for recognition.
+2. **"Both conditions, not either"** — the gate read "one obvious correct approach
+   **and** fits in a single pass", and runs were treating the `and` as an `or`.
+3. **Restored "invoking the right one beats improvising the same procedure
+   worse".** The v0.6.0 rewrite weakened this to apply only when a skill *cannot
+   be seen*, which is a strictly narrower claim. Same regression class as the
+   observer routing rationale: rewriting a section silently dropped the sentence
+   that carried its reason.
+4. **"Plan before the first edit, not after it"** in workflow step 3.
+   Measurably changed behaviour — the same prompt then delegated recon to
+   `explorer` instead of opening with edits.
+
+None of the four made deepwork auto-invoke, and the commit does not claim they
+did.
+
+### Method note
+
+Four test prompts this session had false premises — AVIF already implemented,
+WebCodecs has no still-image encoder, persistence and TS strict mode both already
+present. Each time the plugin correctly refused rather than building the wrong
+thing. Two harness bugs also produced false negatives: `--max-turns 6` killed
+runs mid-orientation, and omitting `Edit,Write` stopped runs at the permission
+prompt before execution. **Verify the fixture before believing the result.**

@@ -1,6 +1,6 @@
 ---
 name: deepwork
-description: Staged execution discipline for large, high-risk or multi-phase work — a written stage plan, parallel delegation, a failable check at every stage, review gates, and a skeptical self-review before delivery. Use when work spans several dependent phases, multiple sources, or a migration that is unsafe to half-ship. Not for routine multi-file changes.
+description: Staged execution discipline for large, high-risk or multi-phase work — a written stage plan, parallel delegation, a failable check at every stage, review gates, and a skeptical self-review before delivery. Use when work spans several dependent phases or multiple sources, when a migration is unsafe to half-ship, or when a fix must land across several subsystems at once because correcting one layer alone leaves the system just as broken. Not for routine multi-file changes.
 ---
 
 # Deepwork
@@ -10,13 +10,18 @@ verifies and reconciles; it is not the implementation worker.
 
 ## When NOT to use this
 
-If the task has one obvious correct approach and fits in a single pass, do it
-directly. Staging a trivial task wastes effort and buries the answer under
-ceremony. Touching several files is not by itself a reason.
+If the task has one obvious correct approach **and** fits in a single pass, do it
+directly. Both conditions, not either — knowing exactly what to do is not the
+same as being able to do it in one pass, and a change with an obvious approach
+that still has to land correctly in four places is not a single pass. Staging a
+trivial task wastes effort and buries the answer under ceremony, but skipping the
+stage map on work that needed one is the more expensive mistake of the two.
+Touching several files is not by itself a reason.
 
 Use it when a one-shot attempt would plausibly miss something: dependent phases,
-cross-cutting architectural change, an unsafe-to-partially-ship migration, or
-sustained coordination across several specialist lanes.
+cross-cutting architectural change, an unsafe-to-partially-ship migration,
+sustained coordination across several specialist lanes, or a fix that is only
+correct once every affected layer lands together.
 
 ## 1. Write the stage map before touching anything
 
