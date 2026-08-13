@@ -322,9 +322,15 @@ git sources, a sha256 for unversioned local files. `./scripts/check-upstream.sh`
 queries each remote and hashes each local file, then prints the exact diff
 command for anything that moved. Read-only.
 
-`docs/upstream/` holds verbatim snapshots of the two sources that have no
-upstream to fetch (`~/.claude/CLAUDE.md`, `fable-mode/SKILL.md`). A hash proves
-something changed; the snapshot shows what.
+`docs/upstream/` holds verbatim snapshots of sources with no upstream to fetch.
+A hash proves something changed; the snapshot shows what.
+
+**`CLAUDE.md.snapshot` is gitignored on purpose.** It is a copy of a personal
+`~/.claude/CLAUDE.md`, and this repo is public. The sha256 pin in `UPSTREAM.tsv`
+still detects drift; only the diff baseline is local. `check-upstream.sh` handles
+its absence — it reports `SNAPSHOT LOST` rather than failing, which on a fresh
+clone is expected, not a fault. Anyone re-deriving the adoption can read
+`COVERAGE.tsv`, which lists every rule taken and where it now lives.
 
 **Updating a pin is a decision, not maintenance.** Review the diff, adopt only
 what earns its tokens against the standing-cost budget, then update the pin and

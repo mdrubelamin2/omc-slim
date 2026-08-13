@@ -1,3 +1,7 @@
 node_modules/
 .DS_Store
 *.log
+
+# Personal config snapshot — kept locally for diffing, never published.
+# UPSTREAM.tsv still pins it by sha256, so drift is still detected.
+docs/upstream/CLAUDE.md.snapshot
