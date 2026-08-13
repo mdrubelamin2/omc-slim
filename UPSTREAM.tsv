@@ -1,0 +1,9 @@
+# kind	name	pin	source
+# kind=git  -> pin is a commit SHA, source is a clone URL
+# kind=file -> pin is a sha256 of the file, source is a local path
+# Update a pin only after reviewing the diff and adopting (or rejecting) the change.
+git	oh-my-opencode-slim	282d5f26a4ad2665118a73014fcf02e57869bd38	https://github.com/alvinunreal/oh-my-opencode-slim
+git	oh-my-claudecode	7e38c1f97d202f46a92f2aa447353fe04b734be3	https://github.com/Yeachan-Heo/oh-my-claudecode
+git	karpathy-skills	2c606141936f1eeef17fa3043a72095b4765b9c2	https://github.com/multica-ai/andrej-karpathy-skills
+file	CLAUDE.md	e1894ef55a06543b9a80aef2d6309f5a7e8a0b99226821712aa8a484e1810f7a	~/.claude/CLAUDE.md
+file	fable-mode.SKILL.md	c48cbc5cf0c9c0bc2e9b150feb2d886ab419aa87ad66fc7bf642d59a1bd53276	~/.claude/skills/fable-mode/SKILL.md

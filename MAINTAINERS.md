@@ -312,3 +312,24 @@ corrected the user's premise from the code, found the planted comment was
 factually wrong, grepped callers before proposing a fix, flagged float drift on a
 money path, stated plainly that it could not run `node`, and asked which of two
 representations to use with a recommendation.
+
+---
+
+## Upstream pins
+
+`UPSTREAM.tsv` records every adopted source with an exact pin: a commit SHA for
+git sources, a sha256 for unversioned local files. `./scripts/check-upstream.sh`
+queries each remote and hashes each local file, then prints the exact diff
+command for anything that moved. Read-only.
+
+`docs/upstream/` holds verbatim snapshots of the two sources that have no
+upstream to fetch (`~/.claude/CLAUDE.md`, `fable-mode/SKILL.md`). A hash proves
+something changed; the snapshot shows what.
+
+**Updating a pin is a decision, not maintenance.** Review the diff, adopt only
+what earns its tokens against the standing-cost budget, then update the pin and
+refresh the snapshot in the same commit as the adoption. A pin bumped without a
+corresponding change to the plugin is a lie about what was reviewed.
+
+Expect movement. oh-my-claudecode ships roughly 35 npm versions a month and had
+already passed its pin within hours of the audit that produced it.

@@ -226,19 +226,68 @@ unproven.
 If measurement does not support it, the correct response is to shrink toward
 Karpathy — not to add features.
 
+## Provenance — what was adopted, pinned exactly
+
+Every source is pinned so a future version can diff against what was actually
+read, and adopt upstream changes deliberately rather than by memory.
+
+| Source | Pin | What omc-slim took |
+|---|---|---|
+| [alvinunreal/oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) | `282d5f26` (2026-08-11) | The agent roster, routing heuristics, output contracts and most prompt content |
+| [Yeachan-Heo/oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) | `7e38c1f9` (2026-08-12), `package.json` 4.15.7, npm `oh-my-claude-sisyphus` 4.15.10 | The deliverable-verification idea, the `tracer` role, `deep-interview`, and six verified failure modes to design against |
+| [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) | `2c606141` (2026-04-20) | "Surgical changes" outright; the whole file as a compression target |
+| `~/.claude/CLAUDE.md` | sha256 `e1894ef55a06…` (4,230 B) | Ownership language bans, no early stopping, no permission-to-continue, evidence over plausibility |
+| `~/.claude/skills/fable-mode/SKILL.md` | sha256 `c48cbc5cf0c9…` (7,516 B) | Stage map, one failable artefact per stage, backward re-runs, warning threshold, the two self-critique questions, find-and-replace safety |
+
+Three further packs were read and deliberately **not** adopted wholesale — see
+[`RESEARCH.md`](./RESEARCH.md) §6d for why. Their disciplines informed the
+register and the two-hook budget:
+
+| Pack | Pin | Informed |
+|---|---|---|
+| [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | `7829ffd9` | Hook discipline — it registers exactly one. Its 24-skill surface is the counter-example, not the model |
+| [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | 4.8.4, `16f29800` | The build ladder and laziness-with-floors stance |
+| [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | `ec83e5ba` | Compressed output contracts and the terse register |
+
+Neither is named anywhere in the plugin's prompts — the behaviour is described
+directly, so nothing depends on those packs being installed.
+
+Benchmark figures come from [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
+July 2026 run, page last updated 2026-08-08.
+
+### Checking for upstream changes
+
+```bash
+./scripts/check-upstream.sh          # all sources
+./scripts/check-upstream.sh karpathy # one
+```
+
+Read-only. It queries each remote and hashes each local file, then prints the
+exact `git diff` or `diff -u` command for anything that moved.
+
+The two local files have no upstream to fetch, so verbatim copies live in
+[`docs/upstream/`](./docs/upstream). A hash tells you *that* something changed; a
+snapshot tells you *what*.
+
+Upstream moves fast — oh-my-claudecode ships roughly 35 npm versions a month, and
+had already moved past its pin within hours of being audited. Expect the checker
+to report movement; the point is to review it, not to chase it. Adopt only what
+earns its tokens, then update the pin in
+[`UPSTREAM.tsv`](./UPSTREAM.tsv) and refresh the snapshot.
+
 ## Credits
 
-- [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) — the
-  agent roster, routing heuristics and most prompt content.
-- [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) — the
-  deliverable-verification idea, the `tracer` role, and `deep-interview`. Also
-  the bug that its SubagentStop hook must not emit `additionalContext`, which we
-  inherited as a lesson rather than an outage.
-- [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) —
-  the compression target, and the "Surgical Changes" principle taken outright.
+Everything this plugin borrows is listed with its exact pin in
+[Provenance](#provenance--what-was-adopted-pinned-exactly) above. Particular
+thanks to **oh-my-claudecode**, which contributed more by its scars than its
+features: the reason `verify-deliverables` emits no `additionalContext` on
+`SubagentStop` is a regression it hit and we inherited as a lesson rather than an
+outage.
 
-Full research, including why each of these decisions was made and what was
-measured, is in [`RESEARCH.md`](./RESEARCH.md).
+Full research — every decision, what was measured, and the three occasions a test
+turned out to prove nothing — is in [`RESEARCH.md`](./RESEARCH.md). Undocumented
+Claude Code runtime behaviour discovered along the way is in
+[`MAINTAINERS.md`](./MAINTAINERS.md).
 
 ## License
 
