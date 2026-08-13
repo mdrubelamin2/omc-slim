@@ -1039,3 +1039,137 @@ One test in this round was invalid because the fixture was shrunk while a
 different variable was under test — the apparent `simplify` regression vanished
 under a like-for-like rerun, then reappeared for the real reason above. Rebuild
 the fixture exactly, or the comparison means nothing.
+
+---
+
+## v0.7.0 — `review`, merged from six sources
+
+The gap `simplify` left. `simplify` makes code lighter; nothing judged whether a
+change was *correct, safe and worth shipping*. Sources merged: gstack's `/review`
+(the largest, ~14.4k words), the official `code-review` plugin, a five-axis
+review command with its performance and security skills, oh-my-claudecode's
+reviewer/verifier/critic agents, oh-my-opencode-slim's deepwork gates and
+`verification-planning`, and ponytail's audit posture. `gstack` and
+`agent-skills` are now pinned in `UPSTREAM.tsv`; both are MIT.
+
+### Three files, because a checklist you always load is a checklist you dilute
+
+`SKILL.md` is the process and the gates. `checklists.md` is what each lane looks
+for. `performance.md` is the whole performance lane plus the keep/revert
+discipline. This is the first skill in the plugin with reference files, so
+`scripts/check-coverage.sh` grew a resolver case for `skill/file.md` — a rule in
+a reference file is no less droppable by a later edit. Proved failable on both
+new arms before trusting it.
+
+### A reference file is opened far less often than its skill assumes
+
+Run 1 produced an excellent review — and **never opened either reference file**.
+Every finding came from model competence. Meanwhile `COVERAGE.tsv` reported
+165/165, because the rules were all *present*.
+
+The wording that failed was descriptive:
+
+> Lanes and their contents are in `checklists.md`. Read only the ones in scope.
+
+Replacing it with an unconditional imperative plus a named cost of skipping —
+"**Read `checklists.md` now, before judging anything.** ... A review that never
+opened it is a review running on recall" — moved the read rate from **0/1 to
+3/4**. A conditional pointer at `performance.md` scored **1/2** over the same
+runs.
+
+**What this does *not* establish.** Run 5 opened neither file and produced the
+strongest review of the five: twelve findings, three criticals, including one no
+other run found. So the honest claim is narrow — imperative framing changes
+whether a sibling file is opened; on this fixture it did **not** measurably change
+what the review found. Every planted defect was within reach of model competence
+alone, which is a limitation of the fixture, not evidence the checklists are
+inert. Something harder would be needed to separate the two, and that test has not
+been run.
+
+The restructure below is therefore justified on dependency grounds — do not put a
+lane's only checklist behind a coin flip — not on a measured quality gain.
+
+### Conflicts the sources did not agree on, and how they were resolved
+
+| Conflict | Resolution |
+|---|---|
+| Five severity vocabularies across the sources | Three, defined by consequence: **Critical / Required / Optional** |
+| Confidence: a 1–10 scale, a HIGH/MED/LOW scale, or none | 1–10, controlling *display*: 8+ report, 6–7 report with a caveat, ≤5 suppress |
+| "Never pre-filter, recall is the reviewer's job" vs "self-audit and downgrade in-agent" | Both, staged: **do not filter while looking; filter hard at report time** |
+| Low-confidence Critical: block, or suppress? | Reported as an open question; the verdict is set by the worst finding you are *confident* about |
+| Severity vs mechanicalness for auto-fix | Separate axes — severity decides whose *decision* it is, mechanicalness whether the *edit* is safe to apply |
+
+### Measured, same fixture both runs
+
+Fixture: a 4-file JS branch with six planted defects and two false-positive
+baits. Rebuilt byte-identical between runs.
+
+| | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 |
+|---|---|---|---|---|---|
+| Fired unprompted on "review my changes" | turn 1 | turn 1 | turn 1 | turn 1 | turn 1 |
+| Scoped via `merge-base` | yes | yes | yes | yes | yes |
+| Planted defects found | **6/6** | **6/6** | **6/6** | **6/6** | **6/6** |
+| False-positive baits avoided | **2/2** | **2/2** | **2/2** | **2/2** | **2/2** |
+| False positives emitted | **0** | **0** | **0** | **0** | **0** |
+| Criticals | 2 | 2 | 1 | 3 | 3 |
+| Extra real bugs beyond the planted six | 5 | 6 | 3 | 6 | 7 |
+| `checklists.md` opened | no | yes | yes | yes | **no** |
+| `performance.md` opened | no | no | yes | no | no |
+| Fresh-context adversarial pass | `oracle` | `oracle` | **blocked** | `oracle` | `oracle` |
+| Auto-fixed anything | 1 edit | 3 edits | 2 edits | 2 edits | **0 — deliberately** |
+| Cost | $1.55 | $1.32 | $0.78 | $1.27 | $1.01 |
+
+Run 3's adversarial pass did not dispatch: `claude -p` launched from inside a
+session inherits `CLAUDE_CODE_CHILD_SESSION=1`, which carries an instruction
+against the Agent tool. Runs 1, 2, 4 and 5 disregarded it; run 3 obeyed. **A test
+artefact, not a property of an ordinary interactive session** — but what it
+accidentally measured is worth keeping. Without the fresh-context pass, run 3 lost
+the double-refund accumulation bug (Critical in every other run) and the revenue
+overstatement: exactly the seam findings the step exists for. It also *disclosed*
+the degradation unprompted — "the adversarial pass ran inline rather than in a
+fresh subagent ... that step is weaker than the skill intends" — which is the
+scope-reduction disclosure rule working under real degradation.
+
+Run 5 found a critical none of the others did: the `applyRefund` guard **fails
+open**. `types.js:9` attaches `total` via the hydrator, so an `Order` built through
+the public constructor has `total === undefined`, and `500 > undefined` is `false`
+— the only protection in the function approves everything. That is the
+"quote the construct that *creates* the symbol" rule not merely avoiding the
+false positive but converting it into the most severe finding in the run.
+
+Run 4 held one finding at 6/10 *with a stated reason* — "nothing persists
+`applyRefund`'s output yet, so I could not confirm refunded rows reach
+`findOrders`" — which is the confidence axis used as designed rather than as
+decoration.
+
+**Remaining variance, not fixed:** whether a Critical with one obvious mechanical
+fix gets applied or asked about. Three runs parameterised the SQL themselves; run
+5 left the tree untouched and said so ("every finding needs a decision from you").
+Both are defensible and both were disclosed, so this is logged rather than tuned.
+
+### The fix for an unreliable read is to move the content, not to shout louder
+
+The `performance.md` precondition got the file read in run 3 and not in run 4 —
+1 of 2. A lane whose entire checklist is behind a coin flip is not a lane, so the
+structure changed instead of the wording: **the review-time half of
+`performance.md` (symptom table, anti-pattern catalogue, "never state a number you
+did not observe") moved into `checklists.md`, which is read reliably.**
+
+What is left in `performance.md` is only the discipline for *changing* something
+on performance grounds — the keep/revert table, the noise gate, the ledger. That
+file is now read at the moment a decision needs it, not as a lookup a reviewer can
+talk themselves out of. It also removed a real duplication the move had created.
+
+The general shape: reference material splits by *when it is needed*, not by
+*topic*. Anything needed to reach a finding belongs where findings are made.
+
+### Still unverified
+
+- Whether `simplify` gets invoked from a review whose simplicity findings are
+  substantial; across five runs they were always small enough to handle inline.
+- The interface, data/schema, API contract and operations lanes have never fired
+  — the fixture has no migration, route or UI.
+- Parallel multi-lane dispatch: every run stayed under the size where the skill
+  fans out, so the one-message fan-out has never actually executed.
+- Whether the checklists change outcomes on a change that is beyond model recall.
+  On this fixture they demonstrably did not.

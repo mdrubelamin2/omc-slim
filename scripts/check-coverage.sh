@@ -22,6 +22,10 @@ FILTER="${1:-}"
 resolve() {
   case "$1" in
     output-styles) echo "$ROOT/output-styles/omc-slim.md" ;;
+    # "skill/file.md" — a skill's reference file, read on demand rather than
+    # loaded with SKILL.md. Pinnable like anything else; a rule that lives in a
+    # reference file is no less droppable by a later edit.
+    */*)           [ -f "$ROOT/skills/$1" ] && echo "$ROOT/skills/$1" || echo "" ;;
     *)
       if   [ -f "$ROOT/skills/$1/SKILL.md" ]; then echo "$ROOT/skills/$1/SKILL.md"
       elif [ -f "$ROOT/agents/$1.md" ];       then echo "$ROOT/agents/$1.md"

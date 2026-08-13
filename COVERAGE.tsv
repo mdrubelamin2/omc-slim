@@ -99,3 +99,84 @@ audit	name-blast-radius	simplify	blast radius stated
 audit	abstraction-pays-rent-now	simplify	pays rent when a second
 audit	exported-wrapper-is-api	simplify	deleting it is an API change
 audit	skills-compete-with-synonyms	output-styles	compete with dozens of near-synonyms
+gstack	diff-against-merge-base	review	merge-base
+gstack	fetch-base-first-or-phantom-findings	review	stale base = phantom findings
+gstack	base-branch-resolution-cascade	review	then `origin/HEAD`, then `main`, then `master`
+gstack	read-whole-diff-before-flagging	review	Read the whole diff before flagging
+gstack	intent-before-quality	review	Scope creep
+gstack	deliverable-not-the-machinery	review	handles a deliverable is not the deliverable
+gstack	enum-completeness-outside-diff	review/checklists.md	requires reading outside the
+gstack	quote-the-code-gate	review	Quote the code, or you do not have a finding
+gstack	no-gaming-the-quote-gate	review	do not invent a higher confidence
+gstack	framework-declares-elsewhere	review	quote the construct that *creates* the symbol
+gstack	symmetric-burden-on-clearance	review	not a finding *and not a clearance*
+gstack	confidence-controls-display	review	5 or below do not report at all
+gstack	critical-survives-low-confidence	review	survives at low confidence
+gstack	lane-triggers-by-scope	review	Runs when
+gstack	auth-scope-is-size-independent	review	at any size
+gstack	size-floor-skips-lanes	review	roughly 50 changed lines
+gstack	dispatch-lanes-in-one-message	review	in parallel, in one message
+gstack	report-lanes-that-did-not-run	review	which did not, with the reason
+gstack	adversarial-pass-always	review	one adversarial pass, always
+gstack	loc-is-not-risk	review	not a proxy for risk
+gstack	adversarial-told-what-others-found	review	told what the lanes already found
+gstack	fix-first-mechanical	review	Fix directly
+gstack	critical-asks-mechanical-fixes	review	Critical findings lean towards asking
+gstack	batch-asks-into-one-question	review	Batch every ask into **one** question
+gstack	review-never-publishes	review	Never commit, push or open a PR
+gstack	suppression-list	review	Do not flag
+code-review-official	confidence-threshold-suppresses	review	do not report at all
+addy	approve-on-net-improvement	review	definitely improves the health
+addy	no-blocking-on-taste	review	not how you would have written it
+addy	sycophancy-is-a-failure	review	Sycophancy is the other failure
+addy	review-tests-first	review	Read the tests first
+addy	changed-test-means-changed-behaviour	review	A test that had to change is a behaviour change
+addy	propose-the-move	review	Propose the move, not just the problem
+addy	remedy-removes-moving-pieces	review	removes moving pieces
+addy	structural-problem-outranks-nits	review	One structural problem beats ten nits
+addy	security-before-style	review	read before style
+addy	ai-code-more-scrutiny	review	more scrutiny, not less
+addy	dependency-one-at-a-time	review/checklists.md	one dependency change at a time
+addy	semver-is-a-promise	review/checklists.md	promise the maintainer may not have kept
+addy	llm-output-is-a-trust-boundary	review/checklists.md	model output
+addy	permissions-in-code-not-prompt	review/checklists.md	enforced in code, not in the prompt
+addy	measure-before-optimising	review/performance.md	Optimise only what a measurement proves
+addy	never-fabricate-metrics	review/checklists.md	Never state a number you did not observe
+addy	potential-vs-measured	review/checklists.md	*potential* impact
+addy	fixed-budget-re-measure	review/performance.md	same fixed budget
+addy	cache-state-asymmetry	review/performance.md	measures the cache, not your change
+addy	one-optimisation-at-a-time	review/performance.md	One change at a time
+addy	beat-the-noise-not-the-mean	review/performance.md	Beat the noise, not the mean
+addy	neutral-is-a-revert	review/performance.md	"Neutral" is a revert, not a keep
+addy	correctness-gates-the-number	review/performance.md	Correctness gates the number
+addy	optimisation-ledger	review/performance.md	including the ones you reverted
+addy	wrong-stack-advice-forbidden	review/checklists.md	Fit the advice to the actual stack
+addy	over-memoisation-is-a-defect	review/checklists.md	over-memoisation costs more than it saves
+addy	project-budget-overrides-defaults	review/performance.md	overrides every number here
+omc	no-self-approval-same-context	review	cannot do to yourself
+omc	no-self-approval-orchestrator	output-styles	cannot be the pass that clears it
+omc	do-not-pre-filter-during-discovery	review	Filter at the end, never while looking
+omc	soft-filter-is-ranking-guidance	review	not permission to look less hard
+omc	pre-commitment-predictions	review	First, predict
+omc	hunting-mode-bias-check	review	found momentum and are now hunting
+omc	downgrade-needs-mitigation	review	Every downgrade names what mitigates it
+omc	downgrade-floor	review	never get downgraded
+omc	author-could-refute	review	refute this in one sentence
+omc	no-manufactured-findings	review	Inventing a problem to look thorough
+omc	verdict-from-confident-findings	review	worst finding you are confident about
+omc	security-severity-is-a-product	review	exploitability
+omc	ask-what-is-absent	review	Ask what is absent
+omc	do-not-stop-at-first-findings	review	do not stop at the first few findings
+omc	stale-evidence-is-not-evidence	review	Evidence has a shelf life
+omc	compiles-is-not-correct	review	says the code compiles, not that it does what was asked
+omc	hedge-words-are-not-results	review	*probably*, is a claim, not a result
+omo-slim	re-review-cap	review	at most two re-reviews
+omo-slim	re-review-scoped-to-unresolved	review	does not reopen concerns already accepted
+omo-slim	no-polish-for-its-own-sake	review	polishing because polishing is possible
+omo-slim	findings-in-final-message	review	in its final message
+audit	route-simplify-not-inline	review	hand it to `simplify`
+audit	skip-unchanged-tree	review	Re-reviewing an unchanged tree
+audit	must-read-checklists	review	Read `checklists.md` now
+audit	performance-lane-precondition	review	applied or accepted, **open `performance.md`
+audit	severity-vs-mechanicalness	review	severity decides whether the *decision* is yours
+audit	finding-vs-change-measurement	review/performance.md	bars unmeasured *changes*, not unmeasured *findings*

@@ -180,7 +180,7 @@ adding more would make this worse for everything you have installed.
 ### Skills
 
 `deep-interview` · `deepwork` *(manual)* · `verification-planning` · `simplify` ·
-`codemap`
+`review` · `codemap`
 
 ### Hook — advisory, does not run per tool call
 

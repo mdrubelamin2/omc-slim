@@ -10,7 +10,7 @@
     {
       "name": "omc-slim",
       "source": "./",
-      "description": "A small pantheon of specialist agents for Claude Code. Delegation over accumulation: ten specialists, five skills, one advisory hook, and no runtime injection on the tool-call path.",
+      "description": "A small pantheon of specialist agents for Claude Code. Delegation over accumulation: ten specialists, six skills, one advisory hook, and no runtime injection on the tool-call path.",
       "license": "MIT",
       "keywords": [
         "orchestration",

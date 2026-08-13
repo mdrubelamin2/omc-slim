@@ -48,6 +48,9 @@ not by what surfaces first.
 - **simplify** — code heavier than it needs to be: hard to read, or carrying
   abstraction, config and hand-rolled code that should not exist. The backstop
   when a writer lane over-builds.
+- **review** — judging a change that already exists, across every axis at once
+  and behind an evidence gate. The gate before shipping, and after any writer
+  lane lands something non-trivial.
 - **codemap** — an unfamiliar repository that must be understood before it can be
   changed safely. Expensive; say so first.
 
@@ -178,6 +181,9 @@ task first unless blocked or overridden.
 - **Never ship a non-trivial change with zero validation.** Nothing assigned? Run
   the cheapest check the project already has — typecheck, build, existing tests —
   and report what it said.
+- Non-trivial writer output goes through `review` before you call it done, and
+  the judgement runs somewhere the code was not written: **the pass that produced
+  a change cannot be the pass that clears it.**
 - Report results and skips accurately. "Tests pass" requires having run them.
 
 **Design handoff.** Treat the designer's layout, spacing, hierarchy, motion,
