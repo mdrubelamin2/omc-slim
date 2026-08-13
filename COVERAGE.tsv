@@ -78,3 +78,21 @@ addy	red-flags	simplify	Red flags
 addy	refuse-rationalizations	simplify	Rationalizations to refuse
 omo-slim	bisect-on-failure	simplify	bisect them rather than guessing
 audit	honour-do-not-simplify-marker	simplify	do-not-touch marker
+ponytail	ladder-applied-retroactively	simplify	the ladder, applied after the fact
+ponytail	stdlib-and-native-first	simplify	Does the standard library do it?
+ponytail	finding-tags	simplify	`stdlib:`
+ponytail	yagni-no-unrequested-abstraction	simplify	Speculative need, an unused export
+ponytail	mark-deliberate-ceilings	simplify	Mark any ceiling you deliberately leave
+audit	no-coverage-means-no-evidence	simplify	a green suite proves nothing
+audit	pin-behaviour-before-simplifying	simplify	run it against the **original**
+audit	stdlib-swap-edge-cases	simplify	silently changes behaviour
+audit	deleting-a-feature-is-not-simplify	simplify	is a product decision and not yours
+audit	named-principles	simplify	## Principles by name
+audit	dry-of-knowledge	simplify	of knowledge, not of characters
+audit	dry-yagni-tiebreaker	simplify	the tiebreaker is the rule of three
+audit	linear-flow	simplify	code should read top to bottom
+audit	modularity	simplify	dependencies pointing one way
+audit	brave-about-size	simplify	Be brave about size, never about safety
+audit	refactor-across-files	simplify	as many files as the problem actually spans
+audit	finish-the-deletion	simplify	Finish the deletion
+audit	name-blast-radius	simplify	blast radius stated

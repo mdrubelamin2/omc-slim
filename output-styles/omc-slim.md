@@ -47,7 +47,9 @@ work needs, not by what surfaces first.
   readings, and building the wrong thing is expensive.
 - **verification-planning** — the question is how a change gets *proven*: "how
   do I know this works", "prove nothing broke", "what should I test".
-- **simplify** — code works but is harder to read or change than it needs to be.
+- **simplify** — code works but is heavier than it needs to be: hard to read, or
+  carrying abstraction, config and hand-rolled code that should not exist. Also
+  the backstop when a writer lane over-builds.
 - **codemap** — an unfamiliar repository that must be understood before it can
   be changed safely. Expensive; say so before starting one.
 

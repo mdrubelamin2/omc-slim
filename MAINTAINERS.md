@@ -794,3 +794,63 @@ list, `Defaults` and `Final-state verification` all survive, as do the v0.6.0
 additions ("that **is** the scope", "name the restructure"). Static context is
 unchanged at 3,568 tokens because the skill's description did not move; the body
 grew 821 → 1,523 words and loads only on invocation.
+
+---
+
+## v0.6.5 — ponytail merged into simplify; principles named; bravery added
+
+The skill covered *expression* — is this well written — and never asked whether
+the code should exist. Ponytail is the missing half, so it was merged in as a
+retroactive backstop: when the orchestrator, fixer or designer over-builds,
+simplify is the last pass that can catch it.
+
+### Added
+
+- **The ladder, applied after the fact** — five rungs, deletion-first, before the
+  expression tables. Ordering matters: there is no point tidying a function the
+  standard library already ships.
+- **The five tags** from `ponytail-review` — `delete:`, `stdlib:`, `native:`,
+  `yagni:`, `shrink:`. Non-overlapping with our tables, which classify *how* code
+  reads rather than *whether* it should be there.
+- **Principles by name** — KISS, YAGNI, DRY, single responsibility, linear flow,
+  modularity — each with the specific failure it prevents rather than as a slogan.
+- **Be brave about size, never about safety** — refactor as many files as the
+  problem spans, restructure rather than rearrange, finish the deletion; but never
+  skip the pin-down check, weaken a test, touch a trust boundary, or restructure
+  silently.
+
+### Contradiction resolved: DRY vs YAGNI
+
+DRY says extract duplication; YAGNI says do not build abstraction you do not
+need. Shipping both unqualified would have the skill argue with itself. Bounded
+as **DRY of knowledge, not of characters** — code that must change together for
+the same reason is duplicated knowledge; code that merely looks alike is
+coincidence — with the **rule of three** as the explicit tiebreaker, because a
+wrong abstraction costs more than the duplication it replaced.
+
+### Measured
+
+Fixture: two files, a hand-rolled deep clone, a single-implementation formatter
+hierarchy, a config nobody sets, a nested ternary, and a trust-boundary validator
+that must survive. Prompt: "src/util.js feels over-engineered. Clean it up."
+
+| | before this change | after |
+|---|---|---|
+| Skill invoked | **no** — output style did it | **`omc-slim:simplify` fired** |
+| `stdlib:` hand-rolled clone | `structuredClone` ✔ | `structuredClone` ✔ |
+| `yagni:` formatter hierarchy | collapsed ✔ | collapsed ✔ |
+| `delete:` unused config | removed ✔ | removed ✔ |
+| Trust-boundary validator | untouched ✔ | untouched ✔ |
+| Nested ternary | **left as "already right-sized"** | **guard clauses** ✔ |
+| Callers in a second file | n/a | **migrated** ✔ |
+| Forwarding wrapper left behind | kept ✘ | **still kept** ✘ |
+
+This is the first judgement-call skill invocation measured in this project;
+`codemap` only ever fired on an unmistakable task shape. The broader description
+— naming "over-engineered or bloated" — is the plausible cause.
+
+**Still open:** `deepClone` survives as `{ return structuredClone(obj) }`, a
+wrapper whose whole body forwards. "Finish the deletion" and the redundancy table
+both say inline it. Arguable — a named one-line seam is cheap — but by the
+skill's own rules it should have gone, and a fourth round of wording was not
+attempted after the deepwork experience showed those returning little.

@@ -1,6 +1,6 @@
 ---
 name: simplify
-description: Simplifies code for clarity without changing behavior. Use for readability, maintainability, and complexity reduction after behavior is understood.
+description: Simplifies code for clarity without changing behavior, and deletes what should never have been written — speculative abstraction, config nobody sets, hand-rolled equivalents of standard library or platform features. Use for readability, maintainability, complexity reduction, and anything described as over-engineered or bloated, once behavior is understood.
 ---
 
 # Code Simplification
@@ -51,6 +51,13 @@ Before every change, ask:
 behaviour.** Revert it. Editing the test to match the new code destroys the only
 evidence that behaviour was preserved.
 
+**And if nothing tested it, a green suite proves nothing.** "Existing tests pass"
+is vacuously true for code no test ever exercised. Before simplifying non-trivial
+logic with no coverage, write the smallest check that pins current behaviour, run
+it against the **original** to confirm it passes, then simplify. That check is
+the deliverable that makes the rest of this skill safe; without it you are
+editing on faith.
+
 ### 2. Follow Project Conventions
 
 Simplification means making code more consistent with this codebase, not
@@ -100,6 +107,66 @@ And if the real problem is the design rather than its expression, say so instead
 of polishing it. Simplification that preserves a wrong structure exactly is the
 expensive kind of tidy. Name the restructure and let the caller decide.
 
+## Principles by name
+
+Named so a review can cite them, and bounded so they do not fight each other.
+
+**KISS** — the simplest thing that fully solves the actual problem. Not the
+smallest thing that appears to.
+
+**YAGNI** — build for today's requirement. Speculative flexibility is complexity
+with no payer: everyone reads, tests and maintains it forever, for a case that
+has not arrived.
+
+**DRY — of knowledge, not of characters.** Two pieces of code that must change
+together for the same reason are one piece of knowledge duplicated; unify them.
+Two that merely look alike today are coincidence; leave them alone. **This is
+where DRY and YAGNI appear to collide, and the tiebreaker is the rule of three:**
+wait for the third occurrence before extracting. A wrong abstraction costs more
+than the duplication it replaced, because every later case bends itself to fit.
+
+**Single responsibility** — one reason to change. The test is whether you can
+name what a function or module does without using "and".
+
+**Linear flow** — code should read top to bottom. Guard clauses and early returns
+over nesting; a straight sequence over callback pyramids, flag-driven branching
+and mutual recursion. Every level of indentation is a branch the reader has to
+hold in their head.
+
+**Modularity** — clear boundaries, narrow interfaces, dependencies pointing one
+way. A module you can understand without opening its neighbours is a module you
+can change safely. Watch for import cycles, and for the `utils` file that has
+become a junk drawer.
+
+## Be brave about size, never about safety
+
+The default failure of this skill is timidity: renaming a variable, straightening
+one conditional, then calling a four-file tangle "already right-sized". That is
+not simplification, it is tidying around the problem.
+
+- **Refactor as many files as the problem actually spans.** If the honest fix
+  moves a responsibility across six modules, say so and do it. Size alone is
+  never a reason to decline.
+- **Restructure, do not only rearrange.** Where the design is the problem — wrong
+  seams, a god object, an inheritance chain expressing one behaviour, state
+  threaded through five layers — replace it. Careful patches over a wrong design
+  is the expensive outcome, not the safe one.
+- **Finish the deletion.** Replacing a hand-rolled helper with the standard one
+  and keeping a wrapper that only forwards to it has moved the complexity, not
+  removed it. Update the callers and delete the wrapper.
+- **Do not grade your own timidity as taste.** "Already fine" about a nested
+  ternary or a three-deep nest is the excuse this section exists to remove.
+
+Bravery never means:
+
+- Skipping the pin-down check on code no test covers
+- Weakening or rewriting a test so a refactor goes green
+- Touching validation at a trust boundary, an error path, a security control or
+  an accessibility affordance
+- Doing it silently. A large restructure is named, and its blast radius stated,
+  before it starts — the caller decides whether to spend it, and *that* decision
+  is theirs, not the size of the diff.
+
 ## Process
 
 ### Step 1: Understand Before Touching
@@ -123,7 +190,54 @@ that out by checking, not by assuming.
 
 ### Step 2: Find the Opportunities
 
-Concrete signals, not vague smells.
+Two questions, in this order. **Should this exist?** comes before **is this well
+expressed?** — there is no point tidying a function the standard library already
+ships.
+
+#### First: the ladder, applied after the fact
+
+Whoever wrote this was supposed to climb the ladder before adding code. When they
+did not, you are the backstop — and this is the half of simplification that
+deletes rather than rearranges. Stop at the first rung that holds.
+
+1. **Does it need to exist at all?** Speculative need, an unused export, a config
+   key nobody sets, a flag with one value, scaffolding "for later" that nothing
+   extends. Delete it; re-add when something actually needs it.
+2. **Is it already in this codebase?** A helper, util, type or pattern living a
+   few files over. Re-implementing what already exists is the most common waste
+   there is.
+3. **Does the standard library do it?** A hand-rolled deep clone, debounce, date
+   parse, UUID, group-by or argument parser is the highest-value deletion
+   available — and the one a clarity-focused pass walks straight past, because
+   the hand-rolled version is often perfectly *readable*.
+4. **Does a native platform feature cover it?** CSS over JS, a DB constraint over
+   application code, a built-in control over a widget library.
+5. **Does an already-installed dependency solve it?** Use it. Never add a new one
+   for what a few lines can do.
+
+Tag each finding so the caller can triage:
+
+| Tag | Means |
+|---|---|
+| `delete:` | dead code, unused flexibility, speculative feature. Replacement: nothing. |
+| `stdlib:` | hand-rolled thing the standard library ships. Name the function. |
+| `native:` | code or a dependency doing what the platform already does. Name the feature. |
+| `yagni:` | abstraction with one implementation, config nobody sets, layer with one caller. |
+| `shrink:` | same logic, fewer lines. Show the shorter form. |
+
+**The line this must not cross.** These rungs remove *implementation*, never
+*behaviour*. Dropping an unused abstraction, an unreachable branch or a
+hand-rolled equivalent of something standard leaves observable behaviour
+identical — Principle 1 intact. Removing a **feature someone uses** is a product
+decision and not yours: name it and let the caller decide.
+
+**Swapping in a standard implementation is where "simplification" silently
+changes behaviour.** Check the edge cases match before you trust the swap — sort
+stability, `null` and empty-input handling, precision, whether the standard
+version accepts input the hand-rolled one rejected or throws where it returned a
+default.
+
+#### Then: expression
 
 **Structure**
 
@@ -172,6 +286,11 @@ Keep refactoring commits separate from feature and bug-fix commits. A change tha
 refactors *and* adds behaviour is two changes; mixed history is harder to review,
 revert and understand later.
 
+**Mark any ceiling you deliberately leave.** Where the simple form carries a real
+limit you are choosing to accept — a global lock, an O(n²) scan over a list you
+know stays small, a naive heuristic — say so in a comment naming the ceiling and
+the upgrade path. An unmarked ceiling is rediscovered the hard way.
+
 **Above roughly 500 lines, stop hand-editing.** A refactor at that scale wants a
 codemod, an AST transform or a scripted rewrite — manual edits there are
 error-prone and exhausting to review. Then verify the transform on a sample before
@@ -199,6 +318,10 @@ every attempt succeeds, and saying so is a result.
 - Simplifying code you do not fully understand
 - One large batch nobody can review or bisect
 - Refactoring outside the task's scope without being asked
+- A nested ternary or a three-deep nest left in place as "already fine"
+- A hand-rolled helper replaced by the standard one, but its wrapper kept — the
+  complexity moved instead of leaving
+- One file touched when the problem plainly spans several
 
 ## Rationalizations to refuse
 
