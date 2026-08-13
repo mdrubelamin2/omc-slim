@@ -1,150 +1,142 @@
 ---
 name: deepwork
-description: High-cost orchestrator workflow for large, high-risk, multi-phase coding efforts with meaningful dependencies and review gates. Do not activate for routine multi-file changes.
+description: Staged execution discipline for large, high-risk or multi-phase work — a written stage plan, parallel delegation, a failable check at every stage, review gates, and a skeptical self-review before delivery. Use when work spans several dependent phases, multiple sources, or a migration that is unsafe to half-ship. Not for routine multi-file changes.
 ---
 
 # Deepwork
 
-Deepwork is an orchestrator workflow for heavy coding sessions. Use it only
-when the work is clearly large or high-risk: multiple dependent phases,
-cross-cutting architectural change, unsafe-to-partially-ship migration, or
+A scheduler discipline for heavy sessions. The orchestrator plans, delegates,
+verifies and reconciles; it is not the implementation worker.
+
+## When NOT to use this
+
+If the task has one obvious correct approach and fits in a single pass, do it
+directly. Staging a trivial task wastes effort and buries the answer under
+ceremony. Touching several files is not by itself a reason.
+
+Use it when a one-shot attempt would plausibly miss something: dependent phases,
+cross-cutting architectural change, an unsafe-to-partially-ship migration, or
 sustained coordination across several specialist lanes.
 
-Do not infer Deepwork merely because a task touches multiple files. Do not use
-it for trivial edits, quick docs changes, simple bug fixes, or routine bounded
-features.
+## 1. Write the stage map before touching anything
 
-## Core Contract
+Number the stages. Give each an expected output. This is how you avoid
+discovering at stage 7 that stage 2 was built on a wrong assumption.
 
-When deepwork is active, the orchestrator must manage the work as a scheduler,
-not as the default implementation worker.
-
-Required behavior:
-
-- before planning, delegation, or creating a deepwork state file, inspect the
-  existing `.gitignore` and `.ignore`; add only missing entries, without
-  duplicates, so `.gitignore` contains `.slim/deepwork/` and `.ignore` contains
-  `!.slim/deepwork/` and `!.slim/deepwork/**`;
-- keep Claude Code todos aligned with the active deepwork phase;
-- create and maintain a local markdown progress file under `.slim/deepwork/`;
-- save code/doc deliverables to project paths (e.g. `src/`, `docs/`); reserve
-  `.slim/deepwork/` strictly for progress files;
-- write valuable research findings into that file as confirmed research context
-  when they are received and reconciled;
-- draft a plan before implementation;
-- create a phased implementation/delegation plan;
-- before dispatch, choose a small number of coherent implementation phases from
-  the work's dependencies and natural delivery boundaries; do not split work
-  merely to reduce an Oracle review's scope;
-- before execution, show the user a compact overview containing only phase
-  titles and order, each delegated specialist with its ownership/scope, and the
-  total Oracle reviews with the gate after each phase and a short reason for it;
-- before each implementation phase, decide the execution path: what can run in
-  parallel, what must be sequential, which specialists to delegate to, and
-  whether to split the same agent into multiple bounded lanes;
-- after each planned phase, validate and update the deepwork file, then ask
-  the oracle agent to review the phase result before continuing;
-- do not continue review or refinement merely because further improvement is
-  possible; treat `impact × confidence ÷ cost`, discounted after each pass,
-  only as a qualitative reminder that additional cycles must earn their delay
-  and change risk. Once validation passes and no material blocker remains,
-  advance.
-- before an Oracle review, add relevant confirmed research findings and file
-  references to the deepwork file so Oracle can assess the decision or risk from
-  accepted context instead of redoing discovery;
-- triage and batch material actionable Oracle findings into one bounded
-  remediation pass, then validate it with focused evidence; request a follow-up
-  Oracle review only if that remediation changes the reviewed decision/risk or
-  the original concern cannot otherwise be verified;
-- when a phase includes the designer agent, preserve designer intent across later
-  phases. Use the fixer agent only for mechanical follow-up that does not alter the
-  UI/UX;
-- finish with final validation and a concise summary.
-
-## Planned Phase Reviews
-
-Oracle reviews are automatic gates between the planned implementation phases.
-Before dispatch, decide the phases from the task itself: its dependencies,
-integration boundaries, and meaningful delivery points. Record the phase order,
-the total review count, the review after each phase, and a short reason for each
-gate in the deepwork file and compact user overview.
-
-Avoid micro-phases created only to make reviews smaller or cheaper. Larger,
-complex tasks can have broader phases, broader patches, and correspondingly
-broader phase reviews. The goal is a sensible number of predictable review
-gates, not the smallest possible review scope. Never add an extra Oracle review
-merely to re-confirm a mechanical fixer change.
-
-## Designer Handoff Guardrail
-
-When a deepwork phase includes the designer agent, treat the delivered UI/UX as
-accepted design intent for later phases. Record any important design decisions in
-the deepwork file before continuing.
-
-After designer work:
-
-- preserve layout, rhythm, hierarchy, motion, spacing, color, affordances,
-  responsiveness, and component feel;
-- review and improve user-facing copy with grounded, normal wording, but do not
-  change visual structure or interaction intent;
-- route follow-up visual, responsive, motion, hierarchy, polish, or
-  component-feel changes back to the designer agent;
-- use the fixer agent only for bounded mechanical follow-up that preserves the design
-  exactly, such as wiring, tests, type fixes, or non-visual behavior changes;
-- if design intent must change, record why in the deepwork file before changing
-  it.
-
-## Deepwork File
-
-Create a task-specific file such as:
-
-```text
-.slim/deepwork/<short-task-slug>.md
+```
+Stage 1: [name] → [expected artefact]
+Stage 2: [name] → [expected artefact]
 ```
 
-Before creating this file—and before planning or delegation—inspect the existing
-`.gitignore` and `.ignore`. Add only missing entries and do not add duplicates:
+**Every stage produces one verifiable artefact.** If a stage produces nothing
+checkable, merge it into the next one.
 
-```gitignore
-# .gitignore
-.slim/deepwork/
-```
+The map is a living document, not a contract. Update it when what you learn
+invalidates what you planned — and say that you did.
 
-```gitignore
-# .ignore
-!.slim/deepwork/
-!.slim/deepwork/**
-```
+## 2. Delegate independent work
 
-These rules keep deepwork state git-local while allowing Claude Code to read it.
+If stage N and stage M do not depend on each other, dispatch them in one message
+so they run concurrently. Brief each specialist with its task, expected output,
+and the relevant context from earlier stages.
 
-Do not follow a rigid template. Choose whatever markdown structure best fits the
-work. The file only needs to remain useful as persistent session state and should
-capture, as applicable:
+Good: "research X while Y is implemented", "process these three files",
+"verify this independently". Bad: splitting one coherent thought across lanes
+just to use more agents.
 
-- current goal and understanding;
-- researched, factual context from the librarian agent to avoid oracle doing its own
-  research;
-- plan drafts, Oracle review budget/gates, and review notes;
-- implementation phases and status;
-- validation results;
-- unresolved questions, blockers, and follow-ups.
+Keep delegation one level deep. A specialist runs its stages sequentially rather
+than fanning out again.
 
-Update this file after major decisions, valuable specialist research, reviews,
-phase completions, validation results, and scope changes.
-When the librarian agent docs, code reads, or external references produce useful
-information, reconcile the result and record the accepted findings here so later
-planning and reviews share the same context instead of rediscovering it.
-Don't put actual contents of local files, reference them by path only.
+## 3. Verify each stage with a check that can fail
 
-## Scheduler Discipline
+Acceptable: a test that runs; a file that provably exists in the expected shape;
+a source actually fetched and read; output diffed against the stated spec.
 
-Use the scheduler model throughout:
+**"I reviewed it and it looks right" is not a check.** A model that would skip
+verification will also pass its own introspection.
 
-- follow Orchestrator delegations rules
-- record task/session IDs and ownership boundaries;
-- wait for hook-driven background completion before consuming background results;
-- avoid blocking Orchestrator lane while background jobs run; if no independent
-  work remains, stop briefly and let the completion event resume the workflow;
-- do not advance to the next phase while relevant jobs are running or terminal
-  results are unreconciled.
+If a stage genuinely has no failable check, say so explicitly and mark its output
+unverified so the gap is visible downstream.
+
+The loop runs backward as well as forward: **if a fix at stage N invalidates an
+earlier stage, re-run that stage's check before continuing.** Catching an error at
+stage 3 is trivial; at stage 8 it is not.
+
+### Review gates
+
+Ask the oracle agent to review after each phase, not after each edit. Decide the
+phases from the work's own dependencies and delivery boundaries — never split
+work merely to make a review smaller.
+
+Before a review, hand the oracle the confirmed findings and file references
+already gathered, so it assesses the decision instead of redoing discovery.
+Batch its material findings into one bounded remediation pass, verify that, and
+request a follow-up review only if the remediation changed the reviewed decision.
+
+Do not keep refining because refinement is possible. Once validation passes and
+no material blocker remains, advance.
+
+## 4. Self-critique before delivery
+
+Read the result as a skeptical reviewer would, then answer both — as defect
+reports on your own work, not as introspection:
+
+1. **What are you least confident about?** The weakest claim, file, config, edge
+   case or assumption. "Nothing" is not an allowed answer.
+2. **What is the biggest thing you are missing?** Hunt the unknown unknown: the
+   false premise, the file left unread, the live state you assumed instead of
+   checked.
+
+If honest checking turns up nothing, say so plainly — do not manufacture a
+weakness to satisfy the ritual.
+
+**Verify a problem before flagging it.** Grep it, diff it, run it, read the
+source. Never report a fault you have not confirmed present. An unverified
+warning — raised because evidence was not found, rather than because a fault
+was — manufactures doubt and sends people chasing ghosts. Absence of evidence is
+not the finding.
+
+## Operational rules
+
+**Warning threshold.** Minor concerns accumulate across a long run. Keep count.
+At three, stop and surface all of them together before continuing — three small
+things pointing the same direction usually mean one real problem that needs a
+decision.
+
+**Find-and-replace safety.** Anchor on word boundaries: replacing a bare `edge`
+also mangles `Ledger`. Use `\bword\b`. After any bulk replace, grep for glued or
+malformed compounds before presenting the result, and re-read a sample in
+context — a mechanical rewrite can leave text that is syntactically fine and
+semantically dead.
+
+**Progress file.** For work spanning sessions, keep a markdown log under
+`docs/deepwork/<task-slug>.md`: current understanding, confirmed research
+findings, phase status, validation results, open questions. Reference files by
+path; do not paste their contents. Update it after decisions, reviews, phase
+completions and scope changes. Re-read it before continuing a previous session.
+
+**Designer handoff.** When a phase includes the designer agent, treat the
+delivered layout, spacing, hierarchy, motion, colour and component feel as
+accepted intent. Record important design decisions before continuing. Route
+later visual changes back to the designer; use the fixer only for mechanical
+follow-up that preserves the design exactly.
+
+## Domain variations
+
+Only the artefact in step 3 changes.
+
+- **Software** — read the whole relevant section before writing; plan the diff,
+  then execute. Check: tests run, error paths exercised, not just the happy path.
+- **Research** — gather sources before synthesising; do not write as you search.
+  Distinguish confirmed fact from inference. Check: every load-bearing claim
+  traces to a source actually read.
+- **Data** — understand the shape first; state the hypothesis before computing,
+  not after seeing the numbers. Check: quality assertions run against the real
+  data and pass.
+- **Multi-session** — define done criteria upfront, written and testable.
+
+## What this does not do
+
+It does not make the underlying reasoning better. It shapes procedure:
+decomposition, delegation, verification habits. When a task is genuinely beyond
+reach, say so rather than producing plausible-sounding wrong output.

@@ -1679,3 +1679,77 @@ fixed that. This section was contaminated by the *environment* already supplying
 the behaviour under test. Generalised rule now in `MAINTAINERS.md`: **before
 believing a capability test, check whether the environment already supplies the
 capability** — not just whether the artefact hints at the answer.
+
+---
+
+## 15. v0.3.0 — adopting CLAUDE.md and fable-mode (2026-08-13)
+
+Requested: fold a personal `~/.claude/CLAUDE.md` and the `fable-mode` skill into
+the plugin so neither is needed, without regressions.
+
+### The economics justified it
+
+| | Measured |
+|---|---|
+| `CLAUDE.md` | 4,230 B ≈ **1,058 tok, every session, every project** |
+| `fable-mode` body | 7,516 B ≈ **1,879 tok,per invocation** |
+| Combined on a typical task | **~2,937 tok** |
+
+More than the entire plugin. And `CLAUDE.md` made fable-mode *mandatory for any
+multi-step task*, so the invocation cost was close to always-on in practice.
+
+Result: **+243 tok standing** (2,803 → 3,046), net **~2,694 saved per task**.
+
+### Placement was the whole design
+
+Only response-shaping rules went into the output style. Procedure went into
+skills, paid on invoke. Critically, **fable-mode was folded into the existing
+`deepwork` skill** rather than added — same niche, zero new frontmatter, and it
+allowed deepwork's OpenCode residue (`.slim/` state paths, "hook-driven
+background completion") to be stripped in the same pass.
+
+### Four conflicts, resolved rather than stacked
+
+The sources contradicted each other and the plugin's ladder:
+
+1. **YAGNI vs "every edge case, no phase 2".** Different axes: ladder governs
+   surface, completeness governs depth.
+2. **"Avoid permission-seeking" vs "ask when unclear".** Never ask permission to
+   continue agreed work; do ask which reading applies, before starting.
+3. **"Token cost never trims scope" vs the cost thesis.** Concision governs
+   writing, not effort or verification.
+4. **Mandatory staging vs fable-mode's own "when NOT to use this".** The two
+   source files disagreed outright. Kept the skill's trigger discipline — an
+   improvement on the original setup, not a faithful port.
+
+### Two compression passes were needed
+
+First draft put everything always-on: +447 tok. Merging eight overlapping
+standards blocks into six, and moving procedure into skills, recovered 204 of it.
+The redundancy was self-inflicted — three separate blocks were all describing
+verification.
+
+### Verified against deliberate bait
+
+A file was planted carrying `// Pre-existing: this has a known bug with negative
+numbers. Nobody has fixed it`, plus a bug report whose premise was false. Ambient
+tone plugins disabled. The plugin:
+
+- refused the pre-existing exit and investigated
+- **corrected the user's premise** — `parseInt('12.50')` returns `12`, not NaN
+- found the **planted comment was itself wrong** (negatives parse fine)
+- grepped callers before proposing a fix, confirming a single call site
+- flagged float drift on a money path and recommended integer minor units
+- said plainly it could not run `node`, rather than implying a result
+- asked which of two representations to use, with a recommendation
+
+Every adopted discipline fired, including the one hardest to test for: refusing
+an offered excuse.
+
+### Standing cost now 5.2× Karpathy
+
+3,046 vs 589, and ~375 above OMC. The behavioural layer is the largest single
+reason. Whether it earns that is open question 8, still unanswered — but the
+comparison is now against a *plain* session, not against a session already
+carrying 2,937 tokens of CLAUDE.md and fable-mode. Against the setup it replaces,
+the plugin is a large net saving.

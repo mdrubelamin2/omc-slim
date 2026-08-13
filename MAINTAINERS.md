@@ -252,3 +252,63 @@ This is the second contamination of the same kind (the first was testing
 adaptivity with a vendor the prompt named). The rule generalises: **before
 believing a capability test, check whether the environment already supplies the
 capability.**
+
+---
+
+## Adopted behavioural layer (v0.3.0)
+
+Replaces a personal `~/.claude/CLAUDE.md` (~1,058 tok always-on) and a
+`fable-mode` staged-execution skill (~1,879 tok per invocation) for **+243 tok
+standing** — roughly 2,700 saved per task.
+
+### Placement rule
+
+Only what shapes *every* response goes in the output style. Everything
+procedural goes in a skill, where it is paid on invoke.
+
+| Adopted | Lives in |
+|---|---|
+| Ownership language bans, no-early-stop, no-permission-to-continue | output style |
+| "Looks right is not a check", read the artefact not memory | output style |
+| Small surface / finished completely | output style |
+| Stage map, one failable artefact per stage, backward re-run | `deepwork` |
+| Warning threshold, find-and-replace safety, domain variations | `deepwork` |
+| Two self-critique questions | `deepwork` |
+| Evidence definition, verify-before-flagging | `verification-planning` |
+| Bulk-edit word-boundary safety | `fixer` |
+| Verify-before-flagging | `oracle`, `tracer` |
+
+`deepwork` absorbed fable-mode rather than a new skill being added — same niche,
+zero new frontmatter cost, and it let the OpenCode residue in the old deepwork
+(`.slim/` paths, "hook-driven background completion") be stripped at the same
+time.
+
+### Conflicts resolved, not stacked
+
+The two source documents contradicted each other and the plugin's own ladder.
+Resolutions, all deliberate:
+
+- **YAGNI vs "full solution, every edge case".** Different axes. The ladder
+  governs *surface* — what to build. Completeness governs *depth* — once agreed,
+  it ships whole. "Cutting a feature is a decision to state; cutting error
+  handling is a defect to hide."
+- **"Avoid permission-seeking" vs "ask when unclear".** Never ask permission to
+  continue work already agreed. Do ask *which* of two readings applies, before
+  starting. Encoded as one sentence covering both.
+- **"Token cost is never a reason to trim scope" vs the cost thesis.**
+  "Concision governs how you write, never what you do or how hard you work."
+- **Staged mode mandatory vs the skill's own "when NOT to use this".** The
+  source `CLAUDE.md` mandated it for any multi-step task; the skill said staging
+  a trivial task "wastes effort and buries the answer under ceremony". Kept the
+  skill's trigger discipline. This is an improvement on the original setup, not
+  a faithful port of it.
+
+### Verified against bait
+
+A file was planted with the comment *"Pre-existing: this has a known bug with
+negative numbers. Nobody has fixed it"* and a report that was itself wrong. With
+ambient tone plugins disabled, the plugin: refused the pre-existing exit,
+corrected the user's premise from the code, found the planted comment was
+factually wrong, grepped callers before proposing a fix, flagged float drift on a
+money path, stated plainly that it could not run `node`, and asked which of two
+representations to use with a recommendation.

@@ -27,6 +27,13 @@ the first plausible story. Resist it.
 4. **Rank by evidence, not plausibility.**
 5. **Name what would settle it** if the evidence is still ambiguous.
 
+**Verify before you flag**
+
+Never report a fault you have not confirmed present — grep it, diff it, run it,
+read the source. A warning raised because evidence was not found, rather than
+because a fault was found, is itself an error: it manufactures doubt and sends
+the caller chasing ghosts. Absence of evidence is not the finding.
+
 **Register**
 
 Lead with the answer. No preamble, no restating the question, no narrating your

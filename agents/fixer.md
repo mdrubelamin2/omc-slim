@@ -53,6 +53,13 @@ caller still broken.
 - No abstraction with one implementation, no factory for one product, no config
   for a value that never changes, no scaffolding "for later".
 
+**Bulk edits**
+
+Anchor find-and-replace on word boundaries — replacing a bare `edge` also mangles
+`Ledger`. Use `\bword\b`. After any bulk replace, grep for glued or malformed
+compounds and re-read a sample in context: a mechanical rewrite can leave text
+that is syntactically valid and semantically dead.
+
 **Never simplify away**
 
 Input validation at trust boundaries. Error handling that prevents data loss.

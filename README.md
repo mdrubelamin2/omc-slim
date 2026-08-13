@@ -2,7 +2,7 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Eleven agents, five skills, two hooks, two MCP servers. **~2,803 tokens of
+Eleven agents, five skills, two hooks, two MCP servers. **~3,046 tokens of
 static context** and **zero bytes injected on the tool-call path.**
 
 Slim by construction, and it **adapts to whatever your project already has** —
@@ -106,8 +106,8 @@ capability classes are the guard, not an exhaustive list.
 Three ideas, each of which cost something to learn.
 
 **Delegation over accumulation.** The main thread plans and reconciles;
-specialists do the work on cheaper tiers. The orchestrator prompt is ~1,448
-tokens — 68% smaller than the one it derives from — because everything Claude
+specialists do the work on cheaper tiers. The orchestrator prompt is ~1,647
+tokens — 64% smaller than the one it derives from — because everything Claude
 Code already provides was deleted rather than described.
 
 **Nothing injects on the tool-call path.** The dominant cost in comparable
@@ -147,6 +147,43 @@ plainly when it could not run it rather than implying it passed.
 that prevents data loss, security controls, accessibility basics and anything you
 explicitly asked for are never simplified away.
 
+**It owns the problem.** "Pre-existing", "not caused by my change", "known
+limitation" and "future work" are descriptions, never exits. Given a file
+carrying a comment that said *"known bug, nobody has fixed it"*, it investigated
+rather than taking the exit — and found the comment itself was wrong.
+
+**It reasons from the artefact, not the report.** Told `total()` returns NaN on
+`'12.50'`, it read the code and corrected the premise: `parseInt('12.50')`
+returns `12`, a silent-truncation bug worse than NaN because nothing signals
+failure.
+
+**It says when it did not verify.** "Looks right" is not a check. If a test could
+not be run, it says so instead of implying a result.
+
+## Replaces a global CLAUDE.md and a staged-work skill
+
+The behavioural layer above is adopted from a personal `~/.claude/CLAUDE.md` and
+a `fable-mode` staged-execution skill, so neither is needed alongside it:
+
+| | Cost |
+|---|---|
+| `CLAUDE.md` | ~1,058 tok **every session, every project** |
+| `fable-mode` | ~1,879 tok **each time it is invoked** |
+| Combined, typical task | **~2,937 tok** |
+| omc-slim's cost for the same behaviour | **+243 tok standing** |
+
+**Net ~2,694 tokens saved per task.** The always-on layer carries only what
+shapes every response; the staged-execution discipline — stage map, one failable
+check per stage, backward re-runs, the warning threshold, the two self-critique
+questions — folded into the existing `deepwork` skill, which occupies the same
+niche and costs nothing until invoked.
+
+One deliberate improvement over the originals: those two files disagreed with
+each other. The `CLAUDE.md` made staged mode *mandatory for any multi-step task*;
+the skill's own text said staging a trivial task "wastes effort and buries the
+answer under ceremony". `deepwork` keeps the skill's trigger discipline, not the
+blanket mandate.
+
 ## Honest limitations
 
 **The council is weaker than it looks.** Its seats differ by model tier,
@@ -173,14 +210,14 @@ enabled. Disabling the plugin reverts it.
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at **identical cost** |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at **+43% cost** |
-| **omc-slim** | **~2,803 tok** | **untested** |
+| **omc-slim** | **~3,046 tok** | **untested** |
 | Agent Skills (24 skills) | ~1,826 tok | **−1.10pp** |
 
 Source: [orcabot.com/benchmarks](https://orcabot.com/benchmarks), July 2026.
 
 In that dataset **sophistication correlates negatively with results.** The
 smallest pack won on efficiency; the largest lost to doing nothing at all.
-omc-slim costs 4.7× Karpathy's static footprint — and ~130 tokens more than
+omc-slim costs 5.2× Karpathy's static footprint — and ~375 tokens more than
 oh-my-claudecode, which is the price of the adaptivity described above — and has
 not yet shown it buys anything. The hypothesis under test is that delegation to
 cheaper tiers pays for a prompt Karpathy does not need. That is plausible and

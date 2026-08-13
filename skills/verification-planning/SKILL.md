@@ -37,6 +37,24 @@ trustworthy conclusion with proportionate cost, safety, and effort.
 **Complete when:** there is a preferred path, its limitations are understood,
 and a weaker or stronger alternative is available if circumstances change.
 
+## What counts as evidence
+
+A check must be able to fail. "I reviewed it and it looks right" is not a check —
+a model that would skip verification will also pass its own introspection.
+
+Acceptable: a test that runs; a request or query whose response you read; a file
+that provably exists in the expected shape; output diffed against the stated
+spec; a source actually fetched.
+
+Report skips honestly. If a check could not be run, say so and say why — never
+imply a result you did not observe.
+
+**Verify a fault before reporting it.** Grep it, diff it, run it, read the
+source. A warning raised because evidence was not found, rather than because a
+fault was found, is itself an error: it manufactures doubt and sends people
+chasing ghosts. Absence of evidence is not the finding.
+
+
 ## Set a verification budget
 
 At the final state, state the distinct claims, assign one owner to establish or
