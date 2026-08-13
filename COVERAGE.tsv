@@ -96,3 +96,5 @@ audit	brave-about-size	simplify	Be brave about size, never about safety
 audit	refactor-across-files	simplify	as many files as the problem actually spans
 audit	finish-the-deletion	simplify	Finish the deletion
 audit	name-blast-radius	simplify	blast radius stated
+audit	abstraction-pays-rent-now	simplify	pays rent when a second
+audit	exported-wrapper-is-api	simplify	deleting it is an API change

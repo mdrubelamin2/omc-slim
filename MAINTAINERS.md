@@ -854,3 +854,46 @@ wrapper whose whole body forwards. "Finish the deletion" and the redundancy tabl
 both say inline it. Arguable — a named one-line seam is cheap — but by the
 skill's own rules it should have gone, and a fourth round of wording was not
 attempted after the deepwork experience showed those returning little.
+
+---
+
+## v0.6.6 — audit of the merged simplify
+
+Six edits were stacked onto `simplify` across v0.6.4 and v0.6.5. Stacking is how
+contradictions arrive, so the merged file was audited rather than declared done.
+Five were real.
+
+| # | Contradiction | Resolution |
+|---|---|---|
+| 1 | Principle 4 defended "abstractions serving testability or extensibility"; the `yagni:` tag says delete an abstraction with one implementation. Those are the same object. | An abstraction pays rent when a second implementation exists **today**, or a test really substitutes at that seam. Otherwise it is the `yagni:` case. Same shape as DRY's rule of three: evidence now, not a story about later. |
+| 2 | Two adjacent red flags pulled opposite ways: "refactoring outside the task's scope" and "one file touched when the problem spans several". | Reframed as *unrelated* code versus the *same* problem continuing into other files. |
+| 3 | Principle 5 ("avoid drive-by refactors") versus the new bravery section ("as many files as the problem spans"). | Bravery now cites Principle 5 explicitly: the guard is on unrequested work, never on large work. |
+| 4 | `Defaults` ended with "keep refactors tightly scoped", flatly undercutting the bravery section. | Section deleted — its other three bullets already duplicated Principles 1–3. |
+| 5 | Verification stated three times: Step 3, the Step 4 checklist, and a trailing `Final-state verification` section. | Trailing section deleted; its one unique idea (run the repository's own required release checks) folded into the checklist. |
+
+Also: "proportionate final-state verification plan" was referenced three times and
+never defined. Now defined inline where it is used.
+
+### A rule that was wrong, not weak
+
+`Finish the deletion` said: replacing a hand-rolled helper and keeping a
+forwarding wrapper means updating callers and deleting the wrapper. Across three
+runs on the same fixture the model declined three times, ending at
+`export const deepClone = structuredClone`.
+
+That is not timidity. **Deleting an exported symbol is an API change, not a
+simplification** — the model was right and the rule was overbroad. Refined to
+distinguish internal wrappers (delete, migrate callers) from exported ones
+(collapse to an alias, or migrate if the module is not a public boundary), and
+say which was chosen.
+
+Worth recording as a method point: three consistent "failures" against a rule are
+evidence about the rule, not about the model. The earlier instinct — a fourth
+round of wording — would have been wrong here.
+
+### Regression check
+
+Fixture re-run after the fixes. `omc-slim:simplify` fired; the nested ternary
+became guard clauses; the formatter hierarchy collapsed and callers in the second
+file migrated; unused config deleted; the trust-boundary validator untouched.
+87/87 coverage rows pass. Static context unchanged at 3,629 tokens.

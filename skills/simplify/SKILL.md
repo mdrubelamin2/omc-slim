@@ -91,8 +91,13 @@ Over-simplification is a real failure mode:
 
 - Do not inline away a name that carries meaning
 - Do not merge unrelated logic into one larger function
-- Do not remove abstractions serving testability or extensibility
 - Do not optimise for line count over comprehension
+- Do not remove an abstraction that genuinely earns its place — but **"serves
+  extensibility" is not earning it.** An abstraction pays rent when a second
+  implementation exists *today*, or a test really does substitute at that seam.
+  One implementation and no substitution is the `yagni:` case below: inline it.
+  This is the same tiebreaker as DRY's rule of three — evidence now, not a story
+  about later.
 
 ### 5. Scope to What Changed
 
@@ -146,14 +151,19 @@ not simplification, it is tidying around the problem.
 
 - **Refactor as many files as the problem actually spans.** If the honest fix
   moves a responsibility across six modules, say so and do it. Size alone is
-  never a reason to decline.
+  never a reason to decline. This is Principle 5 read correctly: the guard is on
+  *unrequested* work, never on *large* work. Following one problem across the
+  files it actually occupies is the task; wandering into unrelated code is not.
 - **Restructure, do not only rearrange.** Where the design is the problem — wrong
   seams, a god object, an inheritance chain expressing one behaviour, state
   threaded through five layers — replace it. Careful patches over a wrong design
   is the expensive outcome, not the safe one.
 - **Finish the deletion.** Replacing a hand-rolled helper with the standard one
-  and keeping a wrapper that only forwards to it has moved the complexity, not
-  removed it. Update the callers and delete the wrapper.
+  and leaving a wrapper that only forwards has moved the complexity, not removed
+  it. If the wrapper is internal, update its callers and delete it. If it is
+  *exported*, deleting it is an API change, not a simplification — collapse it to
+  a one-line alias, or remove it and migrate the callers if this module is not a
+  public boundary. Either is fine; say which you chose and why.
 - **Do not grade your own timidity as taste.** "Already fine" about a nested
   ternary or a three-deep nest is the excuse this section exists to remove.
 
@@ -274,8 +284,11 @@ default.
 One simplification at a time.
 
 1. Make the change
-2. Use the proportionate final-state verification plan to check preservation
-3. Keep it only when the evidence supports preservation
+2. Check preservation with evidence proportionate to the risk: the pinned check
+   for logic you touched, plus whatever the repository's own release instructions
+   require for the diff as a whole. Add or repeat more only where the change, or
+   a stated uncertainty, warrants it.
+3. Keep it only when that evidence holds
 
 Batch only what you can attribute. **If verification fails after several
 simplifications, bisect them rather than guessing** — the reason to work in small
@@ -305,6 +318,7 @@ trusting the whole run.
 - [ ] The diff is clean — nothing unrelated mixed in
 - [ ] No dead code left behind: unused imports, orphaned helpers
 - [ ] The result is genuinely easier to understand than the original
+- [ ] Checks required by the repository's own release instructions have run
 
 If the simplified version is harder to follow or harder to review, revert it. Not
 every attempt succeeds, and saying so is a result.
@@ -317,11 +331,11 @@ every attempt succeeds, and saying so is a result.
 - Error handling removed because it "made the code cleaner"
 - Simplifying code you do not fully understand
 - One large batch nobody can review or bisect
-- Refactoring outside the task's scope without being asked
+- Refactoring code *unrelated* to the task, without being asked
 - A nested ternary or a three-deep nest left in place as "already fine"
-- A hand-rolled helper replaced by the standard one, but its wrapper kept — the
-  complexity moved instead of leaving
-- One file touched when the problem plainly spans several
+- A hand-rolled helper replaced by the standard one, but a full forwarding
+  function kept where an alias or a caller migration would do
+- Stopping at one file when the *same* problem plainly continues into others
 
 ## Rationalizations to refuse
 
@@ -332,17 +346,3 @@ every attempt succeeds, and saying so is a result.
 | "This abstraction might be useful later" | Speculative abstraction is complexity with no payer. Remove it; re-add when something needs it. |
 | "I'll refactor while adding the feature" | Two changes. Split them. |
 | "The original author must have had a reason" | Maybe — check `git blame`. But often it is just residue. Check, then decide. |
-
-## Defaults
-
-- Prefer the straightforward form in whatever language this repository uses over
-  clever compression
-- Preserve existing runtime behavior, tests, and hooks
-- Favor explicit names and smaller focused helpers when they improve readability
-- Keep refactors tightly scoped to the task or review feedback
-
-## Final-state verification
-
-Use a proportionate final-state verification plan for the final diff. Run checks
-required by repository and release instructions; add or repeat evidence only
-when the changed scope or a stated uncertainty warrants it.
