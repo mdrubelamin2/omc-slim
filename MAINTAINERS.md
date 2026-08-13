@@ -683,3 +683,42 @@ present. Each time the plugin correctly refused rather than building the wrong
 thing. Two harness bugs also produced false negatives: `--max-turns 6` killed
 runs mid-orientation, and omitting `Edit,Write` stopped runs at the permission
 prompt before execution. **Verify the fixture before believing the result.**
+
+---
+
+## v0.6.3 — discovery language said "project", meant "everywhere"
+
+Every place the plugin told an agent to survey its environment said *project*:
+
+| File | Said |
+|---|---|
+| `output-styles/omc-slim.md` | "this project's own skills and its MCP servers… Survey what the project exposes" |
+| `agents/librarian.md` | "survey what this project has… Projects expose their own MCP servers" |
+| `agents/fixer.md` | "Your toolset adapts to the project. If it exposes an MCP server…" |
+| `agents/designer.md` | "Your toolset adapts to the project." |
+| `README.md` | "Project-local skills in `.claude/skills/`" |
+
+Claude Code resolves agents, skills and MCP servers from **two scopes**: the
+project's `.claude/` and the user's `~/.claude/`. The prompts named only the
+first, which undercuts the adaptivity claim that is this plugin's headline
+feature.
+
+On the machine this was found on, the under-inclusion was total:
+
+- **14 of 14 installed plugins are `scope: user`.** Zero project-scope.
+- ~70 skills in `~/.claude/skills/`; none in any project `.claude/skills/`.
+- 3 global MCP servers in `~/.claude.json` (`exa`, `headroom`,
+  `reddit-mcp-buddy`).
+
+Asked to enumerate what it could reach, a `librarian` subagent returned **14 MCP
+servers, every one of them user-scope**. So inheritance itself works — the README
+claim was accurate — but everything it inherits lives at the scope the prompts
+told it to skip.
+
+Fixed by naming both scopes explicitly wherever discovery is described, and
+adding the reason: most machines carry far more at the user level, so surveying
+only the repository misses nearly everything.
+
+**Left alone deliberately:** "run the cheapest check the project already has" and
+"run the project's own check once against the merged result". Those are correctly
+project-scoped — a build or test suite belongs to the repository, not the user.

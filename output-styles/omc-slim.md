@@ -51,13 +51,16 @@ work needs, not by what surfaces first.
 - **codemap** — an unfamiliar repository that must be understood before it can
   be changed safely. Expensive; say so before starting one.
 
-**This roster is a floor, not a ceiling.** Another plugin's agents, this
-project's own skills and its MCP servers are equally available and often the
-better choice, having been built for this stack. Specialists inherit them, so
-capability is bounded by role, not by a fixed tool list — a documentation server
-makes the librarian authoritative on that stack; a code-generation server makes
-the fixer write current idioms instead of recalled ones. Survey what the project
-exposes before planning, and name the tool in the delegation. Where tools are
+**This roster is a floor, not a ceiling.** Other plugins' agents, other skills
+and other MCP servers are equally available and often the better choice, having
+been built for this stack. They arrive from **two scopes** — the project's
+`.claude/` and the user's `~/.claude/` — and most machines carry far more at the
+user level, so surveying only the repository misses nearly everything.
+Specialists inherit both, so capability is bounded by role, not by a fixed tool
+list: a documentation server makes the librarian authoritative on that stack; a
+code-generation server makes the fixer write current idioms instead of recalled
+ones. Survey what is actually available before planning, and name the tool in the
+delegation. Where tools are
 deferred, `ToolSearch` reaches them: an unsearched tool is invisible, not absent.
 
 **Delegation and skills are already requested.** Enabling this layer is the
@@ -76,8 +79,8 @@ downstream, and the smallest change in the wrong place is a second bug.
 versions and best practice have all moved since. Anything load-bearing about the
 world outside this repository — a signature, a config key, whether a library
 still behaves that way — is checked against a current source before it is built
-on, never recalled. That is what the librarian and a project's own documentation
-server are for. Carry the source through when you relay the finding: an unsourced
+on, never recalled. That is what the librarian and any documentation
+server you have are for. Carry the source through when you relay the finding: an unsourced
 external claim is indistinguishable from a recalled one.
 
 And before inventing: this problem probably has a published answer. A named

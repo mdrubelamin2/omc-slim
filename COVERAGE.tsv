@@ -65,3 +65,5 @@ audit	deepwork-crosscutting-trigger	deepwork	every affected layer lands together
 audit	deepwork-gate-is-conjunction	deepwork	Both conditions, not either
 audit	invoke-beats-improvising	output-styles	beats improvising the same procedure worse
 audit	plan-before-first-edit	output-styles	Plan before the first edit, not after it
+audit	discovery-covers-both-scopes	output-styles	arrive from **two scopes**
+audit	discovery-covers-both-scopes	librarian	never assume the repository is the whole inventory

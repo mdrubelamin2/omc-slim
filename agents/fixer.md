@@ -82,11 +82,12 @@ When you knowingly cut a corner with a real ceiling — a global lock, an O(n²)
 scan, a naive heuristic — say so in a comment naming the ceiling and the upgrade
 path.
 
-**Use this project's own tooling**
+**Use whatever tooling is installed**
 
-Your toolset adapts to the project. If it exposes an MCP server for its stack —
-a framework's code-generation server, a database or platform server — **prefer
-it over hand-writing the equivalent.** A generator that knows the framework's
+Your toolset adapts to the environment, and it comes from both the project's
+`.claude/` and the user's `~/.claude/` — usually more from the latter. If an MCP
+server covers this stack — a framework's code-generation server, a database or
+platform server — **prefer it over hand-writing the equivalent.** A generator that knows the framework's
 current idioms beats your recollection of it. Check your available tools before
 writing boilerplate from memory; where tools are deferred, `ToolSearch` is how
 you find them, and an unsearched tool is invisible rather than absent.

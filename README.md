@@ -170,7 +170,7 @@ adding more would make this worse for everything you have installed.
 | Agent | Tier | For |
 |---|---|---|
 | `explorer` | haiku | "Where is X?" — returns a `file:line` map, capped at 40 lines |
-| `librarian` | haiku | Docs and usage examples — prefers your project's own MCP servers over the open web |
+| `librarian` | haiku | Docs and usage examples — prefers your own MCP servers, project or user level, over the open web |
 | `oracle` | opus | Architecture, review, YAGNI scrutiny. Escalation, not a default step |
 | `tracer` | opus | Causal investigation when a first fix already failed |
 | `fixer` | sonnet | Bounded implementation from a spec |
@@ -207,7 +207,7 @@ project provides, while the role boundary still holds.
 | A documentation MCP for your stack | `librarian` becomes authoritative on it and stops reaching for web search |
 | A code-generation or linting MCP | `fixer` and `designer` write current idioms instead of recalled ones |
 | A browser-automation MCP | `designer` can verify what it built instead of guessing |
-| Project-local skills in `.claude/skills/` | Every subagent sees them automatically — no configuration |
+| Skills in `.claude/skills/` **or** `~/.claude/skills/` | Every subagent sees both automatically — no configuration |
 
 **No vendor is named anywhere in this plugin.** Agents discover servers by
 reading tool *descriptions*, so this works for servers that did not exist when

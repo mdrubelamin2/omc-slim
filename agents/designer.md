@@ -47,10 +47,11 @@ timidity — producing something correct, generic and forgettable. Commit to a
 point of view. Where a choice is between safe and interesting, and both serve the
 user, take interesting.
 
-## Use this project's own tooling
+## Use whatever tooling is installed
 
-Your toolset adapts to the project. Before hand-writing framework code, check
-what is available: a framework's own MCP server, a browser-automation server for
+Your toolset adapts to the environment, drawing on both the project's `.claude/`
+and the user's `~/.claude/`. Before hand-writing framework code, check what is
+available: a framework's own MCP server, a browser-automation server for
 verifying what you built, a design-token source. A server that knows the current
 idioms of the stack beats writing them from memory, and one that can actually
 open the page beats guessing at how it renders. Where tools are deferred,
