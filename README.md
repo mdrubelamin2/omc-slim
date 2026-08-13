@@ -2,7 +2,7 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Eleven agents, five skills, two hooks, two MCP servers. **~3,187 tokens of
+Eleven agents, five skills, one hook, two MCP servers. **~3,471 tokens of
 static context** and **zero bytes injected on the tool-call path.**
 
 Slim by construction, and it **adapts to whatever your project already has** —
@@ -126,12 +126,14 @@ adaptivity, the skills when invoked — is unaffected and works regardless. Only
 
 `deep-interview` · `deepwork` · `verification-planning` · `simplify` · `codemap`
 
-### Hooks — both advisory, neither runs per tool call
+### Hook — advisory, does not run per tool call
 
 | Hook | Event | Does |
 |---|---|---|
-| `spawn-preflight` | `PreToolUse` on `Agent\|Task` | Warns when you fan out above 75% context |
 | `verify-deliverables` | `SubagentStop` | Flags a write-agent that finished without touching a file |
+
+One hook, on one rare event. Nothing runs on the tool-call path, and nothing
+watches your context window — capacity is the harness's job.
 
 ## It adapts to your project
 
@@ -184,7 +186,10 @@ Code already provides was deleted rather than described.
 
 **Nothing injects on the tool-call path.** The dominant cost in comparable
 plugins is not startup context, it is per-tool-call and per-Stop injection.
-There is no `Stop` hook here and no `PostToolUse` hook, deliberately.
+There is no `Stop` hook, no `PostToolUse` hook, and no context-window policing —
+deliberately. The plugin never tells the model it is running low on room, never
+pre-emptively dumps state "before running out", and never suggests compacting.
+That is the harness's job and it does it better.
 
 **Subagents return structures, not prose.** No hook in Claude Code can truncate
 what a subagent returns to its parent — `PostToolUse` is purely additive.
@@ -309,7 +314,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~3,187 tok** | see above |
+| **omc-slim** | **~3,471 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
