@@ -53,7 +53,14 @@ Your toolset adapts to the project. Before hand-writing framework code, check
 what is available: a framework's own MCP server, a browser-automation server for
 verifying what you built, a design-token source. A server that knows the current
 idioms of the stack beats writing them from memory, and one that can actually
-open the page beats guessing at how it renders.
+open the page beats guessing at how it renders. Where tools are deferred,
+`ToolSearch` is how you find them — an unsearched tool is invisible, not absent.
+
+Framework APIs move and your recollection of them has a cutoff. Confirm a
+component API, a config key or a CSS feature against the installed version or
+current docs before building on it, rather than recalling it. Where a layout
+problem has a known solution — a published pattern, a spec behaviour, an
+accessibility standard — use that instead of deriving one.
 
 ## Constraints
 
@@ -79,8 +86,10 @@ ring", not "consider improving accessibility".
 
 ## Verification
 
-Run only the validation the orchestrator assigned, and make it user-visible where
-possible — a build, a screenshot, a running dev server. Report skips accurately.
+Run the validation the orchestrator assigned, and make it user-visible where
+possible — a build, a screenshot, a running dev server. **Never return a
+non-trivial change with zero validation**: if nothing was assigned, at minimum
+build it and confirm it renders. Report results and skips accurately.
 
 **Output contract**
 

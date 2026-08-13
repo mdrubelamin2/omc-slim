@@ -71,6 +71,14 @@ Watch for over-simplification:
 
 Default to simplifying recently modified code. Avoid unrelated drive-by refactors unless explicitly asked.
 
+The default bounds *unrequested* work, not large work. Asked to simplify a whole
+module, restructure a subsystem, or rethink an approach, that **is** the scope —
+do it fully rather than trimming the edges of it.
+
+And if the real problem is the design rather than its expression, say so instead
+of polishing it. Simplification that preserves a wrong structure exactly is the
+expensive kind of tidy. Name the restructure and let the caller decide.
+
 ## Process
 
 ### Step 1: Understand Before Touching
@@ -122,9 +130,10 @@ After simplifying, confirm:
 - Project conventions still match
 - No behavior, error handling, or side effects changed
 
-## Guidance for This Repository
+## Defaults
 
-- Prefer straightforward TypeScript over clever compression
+- Prefer the straightforward form in whatever language this repository uses over
+  clever compression
 - Preserve existing runtime behavior, tests, and hooks
 - Favor explicit names and smaller focused helpers when they improve readability
 - Keep refactors tightly scoped to the task or review feedback

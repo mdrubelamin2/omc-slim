@@ -44,8 +44,10 @@ Good: "research X while Y is implemented", "process these three files",
 "verify this independently". Bad: splitting one coherent thought across lanes
 just to use more agents.
 
-Keep delegation one level deep. A specialist runs its stages sequentially rather
-than fanning out again.
+Keep delegation one level deep — enforced, not advisory. Specialists cannot spawn
+agents, so a stage that needs its own fan-out has to be split into parallel lanes
+by you, before dispatch. Planning a lane that will subdivide itself is planning a
+lane that runs sequentially.
 
 ## 3. Verify each stage with a check that can fail
 
@@ -75,6 +77,27 @@ request a follow-up review only if the remediation changed the reviewed decision
 
 Do not keep refining because refinement is possible. Once validation passes and
 no material blocker remains, advance.
+
+**Scan structure in the same message.** Dispatch an explorer alongside the oracle
+review — over the phase's changed paths and their immediate dependencies —
+looking for duplication, dependency direction, responsibility overlap and
+misplaced files. It reports evidence; you decide what warrants action. It is the
+cheapest agent and it runs in parallel, so the gate costs no extra wall time. Do
+not open a second oracle review for what the scan turned up.
+
+**Cap the re-reviews.** Each gate gets one review and at most two re-reviews, and
+every oracle prompt states where it is: `Gate 2 — review attempt 2 of 3`. Spend a
+re-review only when remediation materially changed the decision, or the original
+concern could not be verified with focused evidence — never to re-confirm a
+mechanical change. When the budget is exhausted and a material risk is still
+open, record it and ask the user whether to accept it, cut scope, or authorise
+another pass. Do not quietly loop.
+
+**Checkpoint each passing phase.** Put the commit points in the stage map so the
+user approves them with the plan; then, once a phase validates and its findings
+are reconciled, make one focused commit before starting the next. A phase that
+goes wrong later costs one phase instead of the whole run. If the user has not
+agreed to commits, say the checkpoint is available and carry on.
 
 ## 4. Self-critique before delivery
 

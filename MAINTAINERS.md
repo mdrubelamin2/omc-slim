@@ -484,3 +484,89 @@ Independent reasons to keep it denied elsewhere, regardless of the above:
 
 Revisit if the parent-waits-for-child behaviour becomes reliable, and only with a
 fixture large enough that delegation demonstrably pays.
+
+---
+
+## v0.6.0 — orchestrator audit
+
+A line-by-line audit of the output style, all eleven agents and all five skills,
+hunting vagueness, contradictions, overlap, loopholes and edge cases.
+
+### The finding that mattered
+
+`oracle`, `librarian`, `tracer` and the council never fired in real sessions. The
+cause was already known and already fixed — for skills. v0.5.x added a skill
+roster to the output style because skill descriptions get dropped on machines
+with many plugins installed (24 of 103 bare across four plugins). **The same fix
+was never applied to agents**, even though agent descriptions are delivered the
+same way and fail the same way.
+
+Measured on a 41k-LOC repository, before and after adding an agent roster:
+
+| Prompt | v0.5.2 | v0.6.0 |
+|---|---|---|
+| "is the worker pool architecture sound?" | no agent, main thread reviewed | `oracle` on turn 1, $1.93 |
+| "can we drop the JPEG fallback?" | — | `librarian` on turn 1 via `ToolSearch` → WebSearch, $0.89 |
+| "add() subtracts, fix it" | handled directly | handled directly (no over-firing) |
+
+Cost: **+647 tokens of static context, +24%**. That is the trade, and it is the
+one number to re-examine if the plugin ever needs to shrink.
+
+A fourth run ("what's the best way to add AVIF output?") returned *no* research
+agent — correctly. AVIF was already fully implemented and the orchestrator found
+it in the repo and refused to build it. The prompt had a false premise; the
+result was right and the test was wrong. Third time a fixture's premise, not the
+plugin, produced an apparent failure.
+
+### Defects fixed
+
+| Defect | Where | Fix |
+|---|---|---|
+| No rule against stale recall | output style | "Your recalled knowledge is stale" + prior-art-before-inventing |
+| Sources dropped when relaying external facts | output style | carry the source through |
+| `codemap` said "only use when explicitly asked"; the orchestrator said "do not wait to be asked" | codemap | may fire unprompted, must announce cost and writes first |
+| "Never handle UI directly" vs "handle one isolated low-risk action" — opposite verdicts on a one-line CSS change | output style | routes on *visual judgement*, not on touching UI |
+| Roster could suppress a project's own skills | output style | "a floor, not a ceiling" |
+| "Survey what the project exposes" with no mechanism, in a deferred-tool session | output style, fixer, designer | `ToolSearch`; an unsearched tool is invisible, not absent |
+| "Run only the validation assigned" + nothing assigned = ships unverified | output style, fixer, designer | never zero validation; run the cheapest existing check |
+| Parallel lanes each verified their slice; nothing verified the union | output style | reconcile, then check the merged result |
+| Nothing forbade weakening a test to go green | output style, fixer | a check is evidence only while it can fail |
+| `fixer` barred from research but expected not to code from memory | fixer | confirm locally, else name the fact and stop |
+| Hardcoded "prefer straightforward TypeScript" in a language-agnostic skill | simplify | language of the repository |
+| `simplify` had no path to say "this needs restructuring, not tidying" | simplify | scope bounds unrequested work, not large work |
+| One-level delegation stated as a choice; it is enforced by the denylists | deepwork | says enforced, and what to do instead |
+| Duplicated rules inside the always-loaded style | output style | merged; funded part of the roster |
+| `plugin.json` claimed two hooks; one exists | plugin.json | corrected |
+
+### Adopted from upstream
+
+`oh-my-opencode-slim` `282d5f26..6faaed28` reworked its deepwork skill. Three
+ideas taken:
+
+- **Parallel structure scan** — an `explorer` runs alongside each oracle gate
+  over the phase's changed paths, reporting duplication and misplacement as
+  evidence. Cheapest agent, runs concurrently, so the gate costs no extra time.
+- **Oracle re-review budget** — one review plus at most two re-reviews, with the
+  attempt stated in the prompt (`Gate 2 — review attempt 2 of 3`) and an explicit
+  exhaustion path. Turns a guideline into a bound.
+- **Phase checkpoint commits** — commit each validated phase so a later failure
+  costs one phase, not the run. Adapted: the commit points go in the stage map so
+  the user approves them with the plan, rather than committing unasked.
+
+**Rejected:** "before each phase, replace the todo list with delivery todos for
+that phase only." It contradicts the adopted `Todo continuity` rule — a new task
+is appended, never substituted — which exists to stop earlier work vanishing from
+the list. Ours is the better rule; the pin moved without taking this one.
+
+`oh-my-claudecode` `7e38c1f9..5aa678c6` is 64k lines across 241 files of tmux
+session management, worker launch acknowledgement and LSP plumbing. Nothing
+prompt-level to adopt; it is the runtime-heavy approach this plugin exists to
+avoid. Pin advanced, nothing taken.
+
+### Check upgraded
+
+The roster-drift check covered skills only, so an agent roster could rot
+undetected — the exact failure it was written to prevent, one level up. It now
+checks both, resolving the `councillor-alpha / -beta / -gamma` shorthand against
+the files on disk. Proven to fail on a renamed agent, an unlisted new skill, and
+a roster entry with no file behind it.

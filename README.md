@@ -2,18 +2,24 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Eleven agents, five skills, one hook, two MCP servers. **~3,660 tokens of
+Eleven agents, five skills, one hook, two MCP servers. **~4,310 tokens of
 static context** and **zero bytes injected on the tool-call path.**
 
 Slim by construction, and it **adapts to whatever your project already has** —
 every specialist inherits your MCP servers and skills.
 
-> **Status.** Working and installable. 14 of 16 components route automatically;
-> `fixer` and `codemap` do not (see below). Benchmarked once against a plain
+> **Status.** Working and installable. Benchmarked once against a plain
 > session — it cost 10% more and produced an equivalent tool, so the case for it
 > is verification discipline, not raw efficiency. Every claim here was measured,
 > and the measurements that went against it are in
 > [`docs/BENCHMARK.md`](./docs/BENCHMARK.md) and [`RESEARCH.md`](./RESEARCH.md).
+>
+> **v0.6.0** names every agent and skill in the output style, because the
+> descriptions Claude Code shows get dropped once enough plugins are installed.
+> On a 41k-LOC repository that turned `oracle` and `librarian` from never firing
+> into firing on turn one, and a trivial one-line fix still gets handled directly
+> rather than delegated. It cost **+647 tokens of static context (+24%)**, which
+> is the honest price of the fix and the main thing to weigh before installing.
 
 Adapted from [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim),
 rebuilt native-first rather than ported.

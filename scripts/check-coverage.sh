@@ -55,24 +55,51 @@ while IFS=$'\t' read -r origin rule where pattern; do
 done < "$MANIFEST"
 
 # --- roster drift ---------------------------------------------------------
-# The output style names each skill explicitly, because skill descriptions get
-# dropped on machines with many plugins installed. That roster can silently
-# drift from the real skill set: a renamed skill leaves the orchestrator
-# invoking a name that no longer exists, and a new skill stays invisible.
+# The output style names every agent and skill explicitly, because those
+# descriptions get dropped on machines with many plugins installed. Either
+# roster can silently drift from what actually ships: a renamed agent leaves the
+# orchestrator dispatching a name that no longer exists, and a new one stays
+# invisible — which is the whole failure the roster was added to prevent.
 python3 - "$ROOT" <<'PY' || exit 1
 import re, glob, os, sys
 root = sys.argv[1]
 style = open(os.path.join(root, 'output-styles/omc-slim.md')).read()
-listed = set(re.findall(r'^- \*\*([a-z-]+)\*\* —', style, re.M))
-actual = {os.path.basename(os.path.dirname(f))
-          for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))}
-missing, ghost = sorted(actual - listed), sorted(listed - actual)
-if missing or ghost:
-    for m in missing: print(f'  UNLISTED      {m} exists but the orchestrator roster omits it')
-    for g in ghost:   print(f'  GHOST         roster names {g}, which is not a skill')
+
+def expand(m):
+    # "councillor-alpha / -beta / -gamma" -> the three full names, so the
+    # shorthand the prose uses still matches the files on disk.
+    parts = [p.strip() for p in m.group(0).split('/')]
+    prefix = parts[0].split('-')[0]
+    return ' '.join([parts[0]] + [f'{prefix}-{p.lstrip("-")}' for p in parts[1:]])
+
+def section(start, end):
+    a = style.index(start)
+    b = style.index(end, a)
+    return re.sub(r'[a-z]+-[a-z]+(?:\s*/\s*-[a-z]+)+', expand, style[a:b])
+
+rosters = {
+    'agent': (section('**Agents**', '**Skills:**'),
+              {os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'agents/*.md'))}),
+    'skill': (section('**Skills:**', 'roster is a floor'),
+              {os.path.basename(os.path.dirname(f))
+               for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))}),
+}
+
+bad = 0
+for kind, (text, actual) in rosters.items():
+    # Present = named as a whole word. Ghost = a bolded single-word name in the
+    # roster that no longer has a file behind it.
+    absent = [n for n in sorted(actual) if not re.search(rf'\b{re.escape(n)}\b', text)]
+    ghosts = sorted(set(re.findall(r'\*\*([a-z][a-z-]+)\*\*', text)) - actual)
+    for m in absent:
+        print(f'  UNLISTED      {m} exists but the orchestrator {kind} roster omits it'); bad += 1
+    for g in ghosts:
+        print(f'  GHOST         {kind} roster names {g}, which is not a {kind}'); bad += 1
+    if not absent and not ghosts:
+        print(f'{len(actual)}/{len(actual)} {kind}s present in the orchestrator roster.')
+if bad:
     print('\nFix output-styles/omc-slim.md, then re-run.')
     raise SystemExit(1)
-print(f'{len(actual)}/{len(actual)} skills present in the orchestrator roster.')
 PY
 
 echo

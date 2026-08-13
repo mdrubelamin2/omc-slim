@@ -1,5 +1,12 @@
-# Behaviours adopted from sources that will be deleted after adoption.
+# Load-bearing behaviours that must not be lost to a later edit.
 # Each row asserts a rule still lives somewhere in the plugin.
+#
+# Two kinds of origin:
+#   - a deleted source (CLAUDE.md, fable-mode) whose behaviour we absorbed, where
+#     no original is left to diff against;
+#   - `audit`, for rules added to close a defect found in review, where the whole
+#     point is that the defect stays closed.
+#
 # Checked by scripts/check-coverage.sh. Patterns are FIXED SUBSTRINGS, not regex.
 # Whitespace is normalised first, so line-wrapped prose still matches.
 #
@@ -35,3 +42,21 @@ fable-mode	verify-before-flagging	verification-planning	Absence of evidence is n
 fable-mode	verify-before-flagging	oracle	Absence of evidence is not the finding
 fable-mode	verify-before-flagging	tracer	Absence of evidence is not the finding
 fable-mode	find-replace-word-boundaries	fixer	word boundaries
+audit	stale-recall-external	output-styles	Your recalled knowledge is stale
+audit	prior-art-before-inventing	output-styles	Look for prior art first
+audit	lazy-is-not-shallow	output-styles	never the depth of the reading
+audit	no-green-washing	output-styles	wearing a passing badge
+audit	verification-floor	output-styles	zero validation
+audit	roster-is-not-a-ceiling	output-styles	floor, not a ceiling
+audit	deferred-tools-are-findable	output-styles	unsearched tool is invisible
+audit	verification-floor	fixer	zero validation
+audit	verification-floor	designer	zero validation
+audit	stale-recall-external	fixer	Recalled API knowledge is stale
+audit	escalate-unconfirmable-fact	fixer	which fact you need
+audit	prior-art-before-inventing	librarian	Prior art is part of the job
+audit	one-level-is-enforced	deepwork	enforced, not advisory
+audit	scope-allows-large-work	simplify	that **is** the scope
+audit	codemap-announce-cost	codemap	Announce before you start
+omo-slim	parallel-structure-scan	deepwork	Scan structure in the same message
+omo-slim	oracle-rereview-budget	deepwork	at most two re-reviews
+omo-slim	phase-checkpoint-commit	deepwork	Checkpoint each passing phase

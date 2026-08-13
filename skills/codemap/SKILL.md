@@ -1,6 +1,6 @@
 ---
 name: codemap
-description: Generate comprehensive hierarchical codemaps for UNFAMILIAR repositories. Expensive operation - only use when explicitly asked for codebase documentation or initial repository mapping
+description: Generate hierarchical codemaps for an UNFAMILIAR repository — one codemap.md per directory plus a root atlas. Use when asked to map or document a codebase, or before substantial work on a repository nobody has read yet. Expensive and it writes files across the tree, so state the cost and get a yes before starting.
 ---
 
 # Codemap Skill
@@ -11,7 +11,19 @@ You help users understand and map repositories by creating hierarchical codemaps
 
 - User asks to understand/map a repository
 - User wants codebase documentation
-- Starting work on an unfamiliar codebase
+- Starting substantial work on an unfamiliar codebase
+
+## Announce before you start
+
+This skill is expensive — it reads the whole tree and spawns one fixer per
+directory. On a few-hundred-file repository that is real money and several
+minutes. It also **writes files into the user's repository**: a `codemap.md` in
+every mapped directory, `.slim/codemap.json`, and a section in root `AGENTS.md`.
+
+So: say what it will cost and what it will write, and get a yes first. Reaching
+for it unprompted is correct; doing so silently is not.
+
+If the repository is small enough to simply read, read it instead.
 
 ## Workflow
 
