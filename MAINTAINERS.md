@@ -1224,3 +1224,69 @@ batch (measured: "vendor POSTs on 204: 3"), and the loop sleeps three times for
 three attempts — 3023ms — which does not implement the "three attempts, 1s apart"
 the project rule specifies. **Using the project's own stated policy as the
 standard to judge the code against is the behaviour this release was aiming at.**
+
+---
+
+## v0.7.2 — review compressed
+
+`SKILL.md` **3,344 → 2,794 words** (−16.4%), `checklists.md` **1,927 → 1,748**,
+the skill as a whole **5,971 → 5,339 (−10.6%)**. All 178 pins intact.
+
+**More automated, not just shorter.** Scope is now one bash block that prints the
+merge base, the changed-line count and the file list, and lane selection is a
+path/content trigger table (`migration|schema|.sql` → data lane; `auth|session|
+token|secret|crypto` → security at any size; and so on) instead of prose asking
+for a judgement call. Replacing description with detection is what paid for most
+of the reduction.
+
+### The manifest caught one, then missed one — again
+
+Caught: re-wrapping the ask-batching rule moved a bold, turning `**one**` into
+`one`. A pinned substring is literal, and that is the point.
+
+Missed: on the same fixture that produced a tests finding in all five earlier
+runs, the compressed version produced none. Everything else held — 2/2 baits,
+0 false positives, and the strongest set of findings yet, including one the
+remedy-rigour rule improved ("this supersedes deleting the pass-through wrapper —
+it's the right place for the check"). But the tests lane went quiet.
+
+The likely cause was mine: compressing the lane table had collapsed three rows
+each reading `always` into a single `Correctness · Simplicity · Tests | always`.
+Three reminders became one. **Grouping rows in a table is compression of
+reinforcement, not of content** — the same class as the near-synonyms clause in
+v0.6.9.
+
+Two changes, one structural and one that makes the failure impossible to repeat
+silently:
+
+- the three always-on lanes get their own rows again;
+- **an always-on lane that found nothing says so.** "Tests: coverage adequate for
+  the changed paths" is a result, and its absence from a report is
+  indistinguishable from never having looked.
+
+The second is the more valuable of the two, because it converts a silent miss
+into a visible one regardless of what a future compression does to the table.
+
+**Verified on a byte-identical rebuild:** the tests finding came back, and the run
+scored 6/6 planted, 2/2 baits, 0 false positives. That run also happened to lose
+its adversarial subagent again, and again the findings it dropped were the seam
+ones — the fail-open guard and the double-refund idempotency, both of which the
+delegated pass had found an hour earlier on the same fixture. Second independent
+observation of the same effect, so it is worth stating plainly: **the fresh-context
+pass is not a formality, it is where the concurrency and trust-boundary findings
+come from.**
+
+### Fixture B improved under compression
+
+Same fixture, post-compression, best run of the three: both rule-blessed false
+positives avoided, five distinct documentation URLs carried into findings, and a
+security finding no earlier run reached — `tenant_id` is not bound to the
+ciphertext, so a batch can be relabelled to another tenant and still decrypt.
+
+It also used the project's rule to *choose between remedies* rather than merely to
+avoid a false positive: `Object.create(null)` over a `Map`, "chosen deliberately:
+keys stay string-coerced, so the envelope payload is byte-identical" — that is
+`conventions.md`'s byte-for-byte requirement deciding the fix. And it closed with
+its own suppression report: "Not flagged, per `.claude/rules/conventions.md`: the
+fixed 3×1s retry cadence and the `snake_case` field names." Disclosed suppression
+beats silent suppression, and nothing in the skill asked for that line.

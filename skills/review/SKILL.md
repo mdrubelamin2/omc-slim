@@ -5,325 +5,278 @@ description: Reviews a set of code changes across every axis at once — correct
 
 # Code review
 
-Judge a change that already exists. The goal is a change that is *correct, no
-heavier than it needs to be, and safe to ship* — not a change nobody could
-criticise.
+Judge a change that exists. The goal is *correct, no heavier than it needs to be,
+safe to ship* — not a change nobody could criticise.
 
 **Clear it when it definitely improves the health of the codebase, even if it is
-not perfect.** Do not block because it is not how you would have written it.
-Sycophancy is the other failure: do not soften a real finding to keep the peace.
+not perfect.** Never block because it is not how you would have written it.
+Sycophancy is the other failure: never soften a real finding to keep the peace.
 
-**Use it when** an implementation lands, before shipping or merging, when asked
-to check a diff or branch, or as the gate after a phase of larger work.
+**Skip it** for a one-line edit you already verified, or when nothing changed
+since the last pass. Re-reviewing an unchanged tree finds nothing and costs
+everything.
 
-**Skip it when** the change is a one-line edit you already verified, or nothing
-has changed since the last review. Re-reviewing an unchanged tree finds nothing
-and costs everything.
-
-## 1. Scope the change
+## 1. Scope
 
 Get this wrong and every finding after it is noise.
 
 ```bash
-git fetch origin <base> --quiet                 # stale base = phantom findings
-BASE=$(git merge-base origin/<base> HEAD)
-git diff --stat "$BASE"; git diff "$BASE"
+git fetch -q origin 2>/dev/null   # stale base = phantom findings
+B=$(git merge-base "$(git rev-parse -q --verify origin/HEAD >/dev/null && echo origin/HEAD || echo main)" HEAD)
+git diff --numstat "$B" | awk '{n+=$1+$2} END{print "changed lines:", n+0}'
+git diff --name-only "$B"; git diff "$B"
 ```
 
-Diffing against the **merge base** — not `HEAD`, not the base tip — includes
-uncommitted work, which is usually the point since review runs *before* the
-commit, and excludes commits that landed on the base after this branch started.
+The **merge base**, not `HEAD` and not the base tip: it includes uncommitted work
+— review runs before the commit — and excludes whatever landed on the base since.
+Resolve the base as the branch's PR target, else the repository default, then
+`origin/HEAD`, then `main`, then `master`; with no remote, drop the prefix. Print
+which you used. On the base branch with an empty diff, say so and stop. Outside a
+repository, review the named files and say so.
 
-Resolve `<base>` in order: the branch's actual PR target, then the repository's
-default branch, then `origin/HEAD`, then `main`, then `master`. No remote? Drop
-the `origin/` prefix and use the local branch. Print which base you used. On the
-base branch with an empty diff, say so and stop. Outside a repository, review the
-named files or the working tree and say which.
+**Read the whole diff before flagging anything** — the commonest false positive is
+a problem the same diff fixes three hunks later.
 
-**Read the whole diff before flagging anything.** The commonest false positive is
-reporting a problem the same diff already fixes three hunks later.
+## 2. Intent, before quality
 
-## 2. Intent before quality
+Was this what was asked for — nothing more, nothing less?
 
-Before judging *how* it was built, judge *whether it is what was asked for* —
-nothing more, nothing less.
+- **Scope creep** — changes tracing to no request. "While I was in there" widens
+  the blast radius of the review and of the rollback.
+- **Missing requirements** — asked for and quietly not delivered, or left at 80%:
+  the enum handled in one place of three, the error path skipped.
 
-- **Scope creep** — changes that trace to no request. "While I was in there"
-  expands the blast radius of a review and of a rollback.
-- **Missing requirements** — something asked for and quietly not delivered, or
-  started and left at 80%. Look for the partial implementation, the enum handled
-  in one place of three, the error path that was skipped.
-
-Take intent from whatever exists: the request in this session, the plan, the
-issue, the commit messages. **Code that handles a deliverable is not the
-deliverable** — shipping the extractor is not shipping the file. This step is
-informational; it does not block, but a gap here outranks every style finding
-below it.
+Intent comes from whatever exists — this session's request, the plan, the issue,
+the commit messages. **Code that handles a deliverable is not the deliverable.**
+Informational, not blocking, but a gap here outranks every style finding below it.
 
 ## 3. Read the tests first
 
-Tests state what the author believed the change should do. Read them first and
-the implementation becomes a comparison rather than a guess — and the gap between
-what the tests assert and what the change actually does is itself a finding.
+They state what the author believed the change should do, so the implementation
+becomes a comparison rather than a guess — and the gap between what they assert
+and what the code does is itself a finding. **A test that had to change is a
+behaviour change**, whatever the message says. Ask why.
 
-**A test that had to change is a behaviour change**, whatever the description
-says. Ask why. A change with no test where the logic is non-trivial is a finding
-in the tests lane, not a footnote.
+## 4. Lanes
 
-## 4. Run the lanes
+**First, predict.** Name the three to five places this change is most likely to be
+wrong, before reading closely, then go and check each. Prediction turns passive
+reading into deliberate search, and the gap between what you predicted and what
+you found shows where you were blind.
 
-**First, predict.** Before reading closely, name the three to five places this
-change is most likely to be wrong, and write them down. Then go and check each
-one. Prediction turns passive reading into deliberate search, and at the end the
-gap between what you predicted and what you found tells you where you were blind.
+**Then find what judges this better than you can.** You have a cutoff; this
+repository has law you have not read.
 
-**Then look at what can judge this better than you can.** You have a knowledge
-cutoff and this repository has law you have not read yet.
-
-- **Read the project's own rules first** — `CLAUDE.md` / `AGENTS.md`,
-  `.claude/rules/`, the lint, formatter and type configuration, a design system
-  file if one exists. These outrank your preferences wherever they speak, and a
-  finding that contradicts something the project wrote down deliberately is not a
-  finding.
-- **Survey the installed toolset, in both scopes** — the project's `.claude/` and
-  the user's `~/.claude/`, where most machines carry far more. Other plugins ship
-  security, performance, testing and framework-specific reviewers built for
-  exactly this stack, and an MCP server for the framework in front of you is
-  authoritative where you would be inferring. `ToolSearch` reaches deferred
-  tools; an unsearched tool is invisible, not absent. Name what you found when
-  you dispatch, and prefer a specialist built for this stack over a generic lane.
+- **Read the project's own rules first** — `CLAUDE.md`/`AGENTS.md`,
+  `.claude/rules/`, the lint, formatter and type config, a design system. They
+  outrank your preferences wherever they speak, and a finding that contradicts a
+  deliberate project decision is not a finding.
+- **Survey the toolset, in both scopes** — the project's `.claude/` and the user's
+  `~/.claude/`, which usually carries more. Other plugins ship security,
+  performance and framework-specific reviewers built for this stack, and a
+  documentation MCP is authoritative where you would be inferring. `ToolSearch`
+  reaches deferred tools — an unsearched tool is invisible, not absent. Name what
+  you found when you dispatch, and prefer a specialist built for this stack.
 
 **Read `checklists.md` now, before judging anything.** It holds what each lane
-actually looks for, and it exists because the items worth catching are the ones
-that do not come to mind unprompted. Skim past the lanes that are out of scope;
-do not skip the file. A review that never opened it is a review running on
-recall, which is the failure mode this skill was built against.
+looks for, and exists because the items worth catching are the ones that do not
+come to mind unprompted. Skim past the lanes out of scope; do not skip the file. A
+review that never opened it runs on recall, which is the failure this skill was
+built against.
 
 | Lane | Runs when |
 |---|---|
 | Correctness | always |
 | Simplicity | always |
 | Tests | always |
-| Security | auth, permissions or secrets touched — **at any size** — or backend and non-trivial |
-| Data and schema | a migration or schema change is in the diff |
-| API contract | a public interface, route or response shape changed |
-| Interface | the change is user-facing |
-| Operations | CI, release or deploy config changed |
-| Performance | a hot path, query, loop, bundle or render path changed |
+| Security | auth, session, token, permission, secret or crypto in the diff — **at any size** — or backend and non-trivial |
+| Data and schema | a migration, a schema change, raw SQL |
+| API contract | a route, handler, published type, or a changed response shape |
+| Interface | a component, template or stylesheet |
+| Operations | CI, deploy or release config |
+| Performance | a query, IO inside a loop, a bundle entry, a render path |
 
-Under roughly 50 changed lines, run the always-on lanes yourself and skip the
-rest. Above that, **dispatch the triggered lanes in parallel, in one message**,
-one subagent per lane, each with its lane text and the evidence gate below. Use
-the cheapest agent that can do the lane: `explorer` for anything that is pure
-location — every consumer of an enum, every caller of a changed function,
-confirming code is genuinely dead — and `oracle` for the architecture and
-security judgement on a high-risk change. Give each lane the diff command above
-rather than the diff itself.
+Under **roughly 50 changed lines**, run the always-on lanes yourself and skip the
+rest. Above it, dispatch the triggered lanes **in parallel, in one message**, one
+subagent each, carrying its lane text and the gates below — `explorer` for pure
+location (every consumer of an enum, every caller of a changed function, whether
+code is genuinely dead), `oracle` for architecture and security judgement on a
+high-risk change. Give each the diff command, not the diff.
 
-`performance.md` is the exception to that file: it is not a lane, it is the
-discipline for *changing* something on performance grounds. Reporting a hot-path
-finding needs only the lane. **Proposing, applying or accepting an optimisation
-is a precondition — read `performance.md` first**, because a change that does not
-beat the run-to-run noise is reverted rather than kept, and that is not a call to
-make from recall.
+Report which lanes ran and **which did not, with the reason**; a lane silently
+skipped reads as a lane that found nothing. **An always-on lane that found nothing
+says so** — "tests: coverage adequate for the changed paths" is a result, and its
+absence from the report is indistinguishable from never having looked.
 
-Report which lanes ran and **which did not, with the reason**. A lane silently
-skipped reads as a lane that found nothing.
+`performance.md` is not a lane, it is the discipline for *changing* something on
+performance grounds. Reporting a hot-path finding needs only the lane; for an
+optimisation applied or accepted, **open `performance.md`** first, because a
+change that does not beat the noise is reverted rather than kept, and that is not
+a call to make from recall.
 
-**Then one adversarial pass, always, whatever the size.** Line count is not a
-proxy for risk; a five-line auth change can be the worst thing in the release.
+**Then one adversarial pass, always**, whatever the size — line count is not a
+proxy for risk, and a five-line auth change can be the worst thing in the release.
 
-Run it **in a fresh context** — a subagent that did not write this code, holding
-no checklist, told what the lanes already found and asked for what they missed.
-A pass that both wrote the change and blesses it is not a review, however
-carefully it reads; the reasoning that produced the bug is still resident and
-still finds it reasonable. This is the one step you cannot do to yourself.
+Run it **in a fresh context**: a subagent that did not write this code, holding no
+checklist, told what the lanes already found and asked for what they missed. A
+pass that both wrote a change and blesses it is not a review however carefully it
+reads — the reasoning that produced the bug is still resident and still finds it
+reasonable. This is the one step you cannot do to yourself.
 
-Aim it at the seams: what breaks under ten times the load, under a slow
-dependency, on the first run with no data, on the double click, when two requests
-hit the same row. Where a checklist partitions the work, the gaps between the
-partitions are where the real bug lives.
+Aim it at the seams: ten times the load, a slow dependency, the first run with no
+data, the double click, two requests hitting the same row. Where a checklist
+partitions the work, the gaps between the partitions are where the real bug lives.
+**Ask what is absent, explicitly** — the unhandled case, the untested branch, the
+rollback that does not exist. And **do not stop at the first few findings**:
+surface problems mask structural ones.
 
-**Ask what is absent, explicitly.** Missing things are not noticed, they are
-searched for — the unhandled case, the untested branch, the rollback that does
-not exist, the config nobody set. And **do not stop at the first few findings**:
-surface problems mask structural ones, and the review that quits early reports
-the easy layer.
+## 5. Gates every finding passes
 
-## 5. Every finding earns its place
+**Filter at the end, never while looking.** Surface everything during discovery —
+low severity, half-formed, uncertain. Filtering instructions are followed
+faithfully, so a filter applied while reading suppresses the bug before it is ever
+seen. Every gate here runs at *report* time, on a full list. "Only important
+issues" and "don't nitpick" say what to rank first; they are **not permission to
+look less hard**.
 
-**Filter at the end, never while looking.** During discovery, surface everything
-— low severity, half-formed, uncertain. Filtering instructions are followed
-faithfully, which means a filter applied while reading suppresses the bug before
-it is ever seen. All the gates below run at *report* time, on a full list. And if
-the request said "only important issues" or "don't nitpick", that is guidance on
-what to rank first, not permission to look less hard.
-
-**Quote the code, or you do not have a finding.** Before reporting anything,
-quote the specific `file:line` that motivates it. Claiming a field does not
-exist? Quote the class where it would live. Claiming a value can be null? Quote
-where it is initialised. Claiming a race? Quote both sides. The act of trying to
-quote the absent thing is what reveals it was there all along.
-
-Frameworks declare things away from where they are used — an ORM base class, a
-migration, a decorator, a generated client. For those, quote the construct that
-*creates* the symbol. The bar is "I read the source that defines this", not "I
-grepped and did not find it".
-
-Cannot quote it? It is speculation. **Do not report it, and do not invent a
-higher confidence to get around this gate.**
+**Quote the code, or you do not have a finding.** Quote the `file:line` that
+motivates it. Field does not exist? Quote the class where it would live. Value can
+be null? Quote where it is initialised. Race? Quote both sides. Trying to quote
+the absent thing is what reveals it was there all along. Frameworks declare away
+from where things are used — an ORM base, a migration, a decorator, a generated
+client — so **quote the construct that *creates* the symbol**: the bar is "I read
+the source that defines this", not "I grepped and missed it". Cannot quote it, it
+is speculation — do not report it, and **do not invent a higher confidence** to
+get around the gate.
 
 **Cite the source, or you do not have a claim.** The quote gate covers what is
-true *inside* this repository. Anything a finding rests on from outside it — an
-API signature, a default, a deprecation, a "recommended way", whether a library
-still behaves like that, whether an advisory is reachable — is checked against a
-current source before it is reported, never recalled. Training data has a cutoff,
-and a reviewer confidently citing an argument that moved two versions ago is the
-most expensive false positive there is, because it is specific and sounds
-researched. Send it to `librarian` or to the documentation server for this stack,
-and carry the source into the finding: an unsourced external claim is
-indistinguishable from a recalled one.
+true inside this repository. Anything from outside it — an API signature, a
+default, a deprecation, a "recommended way", whether an advisory is reachable — is
+checked against a current source, **never recalled**. Training data has a cutoff,
+and a reviewer citing an argument that moved two versions ago is the most
+expensive false positive there is: specific, and it sounds researched. Send it to
+`librarian` or the documentation server for this stack, and carry the source into
+the finding — an unsourced external claim is indistinguishable from a recalled
+one.
 
 **The remedy gets the same rigour as the finding.** Reviewers are audited on the
-bug and trusted on the fix, which is backwards. Before proposing a workaround,
-check whether the platform, the framework, or a newer version of a dependency
-already solves it. Before proposing anything bespoke, look for prior art — a
-named algorithm, a standard, an RFC, a widely used implementation. "Add a retry
-loop with jitter" is worse than naming the backoff the ecosystem already settled
-on, and a fix invented in one pass is exactly the kind of thing this skill exists
-to catch when someone else writes it.
+bug and trusted on the fix, which is backwards. Check whether the platform, the
+framework or a newer version of a dependency already solves it; before proposing
+anything bespoke, **look for prior art** — a named algorithm, a standard, an RFC,
+a widely used implementation. "Add a retry loop with jitter" is worse advice than
+naming the backoff the ecosystem already settled on.
 
-**The same burden applies to saying something is fine.** "This is handled
-elsewhere" needs the handling code cited. "Tests cover this" needs the test named.
-"Likely handled" and "probably tested" are not review outputs — verify, or record
-it as unverified. `"Looks fine"` is not a finding *and not a clearance*.
+**Clearance needs evidence too.** "Handled elsewhere" cites the handling code;
+"tests cover this" names the test. *Likely handled* and *probably tested* are not
+review outputs — verify, or record it unverified. "Looks fine" is not a finding
+*and not a clearance*.
 
-**Severity** — by consequence, not by feeling:
+**Severity**, by consequence: **Critical** — a security hole, data loss or broken
+behaviour, do not ship · **Required** — fix before merge · **Optional** — a real
+improvement, the author's call. For security it is a product, consequence ×
+**exploitability** × blast radius, so a dramatic hole nothing can reach ranks
+below a dull one on the public path.
 
-- **Critical** — security hole, data loss, or broken behaviour. Do not ship.
-- **Required** — fix before this merges.
-- **Optional** — a real improvement; the author's call.
+**Confidence** 1–10, independent of severity: 8+ report; 6–7 report and say it
+needs confirming; **5 or below do not report at all**. One override — a Critical
+**survives at low confidence** as an open question, never a blocker, because the
+cost of missing it is asymmetric. **The verdict is set by the worst finding you
+are confident about**, not the worst you can imagine.
 
-Security severity is a product, not a label: **consequence × exploitability ×
-blast radius**. A dramatic hole nothing can reach ranks below a dull one on the
-public path.
+**Check yourself once, before writing anything down.**
 
-**Confidence**, 1–10, is the second axis and is independent of severity. 8+
-report normally; 6–7 report and say it needs confirming; 5 or below do not report
-at all — with one override: a *Critical* finding survives at low confidence, as
-an open question rather than a blocker, because the cost of missing it is
-asymmetric. **The verdict is set by the worst finding you are confident about**,
-not by the worst thing you can imagine.
+- Could the author **refute this in one sentence** with context you lack? Then it
+  is a question, not a finding.
+- Flaw, or preference? A preference is a nit or it is nothing.
+- Rating it high because it is bad, or because you **found momentum and are now
+  hunting**? Use the realistic worst case, not the theoretical maximum, and count
+  what already mitigates it — an existing test, a flag, a deploy gate, how fast it
+  would show.
+- **Every downgrade names what mitigates it.** A quiet re-rating is how a real
+  finding disappears. Data loss, a security breach and money **never get
+  downgraded**.
 
-**Then check yourself, once, before writing anything down.**
-
-- Could the author refute this in one sentence with context you do not have? Then
-  it is a question, not a finding.
-- Is this a flaw or a preference? A preference is a nit or it is nothing.
-- Are you rating this high because it is bad, or because you found momentum and
-  are now hunting? Use the realistic worst case, not the theoretical maximum, and
-  count what already mitigates it — an existing test, a feature flag, a
-  deployment gate, how fast it would be noticed.
-- **Every downgrade names what mitigates it.** "Reduced to Required, mitigated by
-  the retry upstream" is auditable; a quiet re-rating is how a real finding
-  disappears. And **data loss, a security breach and money never get downgraded**
-  — those earn their severity.
-
-Inventing a problem to look thorough costs more than missing one. If the code is
-correct, it is correct; the value of a clean review is that it means something.
+**Inventing a problem to look thorough** costs more than missing one. If the code
+is correct it is correct, and a clean review is only worth anything because it can
+happen.
 
 **Propose the move, not just the problem.** "This is complex" leaves the author
-guessing. Name the restructure: replace the conditional chain with a typed
-dispatch, collapse the duplicate branches, separate orchestration from logic,
-move the feature-specific code out of the shared module, reuse the canonical
-helper, make the type boundary explicit so the downstream branching disappears,
-delete the pass-through wrapper. Prefer the remedy that removes moving pieces
-over one that spreads the same complexity around.
-
-Correct is the floor, not the bar. Where a meaningfully better approach was
-available — simpler, or the thing the platform already does — that is a finding
-too, sized as *Optional* unless the chosen approach carries real risk.
+guessing. Name it: typed dispatch for the conditional chain, collapse the
+duplicate branches, split orchestration from logic, move feature code out of the
+shared module, reuse the canonical helper, make the type boundary explicit so the
+downstream branching disappears, delete the pass-through wrapper. Prefer the
+remedy that **removes moving pieces** over one that spreads the same complexity
+around. Correct is only the floor: where a meaningfully better approach existed,
+that is a finding too — *Optional*, unless the chosen one carries real risk.
 
 **One structural problem beats ten nits.** If you have both, the structural
-problem *is* the review. A long list of small findings buries the one that
-mattered, and a review nobody can act on is a review that did not happen.
-Correctness and security are read before style, and the algorithm before the
-pattern it is written in — cataloguing twenty smells while the core logic is
-wrong is the classic way to review nothing.
+problem *is* the review. Correctness and security are **read before style**, and
+the algorithm before the pattern it is written in; twenty smells catalogued over a
+wrong core is the classic way to review nothing.
 
 **Machine-written code gets more scrutiny, not less.** It is fluent and plausible
-in exactly the places it is wrong: the empty catch, the `return await`, the
-abstraction built for a second caller that never came, the memo wrapped around
-everything, the test that asserts the mock.
+exactly where it is wrong: the empty catch, the `return await`, the abstraction
+built for a second caller that never came, the memo around everything, the test
+that asserts the mock.
 
 ### Do not flag
 
-Redundancy that is harmless and aids reading · "add a comment explaining this
-threshold", when thresholds move and comments rot · an assertion that already
-covers the behaviour but could be tighter · consistency-only changes · an edge
-case the input constraints make unreachable · a test exercising several guards at
-once · anything the diff already addresses · anything the project's own
-configuration, style guide or design system explicitly blesses · a
-framework-specific fix for a framework this project does not use.
+Harmless redundancy that aids reading · "add a comment explaining this threshold",
+when thresholds move and comments rot · an assertion that already covers the
+behaviour · consistency-only changes · an edge case the input constraints make
+unreachable · a test exercising several guards at once · anything the diff already
+addresses · anything the project's own config, style guide or design system
+blesses · a framework-specific fix for a framework this project does not use.
 
-Codebase consistency is a legitimate answer to a style finding. If the author has
-the full context and disagrees, that ends the thread — comment on code, not on
-people.
+Codebase consistency is a legitimate answer to a style finding, and an author with
+full context who disagrees ends the thread — comment on code, not on people.
 
-## 6. Act on the findings
+## 6. Act
 
-Every finding gets an action. There is no informational graveyard.
+Every finding gets an action; there is no informational graveyard.
 
 **Fix directly** what is mechanical and a senior engineer would apply without
 discussion: dead code, an orphaned import, a stale comment, a magic number, a
-missing eager-load, a version or path mismatch.
+missing eager-load, a version mismatch. **Ask** where reasonable engineers could
+disagree, or where it changes user-visible behaviour, removes functionality,
+touches security or concurrency, or runs past a handful of lines. **Critical
+findings lean towards asking**; small mechanical ones lean towards fixing.
 
-**Ask** where reasonable engineers could disagree, and about anything that
-changes user-visible behaviour, removes functionality, touches security or
-concurrency, or runs to more than a handful of lines. **Critical findings lean
-towards asking; small mechanical ones lean towards fixing** — the severe items
-are exactly the ones not to touch silently.
-
-Severity and mechanicalness are separate questions, so answer both: severity
-decides whether the *decision* is yours, mechanicalness whether the *edit* is. A
+Severity and mechanicalness are separate questions though: **severity decides
+whether the *decision* is yours**, mechanicalness whether the *edit* is. A
 Critical with one unambiguous fix — the missing enum branch, the interpolated
-query — gets fixed, with the judgement that remains named out loud ("added the
-branch; confirm the wording"). A Critical with two defensible fixes gets asked
-about, however small the diff would be.
+query — gets fixed, naming the judgement that remains ("added the branch; confirm
+the wording"). A Critical with two defensible fixes gets asked about, however
+small the diff.
 
-Batch every ask into **one** question with a recommendation across the set, not a
-question per finding. No asks, no question.
+Batch every ask into **one** question with a recommendation across the set. No
+asks, no question.
 
-Where the simplicity lane found more than a line or two, hand it to `simplify`
-rather than doing it inline — that skill has the pin-down check for untested
-code, and this one does not. Where the gap is missing coverage, hand it to
-`verification-planning`. Where an optimisation is about to be applied or
-accepted, **open `performance.md` and let it decide** — reporting the finding was
-the lane's job, but keeping a change on performance grounds is that file's.
+More than a line or two of simplicity work, **hand it to `simplify`** — it has the
+pin-down check for untested code and this does not. Missing coverage goes to
+`verification-planning`.
 
-**Never commit, push or open a PR from a review.** Reviewing and publishing are
+**Never commit, push or open a PR** from a review. Reviewing and publishing are
 different decisions.
 
-## 7. Close the loop
+## 7. Close
 
-Re-run the project's own checks against the *fixed* tree — the ones the review
-changed the inputs to, not every check. Report what they said, including
-failures. Skipped a check? Say which and why.
+Re-run the project's own checks whose inputs the review changed, not every check.
+Report what they said, failures included; a skipped check is named with its
+reason.
 
-**Evidence has a shelf life.** Output from before the last edit is not evidence
-of the current tree; run it again. A build that succeeds says the code compiles,
-not that it does what was asked. And "all tests pass" without the output, or a
-conclusion carried by *should*, *seems to* or *probably*, is a claim, not a
-result — treat it the same way you treat an unquoted finding.
+**Evidence has a shelf life** — output from before the last edit describes a tree
+that no longer exists. A green build **says the code compiles, not that it does
+what was asked**. "All tests pass" with no output, or a conclusion carried by
+*should*, *seems to* or *probably*, is a claim, not a result.
 
-Then stop. **One review, and at most two re-reviews**, each stating where it is
-(`review attempt 2 of 3`). A re-review looks at what was unresolved and at what
-the remediation newly broke; it does not reopen concerns already accepted or
-settled. Spend one only when the remediation materially changed the picture or
-the original concern survived focused evidence — never to re-confirm a mechanical
-fix. Budget gone with a real risk still open: name it and ask whether to accept
-it, cut scope, or authorise another pass. Do not quietly loop, and do not keep
-polishing because polishing is possible.
+Then stop. One review and **at most two re-reviews**, each stating where it is
+(`review attempt 2 of 3`). A re-review covers what was unresolved and what the
+remediation broke; it **does not reopen concerns already accepted**. Spend one only
+when remediation changed the picture, or the concern survived focused evidence —
+never to re-confirm a mechanical fix. Budget gone with real risk still open: name
+it and ask whether to accept it, cut scope, or authorise another pass. Never
+quietly loop, and never keep **polishing because polishing is possible**.
 
 ## Output
 
@@ -342,25 +295,21 @@ OPEN QUESTIONS
 - file:line — what you could not confirm, and the check that would settle it
 ```
 
-Clean is `Review: ship — no findings.` — say it in one line and stop.
+Clean is `Review: ship — no findings.` in one line, then stop.
 
-A dispatched lane returns its findings **in its final message**; a lane that
-signs off with "done" or "looks good" has returned nothing, because nothing else
-reaches the caller.
-
-Terse: one line for the problem, one for the fix. Name the user-visible
-consequence, not the smell — "returns undefined when the session cookie expires,
-so the user gets a white screen" beats "missing null check". Quantify where you
-can: "adds roughly one query per row" beats "may be slow". Every finding carries
-`file:line`; a claim about code without a location is a guess.
+One line for the problem, one for the fix. Name the user-visible consequence, not
+the smell — "returns undefined when the session cookie expires, so the user gets a
+white screen" beats "missing null check" — and quantify where you can. Every
+finding carries `file:line`; a claim about code without a location is a guess. A
+dispatched lane returns its findings **in its final message**: a lane that signs
+off with "done" has returned nothing, because nothing else reaches the caller.
 
 ## Refuse these
 
 | Excuse | Reality |
 |---|---|
 | "Pre-existing, not caused by this change" | True, and still in the blast radius. Report it; let the author decide. |
-| "I'll clean it up later" | Then file it now, assigned, with a date. An unowned intention is not a plan. |
-| "It's out of scope" | Only if genuinely unrelated. Never as cover for an edge case that was skipped. |
-| "It looks fine" | Not a finding and not a clearance. Cite the evidence it is fine, or mark it unverified. |
-| "Tests pass, so it works" | The tests pass on the paths that have tests. Check which paths those are. |
-| "The author must have had a reason" | Maybe. `git blame` is one command. Check, then decide. |
+| "I'll clean it up later" | File it now, owned and dated. An unowned intention is not a plan. |
+| "It's out of scope" | Only if genuinely unrelated — never cover for an edge case that was skipped. |
+| "Tests pass, so it works" | They pass on the paths that have tests. Check which those are. |
+| "The author must have had a reason" | Maybe. `git blame` is one command. |
