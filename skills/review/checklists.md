@@ -1,10 +1,7 @@
 # Review lanes
 
-What each lane looks for. Read only the lanes in scope; a lane whose trigger did
-not fire costs nothing and finds nothing.
-
-Every item is a *candidate*. None of it is reportable until it clears the gates in
-`SKILL.md` — quote the line that proves it, or it does not exist.
+What each lane looks for. Read only the lanes in scope. Every item is a
+*candidate* — nothing is reportable until it clears the gates in `SKILL.md`.
 
 ---
 
@@ -17,17 +14,17 @@ five processed then a crash, leaving records inconsistent · a catch-all that
 swallows · a background job that fails with nobody watching · a default returned
 where an error was the honest answer.
 
-**Conditional side effects.** One branch updates the related record and the other
-forgets. A log line claiming an action that was conditionally skipped. An event
+**Conditional side effects** — one branch updates the related record and the other
+forgets; a log line claiming an action that was conditionally skipped; an event
 that fires only on the happy path.
 
-**Read-check-write races.** `find` then `create` with no unique index; a status
+**Read-check-write races** — `find` then `create` with no unique index; a status
 transition that is not an atomic `WHERE old_status = ?`; concurrent callers
 double-applying or skipping.
 
-**Boundary coercion.** A value crossing serialisation where numeric becomes
-string — `{cores: 8}` and `{cores: "8"}` hash differently, so digest inputs must
-normalise first. A "today" key that only covers midnight-to-now. Two features
+**Boundary coercion** — a value crossing serialisation where numeric becomes
+string, so digest inputs must normalise first (`{cores: 8}` and `{cores: "8"}`
+hash differently); a "today" key covering only midnight-to-now; two features
 bucketing the same data hourly and daily.
 
 **Enum and value completeness — the one lane that requires reading outside the
@@ -54,15 +51,12 @@ duplicated *knowledge* that must change together.
 push it into its own helper, state or policy. Repeated conditionals on the same
 shape mean a missing model, and the "temporary" branch is usually permanent.
 
-Two judgements to get right:
-
-- **Does the refactor reduce complexity or relocate it?** Count the concepts a
-  reader must hold. If the cleaner version leaves that count unchanged, it is not
-  cleaner. Prefer the restructuring that makes whole branches, modes or layers
-  disappear over one that re-centralises the same logic; prefer deleting an
-  abstraction to polishing it.
-- **Do not normalise drift.** "The file already does this" is how a bad pattern
-  becomes the convention.
+**Does the refactor reduce complexity or relocate it?** Count the concepts a
+reader must hold; if the cleaner version leaves that count unchanged, it is not
+cleaner. Prefer the restructuring that makes whole branches, modes or layers
+disappear over one that re-centralises the same logic, and prefer deleting an
+abstraction to polishing it. **Do not normalise drift** — "the file already does
+this" is how a bad pattern becomes the convention.
 
 ## Security — auth touched, or backend and non-trivial
 
@@ -73,49 +67,48 @@ Past the obvious (validate input, parameterise queries, do not log secrets):
   `eval`, SQL, a shell, `innerHTML` or a file path, and never persisted without a
   shape and format check.
 - **Prompt injection is assumed; permissions are enforced in code, not in the
-  prompt.** Bound token, rate and recursion limits. Keep secrets, cross-tenant
+  prompt.** Bound token, rate and recursion limits; keep secrets, cross-tenant
   data and system prompts out of the context window.
-- **Authorisation defaults to deny.** The endpoint with no auth middleware, the
+- **Authorisation defaults to deny** — the endpoint with no auth middleware, the
   role a user can escalate into, the object reference that works by changing an id
   to someone else's.
-- **Injection past SQL:** shell with interpolation, template injection, path
-  traversal, header injection, SSRF via a user- or model-supplied URL — allowlist
+- **Injection past SQL** — shell interpolation, template injection, path
+  traversal, header injection, SSRF via a user- or model-supplied URL: allowlist
   the host, block private and reserved ranges.
 - **Validation is an allowlist, not a denylist.**
-- **Crypto misuse:** MD5 or SHA1 where security depends on it, `Math.random` for a
-  token, `==` on a secret or digest, a hardcoded key, an unsalted hash.
-- **Escape hatches:** `dangerouslySetInnerHTML`, `v-html`, `html_safe`/`raw`,
+- **Crypto misuse** — MD5 or SHA1 where security depends on it, `Math.random` for
+  a token, `==` on a secret or digest, a hardcoded key, an unsalted hash.
+- **Escape hatches** — `dangerouslySetInnerHTML`, `v-html`, `html_safe`/`raw`,
   `mark_safe`, bare `innerHTML` on anything user- or model-controlled.
 - **Deserialising untrusted data** — pickle, Marshal, unsafe YAML loads.
-- **Leakage:** a secret in source or a log, a credential in a URL, a stack trace or
-  SQL string in an error response, a sensitive field the serialiser forgot.
+- **Leakage** — a secret in source or a log, a credential in a URL, a stack trace
+  or SQL string in an error response, a sensitive field the serialiser forgot.
 
 Dependencies: **one dependency change at a time**, because a bulk bump that breaks
 the build loses which package did it. Read the changelog, not the version number —
 **semver is a promise the maintainer may not have kept.** Review the lockfile
 diff, commit it, never hand-edit it. Triage advisories by *reachability*; an
 advisory audit does not catch a newly malicious package. Every dependency is a
-liability: what it costs in bytes, whether it is maintained, whether the existing
-stack already does it.
+liability: bytes, maintenance, and whether the existing stack already does it.
 
 ## Tests — always
 
 Negative paths — a guard clause, an error branch, a permission check asserted in
 code and never tested for the denied case · edge coverage mirroring the happy-path
-tests that already exist: zero, empty, boundary, single element, unicode ·
-isolation: shared mutable state, order dependence, reliance on the clock, timezone
-or locale, real network calls · flake sources: sleeps and tight timeouts,
-assertions on the order of unordered results, unseeded random data.
+tests that exist: zero, empty, boundary, single element, unicode · isolation:
+shared mutable state, order dependence, reliance on the clock, timezone or locale,
+real network calls · flake sources: sleeps and tight timeouts, assertions on the
+order of unordered results, unseeded random data.
 
 **Coverage of *this* change.** A changed method whose tests only cover the old
-behaviour is untested, whatever the coverage number says. And a test edited to
-make the change pass is a behaviour change that has to be named as one.
+behaviour is untested, whatever the coverage number says. A test edited to make
+the change pass is a behaviour change, and has to be named as one.
 
 ## Performance — a query, loop, hot path, bundle or render path changed
 
 **Never state a number you did not observe.** A finding from reading code is
 *potential* impact; label a measured one `measured`, and what you could not
-measure `not measured`. Field and lab data are different numbers and presenting
+measure `not measured`. Field and lab data are different numbers, and presenting
 one as the other is fabrication — no scorecard beats an invented one.
 
 | Symptom | Look at |
@@ -180,9 +173,9 @@ interactive element with no hover or focus state · a fixed pixel width with no
 `max-width` or breakpoint · text with no measure limit · more than three font
 families.
 
-And the tells of generated UI: everything centred, one large radius on every
-surface, icons in coloured circles as decoration, the symmetrical three-card
-grid, violet-to-indigo gradients, copy that opens "Unlock the power of".
+The tells of generated UI: everything centred, one large radius on every surface,
+icons in coloured circles as decoration, the symmetrical three-card grid,
+violet-to-indigo gradients, copy that opens "Unlock the power of".
 
 **Calibrate against the project's own design system if it has one.** A pattern the
 project blessed is not a finding.
@@ -192,4 +185,4 @@ project blessed is not a finding.
 Version tag format consistent across the manifest, the tag and the publish step ·
 publish idempotent on re-run · secrets referenced, not inlined · a build matrix
 covering the platforms actually shipped · a new artefact type with no release
-path. Skip for test-only CI changes and for services with an existing auto-deploy.
+path. Skip for test-only CI changes and services with an existing auto-deploy.

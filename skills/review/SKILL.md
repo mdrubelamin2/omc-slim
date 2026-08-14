@@ -46,9 +46,10 @@ Was this what was asked for — nothing more, nothing less?
 - **Missing requirements** — asked for and quietly not delivered, or left at 80%:
   the enum handled in one place of three, the error path skipped.
 
-Intent comes from whatever exists — this session's request, the plan, the issue,
-the commit messages. **Code that handles a deliverable is not the deliverable.**
-Informational, not blocking, but a gap here outranks every style finding below it.
+Intent comes from this session's request, the plan, the issue, the commit
+messages — whatever exists. **Code that handles a deliverable is not the
+deliverable.** Informational, not blocking, but a gap here outranks every style
+finding below it.
 
 ## 3. Read the tests first
 
@@ -59,10 +60,10 @@ behaviour change**, whatever the message says. Ask why.
 
 ## 4. Lanes
 
-**First, predict.** Name the three to five places this change is most likely to be
-wrong, before reading closely, then go and check each. Prediction turns passive
-reading into deliberate search, and the gap between what you predicted and what
-you found shows where you were blind.
+**First, predict.** Before reading closely, name the three to five places this
+change is most likely to be wrong, then go and check each. Prediction turns
+passive reading into deliberate search, and the gap between what you predicted and
+what you found shows where you were blind.
 
 **Then find what judges this better than you can.** You have a cutoff; this
 repository has law you have not read.
@@ -81,8 +82,8 @@ repository has law you have not read.
 **Read `checklists.md` now, before judging anything.** It holds what each lane
 looks for, and exists because the items worth catching are the ones that do not
 come to mind unprompted. Skim past the lanes out of scope; do not skip the file. A
-review that never opened it runs on recall, which is the failure this skill was
-built against.
+review that never opened it runs on recall, the failure this skill was built
+against.
 
 | Lane | Runs when |
 |---|---|
@@ -106,7 +107,7 @@ high-risk change. Give each the diff command, not the diff.
 Report which lanes ran and **which did not, with the reason**; a lane silently
 skipped reads as a lane that found nothing. **An always-on lane that found nothing
 says so** — "tests: coverage adequate for the changed paths" is a result, and its
-absence from the report is indistinguishable from never having looked.
+absence is indistinguishable from never having looked.
 
 `performance.md` is not a lane, it is the discipline for *changing* something on
 performance grounds. Reporting a hot-path finding needs only the lane; for an
@@ -149,22 +150,21 @@ the source that defines this", not "I grepped and missed it". Cannot quote it, i
 is speculation — do not report it, and **do not invent a higher confidence** to
 get around the gate.
 
-**Cite the source, or you do not have a claim.** The quote gate covers what is
-true inside this repository. Anything from outside it — an API signature, a
-default, a deprecation, a "recommended way", whether an advisory is reachable — is
-checked against a current source, **never recalled**. Training data has a cutoff,
-and a reviewer citing an argument that moved two versions ago is the most
-expensive false positive there is: specific, and it sounds researched. Send it to
-`librarian` or the documentation server for this stack, and carry the source into
-the finding — an unsourced external claim is indistinguishable from a recalled
-one.
+**Cite the source, or you do not have a claim.** The quote gate covers this
+repository. Anything from outside it — an API signature, a default, a deprecation,
+a "recommended way", whether an advisory is reachable — is checked against a
+current source, **never recalled**. A reviewer citing an argument that moved two
+versions ago is the most expensive false positive there is: specific, and it
+sounds researched. Send it to `librarian` or the documentation server for this
+stack, and carry the source into the finding — an unsourced external claim is
+indistinguishable from a recalled one.
 
 **The remedy gets the same rigour as the finding.** Reviewers are audited on the
 bug and trusted on the fix, which is backwards. Check whether the platform, the
-framework or a newer version of a dependency already solves it; before proposing
-anything bespoke, **look for prior art** — a named algorithm, a standard, an RFC,
-a widely used implementation. "Add a retry loop with jitter" is worse advice than
-naming the backoff the ecosystem already settled on.
+framework or a newer dependency version already solves it; before anything
+bespoke, **look for prior art** — a named algorithm, a standard, an RFC, a widely
+used implementation. "Add a retry loop with jitter" is worse than naming the
+backoff the ecosystem already settled on.
 
 **Clearance needs evidence too.** "Handled elsewhere" cites the handling code;
 "tests cover this" names the test. *Likely handled* and *probably tested* are not
@@ -174,8 +174,8 @@ review outputs — verify, or record it unverified. "Looks fine" is not a findin
 **Severity**, by consequence: **Critical** — a security hole, data loss or broken
 behaviour, do not ship · **Required** — fix before merge · **Optional** — a real
 improvement, the author's call. For security it is a product, consequence ×
-**exploitability** × blast radius, so a dramatic hole nothing can reach ranks
-below a dull one on the public path.
+**exploitability** × blast radius: a dramatic hole nothing can reach ranks below a
+dull one on the public path.
 
 **Confidence** 1–10, independent of severity: 8+ report; 6–7 report and say it
 needs confirming; **5 or below do not report at all**. One override — a Critical
@@ -196,9 +196,8 @@ are confident about**, not the worst you can imagine.
   finding disappears. Data loss, a security breach and money **never get
   downgraded**.
 
-**Inventing a problem to look thorough** costs more than missing one. If the code
-is correct it is correct, and a clean review is only worth anything because it can
-happen.
+**Inventing a problem to look thorough** costs more than missing one. A clean
+review is only worth something because it can happen.
 
 **Propose the move, not just the problem.** "This is complex" leaves the author
 guessing. Name it: typed dispatch for the conditional chain, collapse the
@@ -210,11 +209,11 @@ around. Correct is only the floor: where a meaningfully better approach existed,
 that is a finding too — *Optional*, unless the chosen one carries real risk.
 
 **One structural problem beats ten nits.** If you have both, the structural
-problem *is* the review. Correctness and security are **read before style**, and
-the algorithm before the pattern it is written in; twenty smells catalogued over a
+problem *is* the review. Correctness and security are **read before style**, the
+algorithm before the pattern it is written in; twenty smells catalogued over a
 wrong core is the classic way to review nothing.
 
-**Machine-written code gets more scrutiny, not less.** It is fluent and plausible
+**Machine-written code gets more scrutiny, not less.** Fluent and plausible
 exactly where it is wrong: the empty catch, the `return await`, the abstraction
 built for a second caller that never came, the memo around everything, the test
 that asserts the mock.

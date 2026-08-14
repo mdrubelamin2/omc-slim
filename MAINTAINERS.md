@@ -1290,3 +1290,48 @@ keys stay string-coerced, so the envelope payload is byte-identical" — that is
 its own suppression report: "Not flagged, per `.claude/rules/conventions.md`: the
 fixed 3×1s retry cadence and the `snake_case` field names." Disclosed suppression
 beats silent suppression, and nothing in the skill asked for that line.
+
+---
+
+## v0.7.3 — the compression floor, measured
+
+A second compression pass over all three review files returned **5,339 → 5,203
+words (−2.5%)**, against −10.6% the round before. Worth recording *why*, so nobody
+spends another pass looking for the same win.
+
+| File | v0.7.1 | v0.7.2 | v0.7.3 |
+|---|---|---|---|
+| `SKILL.md` | 3,344 | 2,794 | **2,799** |
+| `checklists.md` | 1,927 | 1,748 | **1,712** |
+| `performance.md` | 797 | 797 | **692** |
+
+`SKILL.md` was rewritten end to end and came out **five words longer**. That is
+the finding. v0.7.2's 16% came from replacing *description* with *detection* — a
+scope script that prints the merge base and changed-line count, a path/content
+trigger table instead of prose asking for a judgement call. Once that lever is
+spent, what remains is rule plus concrete trigger with almost no connective tissue
+between them, and prose editing returns nothing.
+
+Only `performance.md` had slack, because it had never been compressed. It gave up
+13% on its first pass, matching what the other two gave on theirs.
+
+**The rule:** compression of a rules file is a one-time structural win, not a
+recurring prose win. Look for description that can become detection. When there is
+none left, further reduction is a content decision — dropping lanes or rules — and
+that belongs to whoever owns the capability, not to a compression pass.
+
+Rejected: moving rarely-triggered lanes into a third reference file. Reference
+files are opened about three times in four (v0.7.0 measurements), so that trades
+reliability for tokens, and the lanes it would move are the ones already skipped
+cheaply by their triggers.
+
+### Verified, byte-identical rebuild
+
+6/6 planted defects, 2/2 false-positive baits avoided, 0 false positives — and the
+run did something no earlier one had: after fixing `statusLabel`, it **added the
+assertion pinning the fix** to the existing test file. Fix-first and the always-on
+tests lane compounding, not instructed anywhere as a pair.
+
+`performance.md`'s compression is behaviourally unverified: neither fixture reaches
+that file, and building one that does would mean a change where an optimisation is
+proposed and has to survive re-measurement.
