@@ -1462,3 +1462,55 @@ orchestrator's own standards carry most of it. But **only the forced run is
 evidence that these new rules work**, and the first run I looked at was not, which
 is worth remembering before crediting a rule for behaviour the model would have
 produced anyway.
+
+---
+
+## v0.7.6 — simplify and the orchestrator hit the same floor
+
+| File | before | after |
+|---|---|---|
+| `skills/simplify/SKILL.md` | 2,149 words | **2,101** (−2.2%) |
+| `output-styles/omc-slim.md` | 3,579 tokens | **3,531** (−1.3%) |
+
+Third file pair to land in the same place, so the pattern is now established
+rather than suspected. `review` returned 10.6% on its first compression and 2.5%
+on its second. `simplify` was cut 28% back in v0.6.5 and returns 2.2% now. The
+orchestrator was cut 7% in v0.6.9 and returns 1.3%.
+
+**A rules file compresses once, structurally, and never again.** The first pass
+finds description that can become detection, or two sections saying one thing.
+After that every remaining word is a rule or a concrete trigger, and prose editing
+returns noise.
+
+### The one structural duplicate left in simplify
+
+"Be brave about size" opened by restating Principle 5 in full, and said so out
+loud: *"This is Principle 5 read correctly."* One rule written twice, ~40 words.
+Now a single clause pointing back at the principle. That was the last duplicate of
+its kind I could find in the file.
+
+The orchestrator's slack was all in material added the same day — the ASD-STE100
+register block, which had never been through a pass. Tightening it plus the
+design-handoff and context-window paragraphs bought 48 tokens.
+
+### What was rejected, and why
+
+Pushing the orchestrator's `Standards` section into the skills that also state
+those rules. It looks like ~700 words of duplication. It is not: skills only load
+when invoked, and the standards have to apply to direct work too. Same trap as the
+reference-file read rate measured at three in four in v0.7.0 — moving a rule
+somewhere it might not be read is not compression, it is a reliability trade
+wearing compression's clothes.
+
+### Verified, both fixtures rebuilt byte-identical
+
+`simplify` on the comment fixture: 8/8 smells handled, the `FIXME` kept, both
+contradictions caught including the one that was never planted (`// Round down to
+two decimal places` against `Math.round`), and the incident comment removed only
+after `git log -p`, with the commit cited and an offer to relocate it.
+
+`review` on the refunds fixture: 6/6 planted defects, `oracle` dispatched, and the
+register held at **13.4 mean words per sentence, longest 29**. It also produced
+the sharpest finding any run has made on that fixture — `hydrate` builds `total`
+with `s + i.price`, and node-postgres returns `NUMERIC` as a *string*, so the
+total silently concatenates and the refund cap compares against it.
