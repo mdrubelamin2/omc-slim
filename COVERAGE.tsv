@@ -189,3 +189,13 @@ audit	external-claims-never-recalled	review	never recalled
 audit	remedy-checked-against-current	review	The remedy gets the same rigour as the finding
 audit	prior-art-before-bespoke	review	look for prior art
 audit	always-on-lane-reports-nothing	review	An always-on lane that found nothing
+wait-what	simplified-technical-english	output-styles	Simplified Technical English (ASD-STE100)
+wait-what	one-idea-per-sentence	output-styles	One idea per sentence
+wait-what	active-voice-named-actor	output-styles	name who does what
+wait-what	one-word-one-meaning	output-styles	One word, one meaning
+wait-what	project-vocabulary	output-styles	the project's own words for its own concepts
+wait-what	no-noun-stacks	output-styles	break noun stacks apart
+wait-what	orient-before-concluding	output-styles	before a conclusion the reader cannot place
+caveman	lite-keeps-grammar	output-styles	terseness is fewer sentences, never broken ones
+wait-what	hard-sentence-ceiling	output-styles	never past twenty-five
+wait-what	no-parenthetical-lists	output-styles	A parenthetical list becomes its own sentence

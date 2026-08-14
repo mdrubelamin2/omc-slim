@@ -2,7 +2,7 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Ten agents, five skills, one hook, two MCP servers. **~4,310 tokens of
+Ten agents, six skills, one hook, two MCP servers. **~4,310 tokens of
 static context** and **zero bytes injected on the tool-call path.**
 
 Slim by construction, and it **adapts to whatever your project already has** —
@@ -160,7 +160,7 @@ On a machine with **103 skills installed, 24 had no description** in the model's
 listing — across four plugins, two of them ours. A skill with no description
 cannot be matched and will never auto-fire. This is why the orchestrator carries
 its own skill roster rather than trusting the listing, and it is a reason to be
-suspicious of any plugin that ships a large skill count. omc-slim ships five, and
+suspicious of any plugin that ships a large skill count. omc-slim ships six, and
 adding more would make this worse for everything you have installed.
 
 ## What you get
@@ -439,12 +439,12 @@ before deleting.
 
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule.
-[`COVERAGE.tsv`](./COVERAGE.tsv) maps all 31 adopted behaviours to where they now
-live:
+[`COVERAGE.tsv`](./COVERAGE.tsv) maps every load-bearing rule to where it now
+lives — 186 rows, and growing with each release:
 
 ```bash
 ./scripts/check-coverage.sh
-# 31/31 adopted behaviours present.
+# 186/186 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 

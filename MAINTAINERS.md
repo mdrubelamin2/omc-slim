@@ -1335,3 +1335,68 @@ tests lane compounding, not instructed anywhere as a pair.
 `performance.md`'s compression is behaviourally unverified: neither fixture reaches
 that file, and building one that does would mean a change where an optimisation is
 proposed and has to survive re-measurement.
+
+---
+
+## v0.7.4 — default register: Simplified Technical English
+
+The output style's Communication section now merges two things: caveman-lite's
+grammar floor (no filler, keep articles, keep whole sentences) with the discipline
+of ASD-STE100 Simplified Technical English, which is what the `wait-what` skill
+asks for when a message fails to land.
+
+Rules added: one idea per sentence · active voice with a named actor · one word
+for one meaning, using the project's own vocabulary · plain word over elaborate ·
+no noun stacks · one line of orientation before a conclusion the reader cannot
+place.
+
+### Soft numbers do not fire; a ceiling with a repair action does
+
+Measured on one prompt, three configurations, same repository:
+
+| | before | + tone rules | + hard ceiling |
+|---|---|---|---|
+| mean words/sentence | 20.8 | 18.0 | **13.7** |
+| longest sentence | 52 | **52** | **29** |
+| sentences over 25 words | 5/21 | 7/25 | **1/31** |
+| total words | 499 | 469 | 443 |
+
+The middle column is the finding. "One idea per sentence, around twenty words"
+moved the *mean* by 13% and left the *ceiling* untouched — the fifty-word sentence
+survived verbatim, and the share of long sentences did not improve.
+
+Reading both outputs showed the long sentences had one shape: a parenthetical
+enumeration jammed mid-clause, `(a → b, c → d, e → f)`. So the fix targeted the
+observed cause rather than restating the rule louder:
+
+- a hard limit, "never past twenty-five", with the repair named — split at the
+  conjunction;
+- **a parenthetical list becomes its own sentence or a real list**, because that
+  construction "is what pushes a sentence to fifty words, every time".
+
+That took the ceiling from 52 to 29 and long sentences from 28% to 3%, while the
+answer got *shorter* and clearer. Same shape as the `performance.md` read-rate
+finding in v0.7.0: a soft instruction is one the model can talk itself out of; a
+precondition plus a named failure mode is not.
+
+### No cost to review quality
+
+Same fixture, byte-identical, under the tightened register: 6/6 planted defects,
+`oracle` dispatched, 2 criticals, 4 fixed. Prose in the review itself came out at
+**12.8 mean words per sentence, longest 32, two of forty-three over the limit** —
+so the register applies to a structured deliverable, not only to conversational
+answers, and carries the same findings in fewer words.
+
+### Cost
+
++241 tokens of static context, on the only file loaded every request. Paid
+knowingly, because it is a default-register change and there is nowhere cheaper to
+put it. The first draft cost +300 and was cut back before shipping.
+
+### Found by the test, not by me
+
+The tone run was asked to explain the coverage manifest and reported, unprompted,
+that `README.md:442` still claimed "all 31 adopted behaviours" when the real count
+is 186. The header also still said "five skills" after `review` shipped. Both
+fixed. A register test that audits its own subject matter is a better test than
+one that only counts words.
