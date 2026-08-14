@@ -40,7 +40,10 @@ churn. Conventions come from the repository, never from your preferred dialect.
 **3. Clarity over cleverness.** Explicit beats compact whenever compact needs a
 mental pause. Keep names that carry meaning even at a few extra lines. Delete
 comments restating the code; **keep comments that explain why** — intent is the
-one thing code cannot say for itself.
+one thing code cannot say for itself. **Comment volume is its own smell**: a
+function needing a note every third line usually needs splitting or renaming
+instead, and a comment that only survives because the name is bad should be
+deleted *after* the rename, not before.
 
 **4. Balance.** Over-simplification is real: do not inline away a meaningful
 name, merge unrelated logic, or optimise for line count. And do not remove an
@@ -115,6 +118,10 @@ commit message is often the whole answer for one command.
 Cannot answer? Read more. Accumulated complexity often has no reason and is just
 residue from pressure — but you learn that by checking, not assuming.
 
+**A comment is a fence too.** Delete one that restates the code freely; a comment
+you do not *understand* gets `git blame` first, because the cryptic one-liner
+about ordering is usually the scar from an outage.
+
 ### 2. Find the opportunities
 
 **Should this exist?** before **is this well expressed?** — no point tidying a
@@ -168,7 +175,13 @@ rejected or throws where it returned a default.
 | `data`, `result`, `temp`, `val` | Name the content: `validationErrors` |
 | `usr`, `cfg`, `btn`, `evt` | Full words, unless universal (`id`, `url`, `api`) |
 | A `get*` that also mutates | Rename to what it does |
-| Comment restating code / explaining why | Delete / keep |
+| Comment restating the code | Delete |
+| Comment explaining *why* — intent, a constraint, a past incident | Keep |
+| **Comment that contradicts the code** | Read both. Fix whichever is wrong; never leave the pair |
+| Narration — "first we validate", "now return the result" | Delete. The tell of generated code |
+| Docstring repeating the signature and nothing else | Delete. Keep one that names units, ranges or failure modes |
+| Banner dividers, attribution, dated changelog notes | Delete — git owns history |
+| `TODO`/`FIXME` naming work already done | Delete. Keep live ones that name an owner |
 
 | Redundancy | Fix |
 |---|---|

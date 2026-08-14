@@ -44,8 +44,9 @@ wrapper that only forwards · hand-rolled code the standard library, the platfor
 or an installed dependency already ships · a config key nobody sets · a flag with
 one value · nesting three deep · a nested ternary · a function past ~50 lines
 doing more than one thing · `data`/`temp`/`result` naming · a comment restating
-the code · dead code, unreachable branches, imports the change orphaned ·
-duplicated *knowledge* that must change together.
+the code, or contradicting it · narration comments the change added · a `TODO`
+naming work this change finished · dead code, unreachable branches, imports the
+change orphaned · duplicated *knowledge* that must change together.
 
 **A conditional bolted onto an unrelated flow is a design finding, not a nit** —
 push it into its own helper, state or policy. Repeated conditionals on the same

@@ -1400,3 +1400,65 @@ that `README.md:442` still claimed "all 31 adopted behaviours" when the real cou
 is 186. The header also still said "five skills" after `review` shipped. Both
 fixed. A register test that audits its own subject matter is a better test than
 one that only counts words.
+
+---
+
+## v0.7.5 — comment smells, and a routing fix that did not work
+
+### The gap
+
+`simplify` carried three comment rules: delete comments that restate the code,
+keep comments that explain why, remove commented-out blocks. Nothing covered the
+smells that actually accumulate. Added, as table rows so each has a named fix:
+
+a comment that **contradicts** the code (read both, fix whichever is wrong, never
+leave the pair) · narration — "first we validate", "now return the result" · a
+docstring repeating the signature and nothing else · banner dividers, attribution
+and dated changelog notes · a `TODO` naming work already done. Plus two
+principles: **comment volume is its own smell**, and **a comment is a fence too** —
+delete a restating comment freely, but `git blame` one you do not understand,
+because the cryptic line about ordering is usually the scar from an outage.
+
+`review`'s simplicity lane gained the detection half: a comment contradicting the
+code, narration the change added, a `TODO` the change finished.
+
+### Measured
+
+Fixture: one function carrying eight comment smells, one `FIXME` with an owner
+that must survive, and one cryptic comment recording a 2023-11 billing incident.
+
+**8/8 smells handled. The `FIXME` kept.** The incident comment was deleted — but
+only after `git log -p`, with the commit SHA cited, the reason given (the file has
+never contained a `sort`) and a restore path offered. That is the fence rule
+working, not bypassed.
+
+It also found a **second** contradiction that was not planted: `// Round down to
+two decimal places` is wrong, because `Math.round` rounds half-up.
+
+### The routing miss, and the fix that failed
+
+`simplify` **did not fire** on the prompt `simplify src/pricing.js`. The
+orchestrator handled a 38-line file directly, which its own rule permits: "handle
+it directly when it is one isolated, low-risk action **and** briefing a specialist
+would cost more than doing it."
+
+That exemption was written for *agents*, which need a briefing. A skill costs one
+file read, so it should never have applied. I added a clause saying exactly that,
+re-ran the identical prompt — **and the skill still did not fire.**
+
+So the clause was reverted. It cost ~55 tokens of static context on every request
+and produced no measured change, which is the "neutral is a revert" rule from our
+own `performance.md` applied to our own work. Keeping it would have been
+unmeasured complexity.
+
+**Known limitation, documented rather than fixed:** naming the operation a skill
+is named for does not reliably invoke it. Same shape as `deepwork` — a skill fires
+on unmistakable task *shape*, and "simplify one small file" resolves to "I can
+just do this". Workaround is the explicit form, `/omc-slim:simplify <target>`.
+
+Practical impact is small: across three runs on this fixture — two without the
+skill, one with — all three produced good comment handling, because the
+orchestrator's own standards carry most of it. But **only the forced run is
+evidence that these new rules work**, and the first run I looked at was not, which
+is worth remembering before crediting a rule for behaviour the model would have
+produced anyway.

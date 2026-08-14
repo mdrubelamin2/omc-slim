@@ -199,3 +199,11 @@ wait-what	orient-before-concluding	output-styles	before a conclusion the reader 
 caveman	lite-keeps-grammar	output-styles	terseness is fewer sentences, never broken ones
 wait-what	hard-sentence-ceiling	output-styles	never past twenty-five
 wait-what	no-parenthetical-lists	output-styles	A parenthetical list becomes its own sentence
+audit	comment-volume-is-a-smell	simplify	Comment volume is its own smell
+audit	stale-comment-contradiction	simplify	Comment that contradicts the code
+audit	narration-comments	simplify	The tell of generated code
+audit	redundant-docstring	simplify	Docstring repeating the signature
+audit	banner-and-attribution-comments	simplify	git owns history
+audit	completed-todo-comments	simplify	naming work already done
+audit	comment-is-a-fence	simplify	A comment is a fence too
+audit	stale-comment-detection	review/checklists.md	or contradicting it
