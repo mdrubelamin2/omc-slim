@@ -180,3 +180,11 @@ audit	must-read-checklists	review	Read `checklists.md` now
 audit	performance-lane-precondition	review	applied or accepted, **open `performance.md`
 audit	severity-vs-mechanicalness	review	severity decides whether the *decision* is yours
 audit	finding-vs-change-measurement	review/performance.md	bars unmeasured *changes*, not unmeasured *findings*
+audit	read-project-rules-first	review	Read the project's own rules first
+audit	survey-both-scopes	review	in both scopes
+audit	toolsearch-reaches-deferred	review	an unsearched tool is invisible, not absent
+audit	prefer-stack-specific-specialist	review	prefer a specialist built for this stack
+audit	cite-the-source-gate	review	Cite the source, or you do not have a claim
+audit	external-claims-never-recalled	review	never recalled
+audit	remedy-checked-against-current	review	The remedy gets the same rigour as the finding
+audit	prior-art-before-bespoke	review	look for prior art

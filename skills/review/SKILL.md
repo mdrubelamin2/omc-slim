@@ -77,6 +77,22 @@ change is most likely to be wrong, and write them down. Then go and check each
 one. Prediction turns passive reading into deliberate search, and at the end the
 gap between what you predicted and what you found tells you where you were blind.
 
+**Then look at what can judge this better than you can.** You have a knowledge
+cutoff and this repository has law you have not read yet.
+
+- **Read the project's own rules first** — `CLAUDE.md` / `AGENTS.md`,
+  `.claude/rules/`, the lint, formatter and type configuration, a design system
+  file if one exists. These outrank your preferences wherever they speak, and a
+  finding that contradicts something the project wrote down deliberately is not a
+  finding.
+- **Survey the installed toolset, in both scopes** — the project's `.claude/` and
+  the user's `~/.claude/`, where most machines carry far more. Other plugins ship
+  security, performance, testing and framework-specific reviewers built for
+  exactly this stack, and an MCP server for the framework in front of you is
+  authoritative where you would be inferring. `ToolSearch` reaches deferred
+  tools; an unsearched tool is invisible, not absent. Name what you found when
+  you dispatch, and prefer a specialist built for this stack over a generic lane.
+
 **Read `checklists.md` now, before judging anything.** It holds what each lane
 actually looks for, and it exists because the items worth catching are the ones
 that do not come to mind unprompted. Skim past the lanes that are out of scope;
@@ -156,6 +172,26 @@ grepped and did not find it".
 
 Cannot quote it? It is speculation. **Do not report it, and do not invent a
 higher confidence to get around this gate.**
+
+**Cite the source, or you do not have a claim.** The quote gate covers what is
+true *inside* this repository. Anything a finding rests on from outside it — an
+API signature, a default, a deprecation, a "recommended way", whether a library
+still behaves like that, whether an advisory is reachable — is checked against a
+current source before it is reported, never recalled. Training data has a cutoff,
+and a reviewer confidently citing an argument that moved two versions ago is the
+most expensive false positive there is, because it is specific and sounds
+researched. Send it to `librarian` or to the documentation server for this stack,
+and carry the source into the finding: an unsourced external claim is
+indistinguishable from a recalled one.
+
+**The remedy gets the same rigour as the finding.** Reviewers are audited on the
+bug and trusted on the fix, which is backwards. Before proposing a workaround,
+check whether the platform, the framework, or a newer version of a dependency
+already solves it. Before proposing anything bespoke, look for prior art — a
+named algorithm, a standard, an RFC, a widely used implementation. "Add a retry
+loop with jitter" is worse than naming the backoff the ecosystem already settled
+on, and a fix invented in one pass is exactly the kind of thing this skill exists
+to catch when someone else writes it.
 
 **The same burden applies to saying something is fine.** "This is handled
 elsewhere" needs the handling code cited. "Tests cover this" needs the test named.

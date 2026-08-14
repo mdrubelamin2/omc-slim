@@ -1173,3 +1173,54 @@ The general shape: reference material splits by *when it is needed*, not by
   fans out, so the one-message fan-out has never actually executed.
 - Whether the checklists change outcomes on a change that is beyond model recall.
   On this fixture they demonstrably did not.
+
+---
+
+## v0.7.1 — review checks the world, not its memory
+
+`review` judged code against recall. Two gates added, mirroring the two already
+there:
+
+- **Before the lanes:** read the project's own rules, then survey the installed
+  toolset in *both* scopes. Other plugins ship reviewers built for this exact
+  stack, and a documentation MCP is authoritative where recall is inference.
+  `ToolSearch` reaches deferred tools.
+- **At report time:** "**Cite the source, or you do not have a claim.**" The quote
+  gate covers what is true inside the repository; anything from outside it — an
+  API signature, a default, a deprecation, whether a library still behaves that
+  way — is checked against a current source and the source travels into the
+  finding. Plus: **the remedy gets the same rigour as the finding**, so check
+  whether the platform already solves it, and look for prior art before proposing
+  anything bespoke.
+
+### Measured on a fixture built to discriminate
+
+A branch whose defects need a *live* source, plus two false positives that only
+the project's own rules can prevent. `.claude/rules/conventions.md` declared the
+fixed-1s retry policy and `snake_case` field names deliberate, and both had been
+"proposed twice and rejected twice".
+
+The chain fired end to end: **`librarian` → `ToolSearch` → context7 (a different
+plugin, at user scope) → four live doc queries.** Then `oracle` for the
+adversarial pass.
+
+| Test | Result |
+|---|---|
+| Stale-recall trap (`crypto.createCipher`) | **Caught**, and over-delivered: verified against the *installed* runtime (`node -v` → v24.19.0, `typeof createCipher` → `undefined`) **and** cited DEP0106 with a URL |
+| Source carried into the finding | **yes** — the live link is in the output, not just in the reasoning |
+| Rule-blessed FP: exponential backoff | **avoided**, twice explicitly: "Not a challenge to the fixed-retry policy" |
+| Rule-blessed FP: rename to camelCase | **avoided** — and inverted into a finding, that numeric IDs coerced to `"1001"` *contradict* the byte-for-byte vendor-spec goal the rule states |
+| False positives emitted | **0** |
+| Findings | 11 (2 critical), every one quoted, executed or sourced |
+
+The remedy gate showed up where I had not planted it: asked to replace a
+hand-rolled grouping, it proposed `Map` rather than a plain object — correctly,
+because that fixes key coercion, ordering *and* the `__proto__` crash it had just
+demonstrated by running the function.
+
+Two findings came from running the code, not reading it: a vendor `204` makes
+`res.json()` throw *after* a successful POST, so the retry loop triple-posts the
+batch (measured: "vendor POSTs on 204: 3"), and the loop sleeps three times for
+three attempts — 3023ms — which does not implement the "three attempts, 1s apart"
+the project rule specifies. **Using the project's own stated policy as the
+standard to judge the code against is the behaviour this release was aiming at.**
