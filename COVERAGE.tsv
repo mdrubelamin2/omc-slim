@@ -207,3 +207,6 @@ audit	banner-and-attribution-comments	simplify	git owns history
 audit	completed-todo-comments	simplify	naming work already done
 audit	comment-is-a-fence	simplify	A comment is a fence too
 audit	stale-comment-detection	review/checklists.md	or contradicting it
+audit	scope-cut-is-a-gate	deepwork	An assumption that shrinks the deliverable is a question
+audit	set-shaped-work-closes-by-diff	deepwork	Set-shaped work closes by diffing the set
+audit	second-search-corroborates-set	deepwork	differently shaped search

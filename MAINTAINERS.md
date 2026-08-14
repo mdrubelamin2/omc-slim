@@ -1514,3 +1514,66 @@ register held at **13.4 mean words per sentence, longest 29**. It also produced
 the sharpest finding any run has made on that fixture — `hydrate` builds `total`
 with `s + i.price`, and node-postgres returns `NUMERIC` as a *string*, so the
 total silently concatenates and the refund cap compares against it.
+
+---
+
+## v0.7.7 — a scope cut is not an assumption
+
+Reported from a real run: `deepwork` on "unify **all** of the pages header part"
+worked for an hour and left every route under `settings/` untouched.
+
+### My first diagnosis was wrong
+
+I listed four discovery-failure hypotheses — glob depth, a nested layout hiding
+the header, lane assignment, a self-consistent subtree reading as uniform. All
+four were wrong. The transcript showed the run had **found** the settings pages,
+decided they were out of scope, recorded that as a stated assumption, and carried
+on. It was not a discovery miss. It was a silent scope cut.
+
+Worth keeping as a method note: for a "why did it miss X" question, the transcript
+settles it and hypotheses do not. I should have asked for it before enumerating
+causes.
+
+### The defect
+
+`deepwork` said the stage map is "living, not a contract — update it when what you
+learn invalidates the plan, and say that you did." Nothing distinguished two
+different kinds of assumption:
+
+- **fills a gap** — "the vendor spec is unavailable, assuming JSON" → state it,
+  proceed;
+- **removes work** — "treating settings as out of scope" → a cut made on the
+  caller's behalf.
+
+The second was handled like the first, so the user learned about it in the report,
+an hour late. Every gate downstream passed, faithfully, against a narrowed set.
+
+### Two rules
+
+**Before the map runs.** *An assumption that shrinks the deliverable is a
+question, not an assumption.* Where the request names a set, this applies to each
+member proposed for exclusion, and "it looked different from the others" is the
+reason to ask rather than the reason to skip.
+
+**At the end.** *Set-shaped work closes by diffing the set* — re-run the
+enumeration and list every member not touched, each with a reason. "Already
+conformant" is a reason; absence from the list is not. This one is a check that
+can fail, which is deepwork's currency, so it catches the miss even when the first
+rule is talked past.
+
+### Verified on a reproduction
+
+Ten routes, five behind a shared `SettingsPage` rendering `Typography.Title
+level={4}` with optional descriptions, a dashboard to exclude, a tabbed documents
+page. Same prompt, verbatim.
+
+All five settings routes changed plus the shared component; dashboard correctly
+untouched. The closing gate fired in the report: "re-enumerated the route set with
+`find` — 10 pages, 9 route through `PageHeader`, dashboard is the only miss and
+that's intended."
+
+Two unasked-for behaviours worth noting. It stated its verification ceiling rather
+than implying more ("no `package.json`, no build, typecheck or dev server, and I
+never saw this render"). And it **rejected** an oracle suggestion to restore the
+deleted subtitles behind a `subtitle` prop, because removing them was the request —
+scope fidelity holding in the direction that usually fails quietly.

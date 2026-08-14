@@ -38,6 +38,14 @@ checkable, merge it into the next.
 The map is living, not a contract. Update it when what you learn invalidates the
 plan — and say that you did.
 
+**An assumption that shrinks the deliverable is a question, not an assumption.**
+An assumption that fills a gap is stated and worked past. One that removes work is
+a scope cut made on the caller's behalf, and it is a gate: surface it before the
+map runs, never in the report an hour later. Where the request names a set — *all*
+the pages, *every* endpoint — this applies to each member you propose to leave
+out, and "it looked different from the others" is the reason to ask, not the
+reason to skip.
+
 ## 2. Delegate independent work
 
 Stages that do not depend on each other: dispatch them in one message so they run
@@ -65,6 +73,13 @@ so and mark its output unverified, so the gap is visible downstream.
 The loop runs backward too: **if a fix invalidates an earlier stage, re-run that
 stage's check before continuing.** An error caught at stage 3 is trivial; at stage
 8 it is not.
+
+**Set-shaped work closes by diffing the set.** When the request covers *all* of
+something, the final check re-runs the enumeration that defined it and lists every
+member you did not touch, each with a reason. "Already conformant" is a reason;
+absence from the list is not. Derive the set from a command and show it — one glob
+can miss a whole subtree, and a second, differently shaped search is what catches
+that.
 
 ### Review gates
 
