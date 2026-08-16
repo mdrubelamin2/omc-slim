@@ -210,3 +210,8 @@ audit	stale-comment-detection	review/checklists.md	or contradicting it
 audit	scope-cut-is-a-gate	deepwork	An assumption that shrinks the deliverable is a question
 audit	set-shaped-work-closes-by-diff	deepwork	Set-shaped work closes by diffing the set
 audit	second-search-corroborates-set	deepwork	differently shaped search
+audit	review-the-set-not-the-diff	review	review the set, not the diff
+audit	missed-member-absent-from-diff	review	absent from the diff by definition
+audit	derive-set-from-goal	review	Derive the set from the goal
+audit	completeness-lane-generalised	review/checklists.md	A member the change forgot is not in the diff
+audit	enumerate-from-goal-not-old-impl	review/checklists.md	from the goal, not from the old implementation

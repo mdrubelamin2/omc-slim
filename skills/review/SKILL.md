@@ -51,6 +51,17 @@ messages — whatever exists. **Code that handles a deliverable is not the
 deliverable.** Informational, not blocking, but a gap here outranks every style
 finding below it.
 
+**Where the request covers a set — every page, all the endpoints, each consumer —
+review the set, not the diff.** A member that was missed is absent from the diff
+by definition, so no diff-bounded lane can see it. Enumerate independently, list
+what the change did not touch, and account for each one.
+
+**Derive the set from the goal, not from the old implementation.** "Everything
+using the helper we are replacing" reproduces the change's blind spot exactly: the
+file that never used the helper is the file most likely to have been forgotten.
+Enumerate from the requirement — every route, every caller, every subclass —
+resolve each to its code, then test membership.
+
 ## 3. Read the tests first
 
 They state what the author believed the change should do, so the implementation

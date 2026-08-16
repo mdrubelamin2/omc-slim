@@ -27,12 +27,21 @@ string, so digest inputs must normalise first (`{cores: 8}` and `{cores: "8"}`
 hash differently); a "today" key covering only midnight-to-now; two features
 bucketing the same data hourly and daily.
 
-**Enum and value completeness — the one lane that requires reading outside the
-diff.** When the change adds an enum value, status, tier or type constant, grep
-its *siblings* and read every file that switches on, filters by, persists or
-displays them. Check allowlist arrays and `case` chains for the new value falling
-through to a wrong default. The classic miss is adding it to the dropdown while
-the backend never persists it.
+**Completeness — the one lane that requires reading outside the diff.** A member
+the change forgot is not in the diff, so only this lane can find it.
+
+- **A new enum value, status, tier or type constant** — grep its *siblings* and
+  read every file that switches on, filters by, persists or displays them. Check
+  allowlist arrays and `case` chains for the new value falling through to a wrong
+  default. The classic miss is adding it to the dropdown while the backend never
+  persists it.
+- **A change that covers a set** — every page, all the endpoints, each consumer.
+  Enumerate the set **from the goal, not from the old implementation**: "everything
+  importing the helper being replaced" cannot find the file that never imported it.
+  Resolve every route or caller to its code and test membership, then name each
+  member the diff did not touch.
+- **A new required field, a renamed export, a removed parameter** — every
+  construction site, every importer, every override.
 
 ## Simplicity — always
 

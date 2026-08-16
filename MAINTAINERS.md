@@ -1577,3 +1577,60 @@ than implying more ("no `package.json`, no build, typecheck or dev server, and I
 never saw this render"). And it **rejected** an oracle suggestion to restore the
 deleted subtitles behind a `subtitle` prop, because removing them was the request —
 scope fidelity holding in the direction that usually fails quietly.
+
+---
+
+## v0.7.8 — review the set, not the diff
+
+Second set-completeness failure reported in two days, and a different mechanism
+from v0.7.7. Worth stating together, because set-shaped work fails in exactly two
+ways and both are now gated:
+
+| | Mechanism | Gate |
+|---|---|---|
+| v0.7.7 `deepwork` | The set was known and a member was **silently excluded** | A scope cut is a question, not an assumption |
+| v0.7.8 `review` | The member was **never in the set**, so no lane could see it | Review the set, not the diff |
+
+### The mechanism
+
+A header-unification branch migrated every page that imported
+`getPageShellStyle`. One route imported neither helper, so it never entered the
+inventory — and it is absent from the diff by construction, which makes it
+invisible to every review lane, since each is dispatched with the diff command.
+
+The user's own diagnosis is the rule: *"a page absent from the diff is invisible
+to a diff review."* Their fix is the sharper half — enumerate every authenticated
+route, resolve each to its component, and test whether it reaches `PageHeader`.
+
+**Deriving the set from the old implementation reproduces the change's blind spot
+exactly.** "Everything importing the helper we are replacing" cannot, by
+construction, find the file that never imported it — and that file is the one most
+likely to have been forgotten. The set has to come from the goal.
+
+### What changed
+
+`SKILL.md` step 2 gained both halves: review the set rather than the diff when the
+request covers one, and derive it from the goal rather than from the code being
+replaced.
+
+`checklists.md` generalised its enum rule. That lane was already the **only** one
+licensed to read outside the diff, but it was scoped to enum values, statuses and
+type constants. It is now a **Completeness** lane covering three shapes — a new
+enum value, a change covering a set, and a new required field or renamed export —
+opening with the reason it exists: a member the change forgot is not in the diff,
+so only this lane can find it.
+
+### Verified on a reproduction
+
+Five routes in a router, four importing the helper being deleted, one
+(`project-list.tsx`) importing neither and therefore absent from the diff.
+
+Review's **first** finding, at 10/10 confidence: "`src/router.tsx:12` routes
+`ProjectList` alongside the other four, but it never imported `styles.ts`, so
+enumerating 'who uses the helper we are deleting' cannot see it." The rule fired
+and the reviewer named the derivation trap itself.
+
+It also caught three consequences the migration created and the diff alone would
+have justified: `PageHeader` hardcodes `<h2>` so no document has an `h1`; the old
+`getPageShellStyle` padding was deleted with no `children` slot to replace it; and
+the new breadcrumb renders plain text with no `/` route to link to.
