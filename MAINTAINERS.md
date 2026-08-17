@@ -178,10 +178,11 @@ telling it *you are running low on room* is anxiety and does not. Over-correctin
 past that line broke `observer` routing once — its reason to exist disappeared
 along with the framing.
 
-### Both hooks are advisory and fail open
+### The hook is advisory and fails open
 
-Neither returns a `permissionDecision`; neither can block. Every error path exits
-0 emitting nothing. A broken guard must never break a session.
+`verify-deliverables` is the only hook that ships. It returns no
+`permissionDecision` and cannot block. Every error path exits 0 emitting
+nothing. A broken guard must never break a session.
 
 `systemMessage` goes to the **user**, not the model — so you cannot verify a hook
 fired by asking the model whether it saw a warning. Instrument the hook and read
@@ -423,7 +424,7 @@ Consequences worth holding onto:
 - **Do not tune a skill description to fix non-invocation until you have
   confirmed the description is actually reaching the model.** Ask a session to
   print it back.
-- **omc-slim adds 5 skills to a shared, apparently finite listing budget.** On a
+- **omc-slim adds 6 skills to a shared, apparently finite listing budget.** On a
   saturated machine it marginally worsens the problem for every installed plugin,
   including itself. That is a real cost of the skill count, separate from token
   cost.

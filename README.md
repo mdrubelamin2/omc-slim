@@ -2,29 +2,44 @@
 
 A small pantheon of specialist agents for Claude Code.
 
-Ten agents, six skills, one hook, two MCP servers. **~4,310 tokens of
+Ten agents, six skills, one hook, two MCP servers. **~4,406 tokens of
 static context** and **zero bytes injected on the tool-call path.**
+Re-derive that figure any time with `./scripts/measure-context.sh`.
 
 Slim by construction, and it **adapts to whatever your project already has** —
 every specialist inherits your MCP servers and skills.
 
-> **Status.** Working and installable. Benchmarked once against a plain
-> session — it cost 10% more and produced an equivalent tool, so the case for it
-> is verification discipline, not raw efficiency. Every claim here was measured,
-> and the measurements that went against it are in
-> [`docs/BENCHMARK.md`](./docs/BENCHMARK.md) and [`RESEARCH.md`](./RESEARCH.md).
+> **Status — v0.8.1.** Working and installable. Re-benchmarked at n=3 against a
+> plain session and against the setup it replaces: it costs **18% less than
+> plain** at equal correctness, and ships the smallest tool of the three. The
+> harness is committed at `scripts/bench/`, so the numbers are re-derivable
+> rather than asserted. Every claim here was measured, and the measurements that
+> went against it are in [`docs/BENCHMARK.md`](./docs/BENCHMARK.md) and
+> [`RESEARCH.md`](./RESEARCH.md).
 >
-> **v0.6.0** names every agent and skill in the output style, because the
+> **v0.6.0-v0.6.1** name every agent and skill in the output style, because the
 > descriptions Claude Code shows get dropped once enough plugins are installed.
 > On a 41k-LOC repository that turned `oracle` and `librarian` from never firing
-> into firing on turn one, and a trivial one-line fix still gets handled directly
-> rather than delegated. It cost **+647 tokens of static context (+24%)**, which
-> is the honest price of the fix and the main thing to weigh before installing.
+> into firing on turn one. The same pass removed the `observer` agent: Claude
+> Code reads images and PDFs natively, so it never auto-fired, and forced it
+> matched the direct path while being unable to cross-reference the repo.
 >
-> **v0.6.1** removes the `observer` agent. Claude Code reads images and PDFs
-> natively in the main thread, so it never auto-fired; forced, it matched the
-> direct path on cost and fidelity while being unable to cross-reference the
-> repo. Upstream ships it disabled by default for the same reason.
+> **v0.6.4-v0.6.9** merge `simplify` from all four upstream sources, then audit
+> and compress it 28%. The orchestrator lost 250 tokens with no behaviour change.
+>
+> **v0.7.0-v0.7.3** add `review`, the all-axis code-review skill, behind an
+> evidence gate. It checks current sources and installed tooling rather than
+> recalled knowledge.
+>
+> **v0.7.4-v0.7.8** make Simplified Technical English the default register, teach
+> `simplify` to spot comment smells, and fix `review` to judge the whole change
+> set rather than the diff. Three separate files hit the same compression floor
+> at ~2%, so that pattern is now established rather than suspected.
+>
+> **v0.8.0-v0.8.1** hold `fixer` to the same standard the reviewers apply, and
+> solve `deepwork` auto-invocation — the cause was the injection point, not the
+> wording. Eight rewrites inside the output style changed nothing; the same
+> sentences in a `CLAUDE.md` fire it on the first tool call.
 
 Adapted from [oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim),
 rebuilt native-first rather than ported.
@@ -49,8 +64,8 @@ plain Node script and both MCP servers are public HTTP endpoints.
 
 **No further setup.** The orchestration output style applies automatically while
 the plugin is enabled (`force-for-plugin`), so the main thread works as a
-planner and reviewer rather than diving straight into implementation. Spawning
-14 of 15 components route automatically — see
+planner and reviewer rather than diving straight into implementation. 12 of the
+16 components route automatically — see
 [What invokes automatically](#what-invokes-automatically).
 
 That flag overrides your `outputStyle` setting — it is the one global thing this
@@ -78,7 +93,8 @@ the system prompt and an already-running session will not pick it up.
 ## What invokes automatically
 
 Measured across natural prompts that named no component and no plugin, with no
-instruction to delegate. **13 of 15 fire on their own.**
+instruction to delegate. **12 of the 15 components measured fire on their own.**
+The sixteenth, `review`, has not been tested either way.
 
 | Fires unprompted | |
 |---|---|
@@ -89,11 +105,16 @@ instruction to delegate. **13 of 15 fire on their own.**
 | `designer` | "this login form looks awful" |
 | `council` + all 3 seats + synthesiser | "Postgres or DynamoDB? I want more than one opinion" |
 | `deep-interview` | "I want to build something, not sure what yet" |
-| `simplify` | "this file is a mess, clean it up" |
+| `codemap` | fires on an unmistakable task shape — a large, unfamiliar repo — not on wording |
 | `verification-planning` | "how do I prove this refactor didn't break anything?" |
 | `gh_grep`, `context7` | reached through `librarian` |
 
-**Two do not:**
+`codemap` correctly declined a 15-file toy and fired unprompted on a 362-file,
+41k-LOC repository, writing 26 `codemap.md` files across 8 parallel `fixer`
+lanes for $6.09. Since v0.6.0 it must announce that cost, and what it writes
+into your repo, before starting.
+
+**Three do not, and one is untested:**
 
 - **`fixer`** — on "rename X to Y across the codebase" the main thread did it
   directly. That is the ladder working: isolated mechanical work should not pay
@@ -101,13 +122,15 @@ instruction to delegate. **13 of 15 fire on their own.**
   parallel lanes — three non-overlapping packages produced three concurrent
   `fixer` calls, cost-neutral and 1.8x faster than doing them in sequence. The
   threshold is parallelism, not file count.
-- **`codemap`** — resolved. It correctly declined a 15-file toy and fired
-  unprompted on a 362-file, 41k-LOC repository, writing 26 `codemap.md` files
-  across 8 parallel `fixer` lanes for $6.09. Since v0.6.0 it must announce that
-  cost, and what it writes into your repo, before starting.
-
 - **`deepwork`** — **invoke it yourself; it will not fire on its own.** See
   below.
+- **`simplify`** — did not fire on "simplify src/pricing.js"; the orchestrator
+  handled the file directly instead. A routing clause added to fix it measured
+  zero benefit and was reverted. Known limitation — workaround is the explicit
+  form, `/omc-slim:simplify <target>`.
+- **`review`** — **unmeasured, not a known failure.** No routing test has ever
+  covered it. Its description names it as a gate after implementation lands, so
+  it may well fire on "is this ready to ship"; nobody has checked.
 
 `council` fires but not reliably — one hit, one miss across two attempts. Treat
 the synthesiser as unproven and dispatch it explicitly for anything that matters.
@@ -192,15 +215,19 @@ adding more would make this worse for everything you have installed.
 
 ### Agents
 
-| Agent | Tier | For |
+Every agent **inherits the model you are running**. None pins its own tier, so
+the roster costs what your session costs — pick a cheaper model and the whole
+pantheon follows.
+
+| Agent | Access | For |
 |---|---|---|
-| `explorer` | haiku | "Where is X?" — returns a `file:line` map, capped at 40 lines |
-| `librarian` | haiku | Docs and usage examples — prefers your own MCP servers, project or user level, over the open web |
-| `oracle` | opus | Architecture, review, YAGNI scrutiny. Escalation, not a default step |
-| `tracer` | opus | Causal investigation when a first fix already failed |
-| `fixer` | sonnet | Bounded implementation from a spec |
-| `designer` | sonnet | Anything a user looks at |
-| `council` + 3 `councillor-*` seats | mixed | High-stakes decisions needing independent reads |
+| `explorer` | read-only | "Where is X?" — returns a `file:line` map, capped at 40 lines |
+| `librarian` | read-only | Docs and usage examples — prefers your own MCP servers, project or user level, over the open web |
+| `oracle` | read-only | Architecture, review, YAGNI scrutiny. Escalation, not a default step |
+| `tracer` | read-only | Causal investigation when a first fix already failed |
+| `fixer` | **writes** | Bounded implementation from a spec |
+| `designer` | **writes** | Anything a user looks at |
+| `council` + 3 `councillor-*` seats | read-only | High-stakes decisions needing independent reads |
 
 ### Skills
 
@@ -261,9 +288,10 @@ capability classes are the guard, not an exhaustive list.
 Three ideas, each of which cost something to learn.
 
 **Delegation over accumulation.** The main thread plans and reconciles;
-specialists do the work on cheaper tiers. The orchestrator prompt is ~2,261
-tokens — 50% smaller than the one it derives from — because everything Claude
-Code already provides was deleted rather than described.
+specialists do the work on cheaper tiers. The orchestrator prompt is ~3,230
+tokens, measured, because everything Claude Code already provides was deleted
+rather than described. It was smaller still at v0.5.0; the roster added in
+v0.6.0 is most of the difference.
 
 **Nothing injects on the tool-call path.** The dominant cost in comparable
 plugins is not startup context, it is per-tool-call and per-Stop injection.
@@ -362,24 +390,40 @@ Claude Code has no equivalent, so structural queries fall back to `Grep`. The
 side effect: `force-for-plugin` overrides your `outputStyle` while omc-slim is
 enabled. Disabling the plugin reverts it.
 
-**Measured once, honestly.** Full method and caveats in
+**Measured, honestly, and repeatably.** Full method and caveats in
 [`docs/BENCHMARK.md`](./docs/BENCHMARK.md). One prompt naming no technology
 ("build a CLI that finds duplicate files"), three arms, held-out grading fixture,
-measures fixed before running. **n=1 — directional, not settled.**
+measures fixed before running. **n=3 per arm.** The harness is committed at
+`scripts/bench/`, so anyone can re-run it.
 
-| | Cost | Tests | Correct | Notes |
-|---|---|---|---|---|
-| plain session | **$0.82** | 17 | ✅ | silently skips unreadable dirs |
-| **omc-slim** | $0.90 | **36** | ✅ | discloses skips; *identical CLI surface to plain* |
-| CLAUDE.md + fable-mode | $4.52 | 63 | ✅ | 12 files, 64 turns, best hardlink handling |
+| | Cost | Tool LOC | Tests | Flags | Correct |
+|---|---|---|---|---|---|
+| plain session | $1.2367 | 434 | 39 | 16 | ✅ |
+| **omc-slim** | **$1.0146** | **251** | 21 | **6** | ✅ |
+| CLAUDE.md + fable-mode | $7.0651 | 1,077 | 137 | 22 | ✅ |
 
-**omc-slim cost 10% more than a plain session and shipped a structurally
-identical tool** — same file count, near-identical LOC, the same flags. The 10%
-bought 2.1× the tests and disclosure of an unreadable directory that plain
-skipped in silence, which for a dedup tool is a correctness issue, not polish.
+**omc-slim costs 18% less than a plain session, and the spreads do not overlap** —
+plain's cheapest run still costs more than omc-slim's dearest. It also ships the
+smallest tool of the three, with a 6-flag CLI, at identical correctness. All nine
+runs found every duplicate group with no false positives.
 
-The large win is against the setup this replaces, not against plain: **5.0×
-cheaper and 6.3× faster than CLAUDE.md + fable-mode**, at equal correctness.
+Its three runs landed at 243, 251 and 258 LOC with the same 6 flags every time,
+while plain ranged 351 to 539 LOC and 14 to 19 flags. **Consistency is the
+clearest signal in the data.**
+
+More code did not buy more correctness. The heavyweight arm wrote 137 tests and
+5.4× the code, and produced the run's only silent failure — skipping an
+unreadable directory without a word. It also proved wildly unstable: three runs
+of one prompt cost $4.71, $6.01 and $10.47.
+
+Against the setup this replaces: **7.0× cheaper and 6.5× faster**, at equal
+correctness.
+
+This reverses the earlier v0.4.1 result, which found omc-slim 10% *more*
+expensive with 2.1× the tests. Note the baseline moved too — plain now emits 2.3×
+the output tokens it did then, and carries Claude Code's built-in skills — so the
+two runs are not one series. The old table is kept in the appendix of
+[`docs/BENCHMARK.md`](./docs/BENCHMARK.md).
 
 So the honest claim is not "better than plain". It is *close to plain cost, with
 materially more verification, at a fraction of a heavyweight discipline layer.*
@@ -395,7 +439,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~3,660 tok** | see above |
+| **omc-slim** | **~4,406 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -403,12 +447,17 @@ July 2026. In that dataset **sophistication correlates negatively with results**
 the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
-**omc-slim is the most expensive row in that table**, at 6.2× Karpathy and ~1,000
-tokens above oh-my-claudecode. Worse, it has grown every version: 2,774 → 2,803 →
-3,046 → 3,187 → 3,471 → 3,660. Each increase was individually justified — adopted
+**omc-slim is the most expensive row in that table**, at 7.5× Karpathy and ~1,740
+tokens above oh-my-claudecode. It has grown on net across every release —
+2,774 at v0.1.0 against 4,406 today — though not monotonically: v0.6.9 cut 250
+tokens and v0.7.6 cut 48. Each increase was individually justified — adopted
 behaviours, an anti-context-anxiety instruction, a skill roster the listing could
 not be trusted to provide — and they still sum. That is the exact failure mode
 oh-my-claudecode was criticised for, arrived at one defensible step at a time.
+
+The earlier figures in this series were measured by hand, and by v0.8.1 this
+README quoted two different totals for the same plugin. `measure-context.sh`
+exists so that cannot recur; treat pre-v0.8.1 points as approximate.
 
 If further measurement holds this direction, the right response is to shrink
 toward Karpathy, not to add features.
@@ -428,7 +477,7 @@ read, and adopt upstream changes deliberately rather than by memory.
 
 Three further packs were read and deliberately **not** adopted wholesale — see
 [`RESEARCH.md`](./RESEARCH.md) §6d for why. Their disciplines informed the
-register and the two-hook budget:
+register and the one-hook budget:
 
 | Pack | Pin | Informed |
 |---|---|---|
@@ -436,7 +485,7 @@ register and the two-hook budget:
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | 4.8.4, `16f29800` | The build ladder and laziness-with-floors stance |
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | `ec83e5ba` | Compressed output contracts and the terse register |
 
-Neither is named anywhere in the plugin's prompts — the behaviour is described
+None is named anywhere in the plugin's prompts — the behaviour is described
 directly, so nothing depends on those packs being installed.
 
 Benchmark figures come from [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -465,11 +514,11 @@ before deleting.
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule.
 [`COVERAGE.tsv`](./COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 186 rows, and growing with each release:
+lives — 218 rows, and growing with each release:
 
 ```bash
 ./scripts/check-coverage.sh
-# 186/186 adopted behaviours present.
+# 218/218 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 

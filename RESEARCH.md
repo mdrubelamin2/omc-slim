@@ -1,15 +1,18 @@
 # omc-slim — research notes
 
-> **Status: v0.5.0, built and published 2026-08-13** —
-> <https://github.com/mdrubelamin2/omc-slim>. This file is an append-only research
-> log: later sections correct earlier ones and the earlier text is left standing
-> so the reasoning is auditable.
+> **Status: research current to v0.5.0, written 2026-08-13** —
+> <https://github.com/mdrubelamin2/omc-slim>. The plugin has shipped well past
+> this point; see `README.md` and `MAINTAINERS.md` for the current state. This
+> file is an append-only research log: later sections correct earlier ones and
+> the earlier text is left standing so the reasoning is auditable.
 >
-> **Read sections 16-18 first.** They contain the benchmark, the routing
-> measurements, and a regression audit that overturn several conclusions in
-> sections 2b, 6d and 10 — including "delegation is gated" (wrong: 14 of 16
-> components route automatically) and the static-context figures, which have
-> risen every version to ~3,660 tokens.
+> **Read sections 16-19 first.** They contain the benchmark, the routing
+> measurements, a regression audit and the delegation-pays question — and they
+> overturn several conclusions in sections 2b, 6d and 10, including "delegation
+> is gated" (wrong: most components route automatically). The static-context
+> figures below stop at ~3,660 tokens for v0.6.0 and did not only rise after
+> that; several later versions cut them. `README.md` carries the measured
+> current figure.
 
 Research date: **2026-08-13**. Everything below was verified on that date and will
 rot; the upstream projects move fast (OMC ships ~35 npm versions/month).
