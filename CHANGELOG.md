@@ -94,9 +94,74 @@ exact literals rather than found by pattern, so the dated figures in
 deleted from `LIMITATIONS.md` rather than automated, since the table above them
 already prints every input.
 
+Adopted from
+[tim-hub/powerball-harness](https://github.com/tim-hub/powerball-harness), pinned
+at `cf086c6a`. A Go Plan/Work/Review harness in a plugin wrapper, and its own
+benchmark is why so little of it transferred — that study measures a two-line
+prompt instruction rather than the binary, and a search for prompt text across
+all 180 Go files returned one comment.
+
+**Three ways to turn a check green without doing the work; the plugin guarded
+one.** It already refused to weaken an assertion. `fixer` now names the other
+two: code shaped to the test's own inputs, and disabling whatever grades the code
+— a skipped test, `continue-on-error`, a lowered coverage floor, `--no-verify` on
+a commit.
+
+**A bugfix ships the reproduction that failed first.** A check written after the
+fix passes on both versions, so it proves the bug is gone only by assertion.
+
+**A check you tolerate failing is a check you have stopped reading.**
+`verification-planning` now allows three answers to a known-red result — repair
+it, narrow it, delete it — and leaving it red and explained is none of them. Its
+positive-control rule was generalised rather than duplicated: it already covered
+an empty search, and now covers a guard you just wrote, which is run against a
+state where the fault existed.
+
+**`check-upstream.sh` could not gate anything, and cried wolf on every clone.**
+It exited 0 unconditionally, counting a missing record and ordinary upstream
+movement in the same variable. `docs/upstream/CLAUDE.md.snapshot` is gitignored
+on purpose, so a fresh clone reported `SNAPSHOT LOST` — always red for everyone
+but the author. Movement stays news; a fault in our own record now exits
+non-zero, and a deliberately unpublished snapshot is recognised from `.gitignore`
+rather than hardcoded.
+
+**Review caught a regression this change introduced.** The first version of the
+`check-upstream.sh` fix asked `git check-ignore` whether a snapshot was
+deliberately unpublished, and read any non-zero answer as "not ignored". That
+command exits 128 outside a repository, so a release tarball or a vendored copy
+got `SNAPSHOT LOST` and, now that the script gates, a failing exit. Trading an
+always-red check for a red-and-blocking one is the worse deal. Three states now.
+
+**`check-coverage.sh` grew two assertions.** Every `${CLAUDE_PLUGIN_ROOT}` path
+must resolve, because the runtime resolves those and a rename breaks the hook at
+install time with nothing failing here. And both `README.md` and
+`.claude-plugin/plugin.json` state the roster in words, which the roster block
+never checked — it verifies names, never the count. Adding an agent trips the
+name check first, so what this really catches is a hook count, or a roster
+updated everywhere except the prose.
+
+**Every origin in `COVERAGE.tsv` is now classified, pinned and documented — and
+the pin has to be the one actually tracked.** `gstack` had 26 adopted rules, a
+pin, and no entry in `PROVENANCE.md` at all; three further origins had no
+provenance anywhere. Worse, `PROVENANCE.md` was itself built by lifting a table
+out of `README.md` that had already fallen behind, so three rows cited only the
+first of two reads: the `agent-skills` row credited a commit that produced 8 of
+its rules while 27 more came from the pin being tracked. Both halves now fail the
+check, and a source read twice carries both pins.
+
+Proved failable before being trusted, each against a verified-green control:
+**nine mutants against the new assertions, all killed**, five more dropping each
+new `COVERAGE.tsv` row in turn, and five failure branches of `check-upstream.sh`.
+Three mutations first reported a false survival and every one was the harness
+rather than the check — two replaced a literal where the checker normalises
+whitespace and the phrase wraps across lines, and one used a name the filter
+excluded. A harness that has not been shown to fail proves nothing about its
+subject, which is one of the rules this release adopts.
+
 **Static context 4,406 → 4,485 tokens** (+1.8%), all of it in three output-style
-additions. `.claude/settings.local.json` is now ignored by the repo rather than
-by one machine's global config.
+additions. The powerball rules land in agent and skill bodies, which load on
+demand and cost nothing at rest. `.claude/settings.local.json` is now ignored by
+the repo rather than by one machine's global config.
 
 ## v0.8.2
 

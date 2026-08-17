@@ -164,6 +164,192 @@ if bad:
 print(f'{len(sites)}/{len(sites)} published figures quote the measured {total} tokens.')
 PY
 
+# --- internal references --------------------------------------------------
+# Two things nothing else catches.
+#
+# A `${CLAUDE_PLUGIN_ROOT}` path is resolved by the runtime, not by this repo, so
+# renaming the file behind one breaks the hook or the skill at install time
+# rather than at edit time — with no error here.
+#
+# Two documents state the roster in words, and the roster block above checks
+# every name but never the count. Note what this does and does not catch: adding
+# an eleventh agent trips `UNLISTED` first, and this block never runs. The live
+# path is a change that leaves all three earlier blocks green — a hook added to
+# hooks.json, or a roster updated everywhere except the prose.
+#
+# Scoped to plugin-internal paths deliberately. A general markdown link check was
+# written first and rejected: skills/codemap/SKILL.md:168-170 shows sample output
+# containing `src/payments/codemap.md`, illustrating what codemap writes in the
+# user's repo. A link checker calls those three broken on day one, and a check
+# that is born red is a check nobody reads.
+python3 - "$ROOT" <<'PY' || exit 1
+import glob, json, os, re, sys
+root = sys.argv[1]
+bad = 0
+
+refs = {}
+for f in (glob.glob(os.path.join(root, 'agents/*.md'))
+          + glob.glob(os.path.join(root, 'skills/**/*.md'), recursive=True)
+          + glob.glob(os.path.join(root, 'output-styles/*.md'))
+          + glob.glob(os.path.join(root, 'hooks/*.json'))):
+    for hit in re.findall(r'\$\{?CLAUDE_PLUGIN_ROOT\}?(/[A-Za-z0-9_./-]+)', open(f).read()):
+        refs.setdefault(hit.lstrip('/'), set()).add(os.path.relpath(f, root))
+for path, sources in sorted(refs.items()):
+    if not os.path.exists(os.path.join(root, path)):
+        print(f'  DANGLING PATH {path}')
+        print(f'                  named by {", ".join(sorted(sources))}')
+        bad += 1
+# `refs` is glob-derived, so a broken glob empties it and "0/0 resolve" reads
+# exactly like a pass. The plugin forbids that in verification-planning; it would
+# be a poor look to ship it here.
+if not refs:
+    print('  NO REFERENCES found to check — the globs above matched nothing')
+    bad += 1
+elif not bad:
+    print(f'{len(refs)}/{len(refs)} plugin-internal paths resolve.')
+
+WORDS = {1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six',
+         7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten', 11: 'eleven',
+         12: 'twelve', 13: 'thirteen', 14: 'fourteen', 15: 'fifteen'}
+agents = len(glob.glob(os.path.join(root, 'agents/*.md')))
+skills = len(glob.glob(os.path.join(root, 'skills/*/SKILL.md')))
+hooks_cfg = json.load(open(os.path.join(root, 'hooks/hooks.json')))
+hooks = sum(len(g.get('hooks', [])) for ev in hooks_cfg['hooks'].values() for g in ev)
+
+# Above the table the phrase would be spelled in digits, so it stops matching and
+# says so — louder than a KeyError and in the right place.
+def word(n):
+    return WORDS.get(n, str(n))
+
+hookword = 'hook' if hooks == 1 else 'hooks'
+roster_sites = [
+    ('README.md',
+     f'{word(agents)} agents, {word(skills)} skills, {word(hooks)} {hookword}'),
+    # plugin.json's description is a second worded roster, and it has been wrong
+    # before: 4c5ee9b records it claiming two hooks while one existed. It is also
+    # the copy a marketplace shows, so it is the one strangers read first.
+    ('.claude-plugin/plugin.json',
+     f'{word(agents)} specialists, {word(skills)} skills, {word(hooks)} advisory {hookword}'),
+]
+matched = 0
+for path, expect in roster_sites:
+    text = re.sub(' +', ' ', open(os.path.join(root, path)).read().replace('\n', ' '))
+    if expect.lower() in text.lower():
+        matched += 1
+    else:
+        print(f'  STALE ROSTER  {path} does not state the roster this plugin ships')
+        print(f'                  expected: "{expect}"')
+        bad += 1
+if matched == len(roster_sites):
+    print(f'{matched}/{matched} worded rosters match: {word(agents)} agents, '
+          f'{word(skills)} skills, {word(hooks)} {hookword}.')
+
+if bad:
+    raise SystemExit(1)
+PY
+
+# --- adoption provenance --------------------------------------------------
+# COVERAGE.tsv records what this plugin took and from where. Two things must stay
+# true of that record: every origin is classified, and every external one is
+# documented where a reader can find it.
+#
+# Neither held. The audit that added this block found `gstack` pinned in
+# UPSTREAM.tsv with 26 adopted rules and no entry in PROVENANCE.md at all, plus
+# three further origins with no provenance anywhere. An adopted rule whose source
+# is undocumented is folklore.
+#
+# Classified by hand rather than matched, because the two files legitimately use
+# different names for one source — `omc` here, `oh-my-claudecode` there — and a
+# fuzzy match across them produced ten false positives when tried. An origin
+# missing from this table fails the check, which is the point: a new source
+# cannot enter COVERAGE.tsv without someone saying what it is.
+#
+# `tracked`    pinned in UPSTREAM.tsv, so drift is detected.
+# `documented` no commit to pin — a local install, or bundled with Claude Code.
+# `internal`   our own review found the defect; there is no upstream.
+python3 - "$ROOT" <<'PY' || exit 1
+import os, re, sys
+root = sys.argv[1]
+
+ORIGINS = {
+    # origin                 kind          UPSTREAM.tsv name      must appear in PROVENANCE.md
+    'audit':                ('internal',   None,                  None),
+    'CLAUDE.md':            ('tracked',    'CLAUDE.md',           '~/.claude/CLAUDE.md'),
+    'fable-mode':           ('tracked',    'fable-mode.SKILL.md', 'fable-mode'),
+    'addy':                 ('tracked',    'agent-skills',        'addyosmani/agent-skills'),
+    'gstack':               ('tracked',    'gstack',              'garrytan/gstack'),
+    'omc':                  ('tracked',    'oh-my-claudecode',    'Yeachan-Heo/oh-my-claudecode'),
+    'omo-slim':             ('tracked',    'oh-my-opencode-slim', 'alvinunreal/oh-my-opencode-slim'),
+    'ballast':              ('tracked',    'ballast',             'svy04/ballast'),
+    'ani-skills':           ('tracked',    'ani-skills',          'aniruddha-adhikary/skills'),
+    'powerball':            ('tracked',    'powerball-harness',   'tim-hub/powerball-harness'),
+    'ponytail':             ('documented', None,                  'DietrichGebert/ponytail'),
+    'caveman':              ('documented', None,                  'JuliusBrussee/caveman'),
+    'wait-what':            ('documented', None,                  '`wait-what` skill'),
+    'omc-official':         ('documented', None,                  'bundled simplification skill'),
+    'code-review-official': ('documented', None,                  'bundled `code-review` plugin'),
+}
+
+pinned = {}
+for line in open(os.path.join(root, 'UPSTREAM.tsv')):
+    if line.startswith('#') or not line.strip():
+        continue
+    fields = line.rstrip('\n').split('\t')
+    pinned[fields[1]] = fields[2]
+
+seen = []
+for line in open(os.path.join(root, 'COVERAGE.tsv')):
+    if line.startswith('#') or not line.strip():
+        continue
+    origin = line.split('\t')[0]
+    if origin not in seen:
+        seen.append(origin)
+
+prov = re.sub(' +', ' ', open(os.path.join(root, 'docs/PROVENANCE.md')).read().replace('\n', ' '))
+
+bad = 0
+for origin in sorted(seen):
+    entry = ORIGINS.get(origin)
+    if entry is None:
+        print(f'  UNCLASSIFIED  COVERAGE.tsv origin {origin!r} is not in this check')
+        print('                  classify it as tracked, documented or internal')
+        bad += 1
+        continue
+    kind, upstream_name, doc_token = entry
+    if kind == 'tracked':
+        if upstream_name not in pinned:
+            print(f'  UNPINNED      {origin} claims to be tracked, but UPSTREAM.tsv')
+            print(f'                  has no row named {upstream_name!r}')
+            bad += 1
+        # The pin we track must be a pin the record names. PROVENANCE.md was
+        # built by lifting a table out of README.md that had already fallen
+        # behind, so three sources documented a commit that predated most of what
+        # was taken from them — addy's row cited the read that produced 8 rules
+        # while 27 more came from the later pin. A source read twice needs both
+        # pins in the table; it does not need them merged.
+        elif pinned[upstream_name][:8] not in prov:
+            print(f'  STALE PIN     {origin} is tracked at {pinned[upstream_name][:8]},')
+            print('                  which docs/PROVENANCE.md never mentions')
+            bad += 1
+    if doc_token and doc_token not in prov:
+        print(f'  UNDOCUMENTED  {origin} has adopted rules but no provenance entry')
+        print(f'                  expected in docs/PROVENANCE.md: {doc_token!r}')
+        bad += 1
+
+# The table only gets consulted for origins that exist, so an entry whose rows all
+# left COVERAGE.tsv would sit here forever unnoticed.
+for gone in sorted(set(ORIGINS) - set(seen)):
+    print(f'  STALE ENTRY   this check classifies {gone!r}, which COVERAGE.tsv')
+    print('                  no longer uses — drop it from ORIGINS')
+    bad += 1
+
+if bad:
+    print('\nEvery origin in COVERAGE.tsv needs a pin or a stated reason it has none.')
+    raise SystemExit(1)
+external = sum(1 for o in seen if ORIGINS[o][0] != 'internal')
+print(f'{len(seen)}/{len(seen)} adopted origins classified, {external} external and all documented.')
+PY
+
 echo
 if [ "$missing" -eq 0 ]; then
   echo "$checked/$checked adopted behaviours present."

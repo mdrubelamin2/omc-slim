@@ -354,10 +354,15 @@ A hash proves something changed; the snapshot shows what.
 
 **`CLAUDE.md.snapshot` is gitignored on purpose.** It is a copy of a personal
 `~/.claude/CLAUDE.md`, and this repo is public. The sha256 pin in `UPSTREAM.tsv`
-still detects drift; only the diff baseline is local. `check-upstream.sh` handles
-its absence — it reports `SNAPSHOT LOST` rather than failing, which on a fresh
-clone is expected, not a fault. Anyone re-deriving the adoption can read
-`COVERAGE.tsv`, which lists every rule taken and where it now lives.
+still detects drift; only the diff baseline is local. `check-upstream.sh` reports
+it as `unpublished` and stays green, because absence is the expected state
+everywhere except this machine. It decides that by asking `git check-ignore`
+rather than by holding a list, so the script and `.gitignore` cannot drift apart.
+Outside a repository — a release tarball, a vendored copy — `check-ignore` cannot
+answer at all, and that third case is also `unpublished`: an early version folded
+it in with "not ignored" and made the script exit non-zero for everyone not
+working from a clone. Anyone re-deriving the adoption can read `COVERAGE.tsv`,
+which lists every rule taken and where it now lives.
 
 **Updating a pin is a decision, not maintenance.** Review the diff, adopt only
 what earns its tokens against the standing-cost budget, then update the pin and
@@ -398,6 +403,22 @@ place and nothing will notice it going stale, so add the site to that list in th
 same commit. Enrolment is deliberate: a pattern loose enough to find the figure
 anywhere also matches the dated figures in `CHANGELOG.md` and `RESEARCH.md`,
 which must never be updated.
+
+**Adding an origin to `COVERAGE.tsv` means editing the checker too.** The
+`adoption provenance` block holds a hand-written table classifying every origin
+as `tracked` (pinned in `UPSTREAM.tsv`), `documented` (no commit exists to pin —
+a local install, or something bundled with Claude Code), or `internal` (our own
+review found it). An origin missing from that table fails the check by design, so
+a new source cannot arrive without someone stating what it is and where a reader
+can find it. Classification is by hand because the files legitimately use
+different names for one source — `omc` in `COVERAGE.tsv`, `oh-my-claudecode` in
+`UPSTREAM.tsv` — and matching across them loosely produced ten false positives.
+
+**Do not turn the path check into a link checker.** The `internal references`
+block resolves `${CLAUDE_PLUGIN_ROOT}` paths only. A general markdown link check
+was written first and rejected: `skills/codemap/SKILL.md:168` shows sample output
+containing `src/payments/codemap.md`, illustrating what codemap writes in the
+user's repo, and a link checker calls all six of those broken on day one.
 
 The check earned its place on first use: it caught that `surgical-edits`, adopted
 from `CLAUDE.md`, had been lost from the output style during the v0.3.0
