@@ -1767,3 +1767,44 @@ That is an invitation to `formatReport(rows, true, false, true)`.
 It also exceeded the one-check-behind floor — wrote 14 tests, ran them, and
 disclosed the real ceiling: "the tests run under Node 24's type stripping, which
 erases annotations without checking them. Types are unverified."
+
+---
+
+## v0.8.1 — deepwork auto-invocation solved: it was the injection point
+
+Eight attempts across several releases tried to make `deepwork` self-invoke by
+rewording its trigger inside `output-styles/omc-slim.md`. Every one failed. The
+answer came from re-reading the archived `CLAUDE.md` snapshot, where the rule that
+made `fable-mode` fire almost every time was sitting in plain sight:
+
+> For any task that spans multiple files, multiple sources, or multiple steps …
+> you MUST invoke the **fable-mode** skill (Skill tool, `skill: fable-mode`)
+> BEFORE any other tool call or substantive output. Do not skip, defer, or work
+> around it.
+
+I first read that as four wording techniques — mandatory rather than descriptive,
+the exact tool call named, an ordering constraint, escapes closed by name — and
+shipped it into the output style. **It still did not fire**, and went straight to
+`Write` on call 4.
+
+The variable was never the wording. It was the file.
+
+| Identical wording, identical fixture and prompt | Result |
+|---|---|
+| in `output-styles/omc-slim.md` | never fires |
+| in `CLAUDE.md` | **fires as tool call 1** |
+
+An output style shapes *how* the model works; it does not compel a skill
+invocation the way project or user instructions do. Eight rounds of rewording held
+the one variable that mattered constant, which is a method failure worth naming:
+when several attempts at the same fix all fail, stop varying the parameter and
+question the frame.
+
+This very likely explains the `simplify` non-invocation logged in v0.7.5 as well —
+the same class, the same file, and the routing clause I added there also measured
+zero and was reverted.
+
+**Shipped as documentation, not code.** A plugin cannot write a user's
+`CLAUDE.md`, so `README.md` now carries the paragraph to paste and the measurement
+behind it. The output style is unchanged and the +117 tokens of failed mandate were
+reverted.

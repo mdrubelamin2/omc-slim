@@ -135,11 +135,36 @@ the orchestrator says **yes** and reasons correctly about why. Then, given the
 same task to actually do, it makes fourteen edits across three files without
 writing a stage map. **The gap is recognition to action, not recognition.**
 
-The plausible reason: the one skill that reliably self-invokes is `codemap`,
-which matches an unmistakable task *shape* — "map this repo". `deepwork` needs a
-judgement about whether work is hard enough to stage, and that judgement
-reliably resolves toward "I can handle this". Four rounds of trigger wording did
-not move it. If you want the staging discipline, ask for it.
+### Make it automatic — one paragraph in your `CLAUDE.md`
+
+**Solved, and the cause was not the wording.** Eight rewrites of the trigger
+inside the output style changed nothing. The same sentences placed in a
+`CLAUDE.md` fire the skill on **the first tool call**.
+
+| Same wording, same fixture, same prompt | Result |
+|---|---|
+| In `output-styles/omc-slim.md` | never fires — call 4 was a `Write` |
+| In `CLAUDE.md` | **fires as call 1** |
+
+An output style shapes *how* the model works. It does not appear to compel a
+skill invocation the way project or user instructions do. A plugin cannot write
+your `CLAUDE.md`, so this is setup rather than something omc-slim can ship.
+
+Paste this into `~/.claude/CLAUDE.md` for every project, or a project's own
+`CLAUDE.md` for one:
+
+```markdown
+### omc-slim:deepwork is mandatory for qualifying work
+
+For any task that spans multiple files, multiple sources, or multiple steps — or
+when the user asks to be thorough / systematic / "deep work" — you MUST invoke the
+**deepwork** skill (Skill tool, `skill: omc-slim:deepwork`) BEFORE any other tool
+call or substantive output. Do not skip, defer, or work around it. Skip it only
+for genuinely trivial, one-shot requests.
+```
+
+Without it, invoke the skill yourself — `/omc-slim:deepwork <task>` — and
+everything else in the plugin works unchanged.
 
 ### If nothing delegates at all
 
