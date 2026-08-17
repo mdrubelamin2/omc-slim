@@ -60,8 +60,16 @@ whose glob matched no file exits green, and so does an assertion behind a
 condition nothing satisfied. Print the number of inputs that reached the
 assertion beside the verdict, and read zero as unproven rather than passed. Where
 the result is an empty search rather than a green test, run that same search for
-something you know is there. If that comes back empty too, the search is broken
-and proves nothing about the code.
+something you know is there. A guard you just wrote earns the same treatment: run
+it against a state where the fault existed and confirm it fires. If neither finds
+what you planted, the check is broken and proves nothing about the code.
+
+**A check you tolerate failing is a check you have stopped reading.** A known-red
+result teaches everyone to skip that output, so the next real failure arrives
+already hidden. Repair it, narrow its scope to what it can honestly assert, or
+delete it — leaving it red and explained is none of those. That is a choice about
+a check this work owns; one already red when you arrived gets named to the caller
+rather than deleted.
 
 **Verify a fault before reporting it.** Grep it, diff it, run it, read the
 source. A warning raised because evidence was not found, rather than because a

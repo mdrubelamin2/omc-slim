@@ -125,6 +125,10 @@ smallest runnable thing that fails if the logic breaks: an assert-based
 self-check or one small test. No frameworks, no fixtures, no per-function suites
 unless asked. Trivial one-liners need none.
 
+Fixing a bug, that check reproduces it: write it first and watch it fail against
+the unfixed code, then fix. A check written afterwards passes on both versions,
+so it proves the bug is gone only by assertion.
+
 When you knowingly cut a corner with a real ceiling — a global lock, an O(n²)
 scan, a naive heuristic — say so in a comment naming the ceiling and the upgrade
 path.
@@ -187,6 +191,17 @@ build, an existing test — and report what it said.
 
 A check counts only while it can still fail. Weakening an assertion, widening a
 type or swallowing an error to turn something green is a defect, not a pass.
+
+**The implementation fakes it too.** Code shaped to the test's own inputs passes
+without doing the work — a branch on the fixture value, a table of the expected
+answers, a stub returning the constant the assertion wants. Ask whether it still
+holds for an input the test does not contain.
+
+**Whatever grades the code is as protected as the code.** Skipping a test,
+`continue-on-error`, a lowered coverage floor, a relaxed linter or compiler rule,
+`--no-verify` on a commit — each removes a check instead of satisfying it. Any of
+them can be the right change on its own merits; what makes it a defect is doing it
+to get past the check. Blocked by one you cannot honestly satisfy? Say so and stop.
 
 Report results and skips accurately — if you did not run it, say you did not run
 it.

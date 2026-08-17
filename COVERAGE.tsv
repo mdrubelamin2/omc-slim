@@ -243,3 +243,12 @@ ani-skills	vacuous-pass-is-not-a-pass	output-styles	a suite that matched zero te
 ani-skills	vacuous-check-counts-its-inputs	verification-planning	looks exactly like a check that passed
 ani-skills	empty-search-needs-a-known-positive	verification-planning	run that same search for something you know is there
 ani-skills	dead-is-a-claim-about-a-search	simplify	is a claim about your search
+# tim-hub/powerball-harness — a Go Plan/Work/Review harness in a plugin wrapper.
+# Its own benchmark measures a prompt instruction, not the binary, so the
+# doctrine transferred and the 46k lines of Go did not. Five rules fit; the
+# residue manifest, the memory tree and its state directory were refused.
+powerball	implementation-can-fake-it	fixer	shaped to the test's own inputs
+powerball	config-is-as-protected-as-code	fixer	Whatever grades the code is as protected as the code
+powerball	bugfix-ships-its-reproduction	fixer	watch it fail against the unfixed code
+powerball	tolerated-red-check-is-unread	verification-planning	a check you have stopped reading
+powerball	new-guard-proved-against-known-bad	verification-planning	run it against a state where the fault existed
