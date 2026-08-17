@@ -6,8 +6,7 @@ description: >
   named algorithms, standards, RFCs, well-reviewed implementations, published
   research. Use when a library's API may have moved, when a fact about the outside
   world is load-bearing, or before inventing something that probably already
-  exists. Cheap tier (Haiku). Read-only.
-model: haiku
+  exists. Read-only.
 disallowedTools: [Edit, Write, NotebookEdit, Bash, Agent, Task]
 ---
 

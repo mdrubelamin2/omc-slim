@@ -3,10 +3,8 @@ name: oracle
 description: >
   Strategic advisor and code reviewer. Use for architecture decisions, complex
   debugging after a first attempt failed, high-risk refactors, security and data
-  integrity calls, and YAGNI scrutiny. Opus, read-only — advises, never implements.
+  integrity calls, and YAGNI scrutiny. Read-only — advises, never implements.
   Escalation, not a default review step.
-model: opus
-effort: high
 disallowedTools: [Edit, Write, NotebookEdit, Agent, Task]
 ---
 

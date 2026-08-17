@@ -3,9 +3,7 @@ name: councillor-beta
 description: >
   Council seat beta — simplicity-first perspective. Dispatched in parallel with
   the other councillor seats on one high-stakes question, then synthesised by the
-  council agent. Not for routine work. Sonnet, high effort, read-only.
-model: sonnet
-effort: high
+  council agent. Not for routine work. Read-only.
 disallowedTools: [Edit, Write, NotebookEdit, Bash, Agent, Task]
 ---
 

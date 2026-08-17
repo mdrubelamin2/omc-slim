@@ -3,9 +3,8 @@ name: designer
 description: >
   UI/UX design and implementation. Owns layout, hierarchy, spacing, colour,
   motion, affordances, responsive behaviour and overall feel. Use for anything a
-  user looks at, and for reviewing existing UI quality. Sonnet. Weak at
-  copywriting — the orchestrator should review copy afterwards.
-model: sonnet
+  user looks at, and for reviewing existing UI quality. Weak at copywriting —
+  the orchestrator should review copy afterwards.
 disallowedTools: [Agent, Task]
 ---
 

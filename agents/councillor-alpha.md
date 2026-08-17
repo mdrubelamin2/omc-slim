@@ -3,9 +3,7 @@ name: councillor-alpha
 description: >
   Council seat alpha — risk-first perspective. Dispatched in parallel with the
   other councillor seats on one high-stakes question, then synthesised by the
-  council agent. Not for routine work. Opus, high effort, read-only.
-model: opus
-effort: high
+  council agent. Not for routine work. Read-only.
 disallowedTools: [Edit, Write, NotebookEdit, Bash, Agent, Task]
 ---
 

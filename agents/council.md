@@ -6,8 +6,6 @@ description: >
   dispatching councillor-alpha, -beta and -gamma in parallel and collecting their
   replies. Synthesis only — it reasons over what you paste in and does not
   investigate.
-model: opus
-effort: high
 disallowedTools: [Edit, Write, NotebookEdit, Bash, Agent, Task]
 ---
 
@@ -67,10 +65,10 @@ For each of **alpha**, **beta** and **gamma**, by that seat name:
 
 ## A caveat you must state when it applies
 
-These seats differ by model tier, reasoning effort and analytical stance — not by
-model *provider*. They share a common training lineage, so **correlated error is
-possible**: they can be confidently wrong in the same direction. When all three
-agree, that is weaker evidence than genuine cross-vendor consensus would be.
+These seats differ by analytical stance — not by model *provider*. They share a
+common training lineage, so **correlated error is possible**: they can be
+confidently wrong in the same direction. When all three agree, that is weaker
+evidence than genuine cross-vendor consensus would be.
 
 If consensus is unanimous on a high-stakes question, note this limitation
 explicitly in Remaining Uncertainty. Do not present agreement among three related

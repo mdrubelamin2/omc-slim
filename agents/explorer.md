@@ -2,9 +2,8 @@
 name: explorer
 description: >
   Fast codebase recon. Answers "where is X", "what calls Y", "which files touch Z".
-  Returns a compressed file:line map, not prose. Cheapest tier (Haiku) — the right
-  first call for any "where/what/which" question. Read-only; refuses to propose fixes.
-model: haiku
+  Returns a compressed file:line map, not prose — the right first call for any
+  "where/what/which" question. Read-only; refuses to propose fixes.
 disallowedTools: [Edit, Write, NotebookEdit, Agent, Task]
 ---
 

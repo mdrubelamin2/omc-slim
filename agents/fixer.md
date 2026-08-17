@@ -3,9 +3,8 @@ name: fixer
 description: >
   Bounded implementation. Receives a clear task spec and complete context from the
   orchestrator, then executes. Use for multi-file mechanical changes and
-  well-defined edits. Sonnet. Not for research, architecture, or anything a user
-  looks at — UI work goes to the designer.
-model: sonnet
+  well-defined edits. Not for research, architecture, or anything a user looks
+  at — UI work goes to the designer.
 disallowedTools: [Agent, Task, WebSearch, WebFetch]
 ---
 

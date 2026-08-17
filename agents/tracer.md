@@ -3,10 +3,8 @@ name: tracer
 description: >
   Evidence-driven causal tracing. Use when a bug's cause is genuinely unknown and
   a first fix attempt already failed. Builds competing hypotheses, gathers evidence
-  for and against each, and reports remaining uncertainty. Opus, read-only.
+  for and against each, and reports remaining uncertainty. Read-only.
   Distinct from oracle: oracle advises, tracer investigates.
-model: opus
-effort: high
 disallowedTools: [Edit, Write, NotebookEdit, Agent, Task]
 ---
 
