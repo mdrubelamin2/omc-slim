@@ -55,6 +55,14 @@ trustworthy.
 Report skips honestly. If a check could not be run, say so and say why — never
 imply a result you did not observe.
 
+**A check that ran over nothing looks exactly like a check that passed.** A suite
+whose glob matched no file exits green, and so does an assertion behind a
+condition nothing satisfied. Print the number of inputs that reached the
+assertion beside the verdict, and read zero as unproven rather than passed. Where
+the result is an empty search rather than a green test, run that same search for
+something you know is there. If that comes back empty too, the search is broken
+and proves nothing about the code.
+
 **Verify a fault before reporting it.** Grep it, diff it, run it, read the
 source. A warning raised because evidence was not found, rather than because a
 fault was found, is itself an error: it manufactures doubt and sends people

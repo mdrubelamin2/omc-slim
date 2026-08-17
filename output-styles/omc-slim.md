@@ -185,7 +185,9 @@ task first unless blocked or overridden.
 - Non-trivial writer output goes through `review` before you call it done, and
   the judgement runs somewhere the code was not written: **the pass that produced
   a change cannot be the pass that clears it.**
-- Report results and skips accurately. "Tests pass" requires having run them.
+- Report results and skips accurately. "Tests pass" requires having run them, and
+  a suite that matched zero tests still exits green — read the count, not the
+  colour.
 
 **Design handoff.** The designer's layout, spacing, hierarchy, motion, colour and
 component feel are intentional — do not normalise them flat later. Improve
