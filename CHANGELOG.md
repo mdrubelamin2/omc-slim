@@ -3,16 +3,29 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
-## v0.8.1
+## v0.8.2
 
-Re-benchmarked at n=3, with the harness committed at `scripts/bench/` so the
+**Per-agent `model:` and `effort:` pinning removed.** Every agent now inherits
+the caller's model. Note what this means for cost: `explorer` and `librarian`
+previously ran on a cheaper tier, and now run on whatever you are running. The
+roster costs what your session costs.
+
+**Re-benchmarked at n=3**, with the harness committed at `scripts/bench/` so the
 numbers are re-derivable rather than asserted. omc-slim costs **18% less than a
 plain session** at equal correctness, reversing the v0.4.1 finding of 10% more.
-See [BENCHMARK.md](./docs/BENCHMARK.md), including the four measurement bugs
-found before publishing.
+The benchmark ran before the model change, and no specialist fired during it, so
+that result measures the orchestrator prompt rather than tier routing. See
+[BENCHMARK.md](./docs/BENCHMARK.md), including the four measurement bugs found
+before publishing.
 
-Per-agent `model:` and `effort:` pinning removed. Every agent now inherits the
-caller's model, so the roster costs what your session costs.
+**Static context measured, not estimated.** `scripts/measure-context.sh` reports
+4,406 tokens. The README had been quoting two different totals for the same
+plugin, because both were counted by hand and nothing could re-derive them.
+
+**README rebuilt**, 562 lines to 181. Routing measurements, limitations and
+provenance moved to `docs/`; release history moved here.
+
+## v0.8.1
 
 `deepwork` auto-invocation solved: the cause was the injection point, not the
 wording. Eight rewrites inside the output style changed nothing; the same
