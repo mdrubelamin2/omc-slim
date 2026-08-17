@@ -3,7 +3,7 @@
 **A small pantheon of specialist agents for Claude Code.**
 
 Ten agents, six skills, one hook. The main thread stops being the implementer and
-becomes a planner that delegates, verifies and reconciles. It costs **~4,462
+becomes a planner that delegates, verifies and reconciles. It costs **~4,485
 tokens of static context**, injects **zero bytes on the tool-call path**, and
 inherits whatever MCP servers and skills your project already has.
 

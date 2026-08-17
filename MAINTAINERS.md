@@ -392,6 +392,13 @@ When rewording an adopted rule, update its pattern in the same commit. When
 deliberately dropping one, delete the row and say why in the commit message — a
 silent drop is exactly the failure this prevents.
 
+**The same script asserts the published static-context figure**, at three sites
+enrolled by hand in its `published figures` block. Quote that number in a fourth
+place and nothing will notice it going stale, so add the site to that list in the
+same commit. Enrolment is deliberate: a pattern loose enough to find the figure
+anywhere also matches the dated figures in `CHANGELOG.md` and `RESEARCH.md`,
+which must never be updated.
+
 The check earned its place on first use: it caught that `surgical-edits`, adopted
 from `CLAUDE.md`, had been lost from the output style during the v0.3.0
 eight-blocks-into-six compression. It survived only in `fixer.md`, so the

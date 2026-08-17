@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Assert the plugin still carries every behaviour adopted from a deleted source.
+# Assert the plugin still carries every behaviour adopted from a deleted source,
+# and still quotes its own published figures accurately.
 #
 # The whole point of v0.3.0 was to make ~/.claude/CLAUDE.md and the fable-mode
 # skill unnecessary. Once those are deleted there is no original left to compare
@@ -104,6 +105,63 @@ for kind, (text, actual) in rosters.items():
 if bad:
     print('\nFix output-styles/omc-slim.md, then re-run.')
     raise SystemExit(1)
+PY
+
+# --- published figures ----------------------------------------------------
+# Three sites across two documents quote the static-context total by hand, and by
+# v0.8.1 the README carried two different ones for the same plugin — see
+# CHANGELOG.md, v0.8.2, "Static context measured, not estimated". A line number
+# would have rotted here: this block's first citation pointed at a line that the
+# next release pushed thirty lines down.
+# measure-context.sh is the one source; these are its readers.
+#
+# Reader sites are enrolled by hand, not found by pattern, so the dated figures
+# in CHANGELOG.md and RESEARCH.md can never fire. The cost of that is a new site
+# added later without enrolling it here, which is the cheaper failure.
+python3 - "$ROOT" <<'PY' || exit 1
+import os, re, subprocess, sys
+root = sys.argv[1]
+
+try:
+    terse = subprocess.run([os.path.join(root, 'scripts/measure-context.sh'), '--terse'],
+                           capture_output=True, text=True)
+except OSError as exc:
+    print('  UNMEASURED    scripts/measure-context.sh could not be run')
+    print(f'                  {exc}')
+    raise SystemExit(1)
+measured = terse.stdout.strip()
+if terse.returncode != 0 or not measured.isdigit():
+    print('  UNMEASURED    scripts/measure-context.sh --terse printed no integer')
+    print(f'                  exit {terse.returncode}, stdout {measured!r}')
+    if terse.stderr.strip():
+        print(f'                  stderr {terse.stderr.strip()!r}')
+    raise SystemExit(1)
+
+total = f'{int(measured):,}'
+sites = [
+    ('README.md',           f'~{total} tokens of static context'),
+    ('docs/LIMITATIONS.md', f'**~{total} tok**'),
+    # Left-anchored on "against": a bare "{total} today" is a suffix of the very
+    # figure it guards, so a total that lost its leading digits would still match.
+    ('docs/LIMITATIONS.md', f'against {total} today'),
+]
+
+bad = 0
+for path, literal in sites:
+    # Same whitespace normalisation as the COVERAGE.tsv loop above, so a figure
+    # that wraps onto the next line still matches. Case-sensitive here, where
+    # that loop folds case — these are our own figures, and stricter can only
+    # raise a false alarm, never let a stale one through.
+    text = re.sub(' +', ' ', open(os.path.join(root, path)).read().replace('\n', ' '))
+    if literal in text:
+        continue
+    print(f'  STALE FIGURE  {path} does not quote the measured {total} tokens')
+    print(f'                  expected: {literal}')
+    bad += 1
+if bad:
+    print('\nUpdate those sites to match ./scripts/measure-context.sh, then re-run.')
+    raise SystemExit(1)
+print(f'{len(sites)}/{len(sites)} published figures quote the measured {total} tokens.')
 PY
 
 echo

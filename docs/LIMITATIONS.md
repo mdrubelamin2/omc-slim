@@ -83,7 +83,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,462 tok** | see above |
+| **omc-slim** | **~4,485 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -91,13 +91,13 @@ July 2026. In that dataset **sophistication correlates negatively with results**
 the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
-**omc-slim is the most expensive row in that table**, at 7.6× Karpathy and ~1,800
-tokens above oh-my-claudecode. It has grown on net across every release —
-2,774 at v0.1.0 against 4,462 today — though not monotonically: v0.6.9 cut 250
-tokens and v0.7.6 cut 48. Each increase was individually justified — adopted
-behaviours, an anti-context-anxiety instruction, a skill roster the listing could
-not be trusted to provide — and they still sum. That is the exact failure mode
-oh-my-claudecode was criticised for, arrived at one defensible step at a time.
+**omc-slim is the most expensive row in that table**. It has grown on net across
+every release — 2,774 at v0.1.0 against 4,485 today — though not monotonically:
+v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
+justified — adopted behaviours, an anti-context-anxiety instruction, a skill
+roster the listing could not be trusted to provide — and they still sum. That is
+the exact failure mode oh-my-claudecode was criticised for, arrived at one
+defensible step at a time.
 
 The earlier figures in this series were measured by hand, and by v0.8.1 the
 README quoted two different totals for the same plugin. `measure-context.sh`
