@@ -15,6 +15,9 @@
  * the bug.
  *
  * Fails open in every error path: a broken guard must never break a session.
+ *
+ * Set OMC_SLIM_DEBUG=1 to trace on stderr. A hook that exits 0 never shows its
+ * stderr to the user, so this costs nothing when unset and nothing when set.
  */
 
 import { readFileSync, statSync } from "node:fs";
@@ -22,11 +25,21 @@ import { readFileSync, statSync } from "node:fs";
 /** Specialists expected to produce file changes. Read-only agents are exempt. */
 const WRITE_AGENTS = new Set(["fixer", "designer"]);
 
-/** Never read more than this from the transcript. Bounded by design. */
-const MAX_TRANSCRIPT_BYTES = 2 * 1024 * 1024;
+/**
+ * Cap on the transcript read. It was 2 MB, and 89% of transcripts over that cap
+ * contain a successful write (39 of 44, sampled 2026-08-17) — so the check was
+ * being skipped on the agents doing the most work. The largest sampled was
+ * 50,017,698 bytes and parsed fully in 145 ms against the 5 s timeout in
+ * hooks.json — so this bounds readFileSync's string allocation, not scan time.
+ */
+const MAX_TRANSCRIPT_BYTES = 64 * 1024 * 1024;
 
 /** Tools whose successful use counts as having produced a deliverable. */
 const WRITE_TOOLS = new Set(["Edit", "Write", "NotebookEdit", "MultiEdit"]);
+
+function debug(...args) {
+  if (process.env.OMC_SLIM_DEBUG === "1") console.error("[omc-slim]", ...args);
+}
 
 function readStdin() {
   try {
@@ -42,7 +55,8 @@ function readStdin() {
  * An attempted write is not a deliverable. A permission-denied Edit still
  * appears as a `tool_use` block, so matching on tool_use alone reports success
  * for an agent that was blocked and produced nothing — the exact situation most
- * worth flagging. Verified against a real transcript 2026-08-13.
+ * worth flagging. Pinned by "denied write is not a deliverable" in
+ * verify-deliverables.test.mjs, which re-runs this against a real denial payload.
  *
  * So: collect write-tool `tool_use` ids, then require a matching `tool_result`
  * that is not `is_error`. A tool_use with no result at all (agent died
@@ -52,13 +66,29 @@ function readStdin() {
  * "cannot tell" and stays silent, rather than as "no writes".
  */
 function sawWriteTool(transcriptPath) {
-  if (!transcriptPath) return null;
+  if (!transcriptPath) {
+    debug("cannot tell: no agent transcript path in payload");
+    return null;
+  }
+
+  let size;
+  try {
+    size = statSync(transcriptPath).size;
+  } catch (err) {
+    debug("cannot tell: stat failed", transcriptPath, err && err.message);
+    return null;
+  }
+
+  if (size > MAX_TRANSCRIPT_BYTES) {
+    debug("cannot tell: over cap", size, transcriptPath);
+    return null;
+  }
+
   let raw;
   try {
-    const size = statSync(transcriptPath).size;
-    if (size > MAX_TRANSCRIPT_BYTES) return null; // too big to scan cheaply
     raw = readFileSync(transcriptPath, "utf8");
-  } catch {
+  } catch (err) {
+    debug("cannot tell: read failed", transcriptPath, err && err.message);
     return null;
   }
 
@@ -130,12 +160,14 @@ function main() {
 
   // MUST be the subagent's own transcript, not `transcript_path` — that one is
   // the parent session. Scanning the parent would find any edit the main thread
-  // ever made and wrongly conclude this subagent wrote something. Verified
-  // against a real SubagentStop payload 2026-08-13.
+  // ever made and wrongly conclude this subagent wrote something. Pinned by
+  // "missing agent transcript stays silent", whose decoy holds no write: adding a
+  // `?? data.transcript_path` fallback here turns silence into a false accusation.
   const agentTranscript =
     data.agent_transcript_path ?? data.agentTranscriptPath ?? null;
 
   const wrote = sawWriteTool(agentTranscript);
+  debug("agent", bare, "wrote:", wrote);
 
   // null => could not determine. Say nothing rather than cry wolf.
   if (wrote === null || wrote === true) return emit(null);

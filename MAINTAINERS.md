@@ -185,8 +185,19 @@ along with the framing.
 nothing. A broken guard must never break a session.
 
 `systemMessage` goes to the **user**, not the model — so you cannot verify a hook
-fired by asking the model whether it saw a warning. Instrument the hook and read
-the log.
+fired by asking the model whether it saw a warning. Run it with `OMC_SLIM_DEBUG=1`
+and read stderr, which names which of the four "cannot tell" paths it took.
+
+`node hooks/verify-deliverables.test.mjs` runs the hook as a child process against
+isolated fixtures and asserts its observable contract, including the exact set of
+keys it may emit. Run it after any edit to the hook. It is not wired into CI.
+
+`node hooks/verify-deliverables.mutate.mjs` checks that suite the only way that
+means anything: it breaks the hook fifteen ways and requires the harness to catch
+all fifteen. Run it after adding or weakening a case — a suite that still passes
+when the hook is broken is worse than none, because it looks like evidence. Add a
+mutant whenever you add a branch to the hook. It restores the hook by sha256, so
+an interrupted run leaves nothing behind.
 
 ---
 
