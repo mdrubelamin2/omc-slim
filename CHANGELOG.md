@@ -64,7 +64,37 @@ nothing else, then executes rather than reviews it.
 output-style flag and the hook matcher are harness-enforced; one hook is our
 code; everything else is prose and holds as well as a prompt holds.
 
-**Static context 4,406 → 4,462 tokens** (+1.3%), all of it in the two output-style
+Also adopted from
+[aniruddha-adhikary/skills](https://github.com/aniruddha-adhikary/skills), pinned
+at `43fe972a`. That pack is Joern/CPG static analysis, so nearly all of it was
+refused — see [PROVENANCE.md](./docs/PROVENANCE.md).
+
+**A check that ran over nothing is no longer reported as a check that passed.** A
+suite whose glob matched no file exits green, and that satisfied the old wording
+of "tests pass requires having run them". The orchestrator rule now names the
+case, and `verification-planning` carries the mechanism: print how many inputs
+reached the assertion, and read zero as unproven rather than passed.
+
+**An empty search is now proved against a known positive.** Run the same search
+for something you know is there. If that comes back empty too, the search is
+broken and proves nothing about the code.
+
+**`simplify` no longer licenses deletion on an undefined standard.** Its table
+row said "remove once confirmed dead" and never said what confirms it. Dead is a
+claim about a search, so the claim now has to say what was searched and what that
+search cannot reach — dynamic dispatch, string-keyed lookup, callers outside the
+repo.
+
+**`check-coverage.sh` now asserts the plugin's own published figures.** The
+static-context number is computed by `measure-context.sh` and quoted at three
+sites across two documents, hand-maintained until now — and they diverged once
+already, which is recorded further down this file. The sites are enrolled as
+exact literals rather than found by pattern, so the dated figures in
+`RESEARCH.md` and in this changelog cannot trip it. Two derived multiples were
+deleted from `LIMITATIONS.md` rather than automated, since the table above them
+already prints every input.
+
+**Static context 4,406 → 4,485 tokens** (+1.8%), all of it in three output-style
 additions. `.claude/settings.local.json` is now ignored by the repo rather than
 by one machine's global config.
 

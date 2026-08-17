@@ -17,12 +17,22 @@ read, and adopt upstream changes deliberately rather than by memory.
 | `~/.claude/CLAUDE.md` | sha256 `e1894ef55a06…` (4,230 B) | Ownership language bans, no early stopping, no permission-to-continue, evidence over plausibility |
 | `~/.claude/skills/fable-mode/SKILL.md` | sha256 `c48cbc5cf0c9…` (7,516 B) | Stage map, one failable artefact per stage, backward re-runs, warning threshold, the two self-critique questions, find-and-replace safety |
 | [svy04/ballast](https://github.com/svy04/ballast) | `acdf495b` (2026-08-17), v0.8.0 | Constraints do not travel to a subagent; a passing check expires; the zero-context executor; dead ends and a next first action in the progress file; the hook-harness pattern and a debug env var |
+| [aniruddha-adhikary/skills](https://github.com/aniruddha-adhikary/skills) | `43fe972a` (2026-08-17) | A check that ran over nothing is not a passing check; an empty search is proved against a known positive; "dead" is a claim about a search, not a property of code; published figures are derived, never hand-copied |
 
 ballast was read whole and mostly refused: its `memory/` tree writes into the
 user's project and duplicates native memory, `skill-forge` generates surface, and
 its five-label claim taxonomy restates rules already in `verification-planning`.
 Its `UserPromptSubmit` rule hook is deliberately not adopted — see
 [LIMITATIONS.md](./LIMITATIONS.md).
+
+aniruddha-adhikary/skills is a Joern/CPG static-analysis pack, so almost all of it
+is a different domain and was refused: three skills of graph-query mechanics, eight
+scripts, and a `traps.md` cataloguing one tool's quirks. Its `PreToolUse` guard hook
+was refused too — this plugin ships one hook and stays off the tool-call path. So was
+its publication boundary, which git-ignores `research/` and `docs/`; the same figures
+are published here instead, with the script that re-derives them. What transferred was
+its central discipline, stated eight times across the pack: a result that is empty
+proves nothing until a known positive shows the search works.
 
 Three further packs were read and deliberately **not** adopted wholesale — see
 [`RESEARCH.md`](../RESEARCH.md) §6d for why. Their disciplines informed the
@@ -63,11 +73,15 @@ before deleting.
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 223 rows, and growing with each release:
+lives — 227 rows, and growing with each release:
 
 ```bash
 ./scripts/check-coverage.sh
-# 223/223 adopted behaviours present.
+# 10/10 agents present in the orchestrator roster.
+# 6/6 skills present in the orchestrator roster.
+# 3/3 published figures quote the measured total.
+#
+# 227/227 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 

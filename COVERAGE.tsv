@@ -236,3 +236,10 @@ ballast	external-checks-expire	output-styles	Time changes them too
 ballast	progress-file-dead-ends	deepwork	what was tried and failed
 ballast	next-first-action-is-executable	deepwork	executable without reading anything but this file
 ballast	zero-context-executor	verification-planning	receives it and nothing else
+# aniruddha-adhikary/skills — a Joern/CPG static-analysis pack. Four rules fit a
+# delegation plugin; the CPG domain, a second hook and its publication boundary
+# were refused.
+ani-skills	vacuous-pass-is-not-a-pass	output-styles	a suite that matched zero tests still exits green
+ani-skills	vacuous-check-counts-its-inputs	verification-planning	looks exactly like a check that passed
+ani-skills	empty-search-needs-a-known-positive	verification-planning	run that same search for something you know is there
+ani-skills	dead-is-a-claim-about-a-search	simplify	is a claim about your search
