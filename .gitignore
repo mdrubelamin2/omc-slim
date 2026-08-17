@@ -2,6 +2,11 @@ node_modules/
 .DS_Store
 *.log
 
+# Claude Code's approved-command log. It records full command strings, so an
+# inline `API_KEY=...` ends up in it. A global gitignore covered this on one
+# machine; the repo covers it on every clone.
+.claude/settings.local.json
+
 # Personal config snapshot — kept locally for diffing, never published.
 # UPSTREAM.tsv still pins it by sha256, so drift is still detected.
 docs/upstream/CLAUDE.md.snapshot
