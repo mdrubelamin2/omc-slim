@@ -3,7 +3,14 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
-## Unreleased
+## v0.8.3
+
+Four packs adopted since v0.8.2 — ballast, aniruddha-adhikary/skills,
+powerball-harness and superpowers — for 19 rules at **zero static context**.
+Every one lands in an agent or skill body, which loads on demand, so the figure
+paid on every request is unchanged at 4,485 tokens. `COVERAGE.tsv` grew from 218
+rows to 240: 22 new rows, because one rule is pinned separately in each of the
+three agents that carry it.
 
 Adopted from [obra/superpowers](https://github.com/obra/superpowers), pinned at
 `b36e0829`. Five rules, **zero static context** — every one lands in an agent or
