@@ -229,3 +229,10 @@ audit	fixer-self-explanatory-names	fixer	Reaching for a comment to explain *what
 audit	fixer-no-boolean-flag-params	fixer	No boolean flag parameters
 audit	fixer-do-not-leave-it-to-simplify	fixer	leave `simplify` to clean up after you
 audit	fixer-no-thinking-out-loud	fixer	never think out loud in the file
+# ballast (svy04) — a memory/verification plugin. Five rules fit a delegation
+# plugin; the memory tree, skill-forge and the label taxonomy were refused.
+ballast	constraints-dont-travel	output-styles	do not travel to a specialist
+ballast	external-checks-expire	output-styles	Time changes them too
+ballast	progress-file-dead-ends	deepwork	what was tried and failed
+ballast	next-first-action-is-executable	deepwork	executable without reading anything but this file
+ballast	zero-context-executor	verification-planning	receives it and nothing else

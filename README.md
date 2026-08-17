@@ -3,7 +3,7 @@
 **A small pantheon of specialist agents for Claude Code.**
 
 Ten agents, six skills, one hook. The main thread stops being the implementer and
-becomes a planner that delegates, verifies and reconciles. It costs **~4,406
+becomes a planner that delegates, verifies and reconciles. It costs **~4,462
 tokens of static context**, injects **zero bytes on the tool-call path**, and
 inherits whatever MCP servers and skills your project already has.
 
@@ -93,6 +93,13 @@ One hook, on `SubagentStop`, for `fixer` and `designer` only. It checks that a
 write-capable agent actually wrote something, and tells **you** when it did not.
 It never blocks, always exits 0, and stays silent when it cannot tell.
 
+Those are claims, so they have a check: `node hooks/verify-deliverables.test.mjs`
+runs the hook as a child process against isolated fixtures — 13 cases asserting
+the exact set of keys it may emit, which is what makes "never blocks" falsifiable.
+And the check has a check: `verify-deliverables.mutate.mjs` breaks the hook
+fifteen ways and confirms the suite catches all fifteen. `OMC_SLIM_DEBUG=1` prints
+which path it took, on stderr.
+
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
 path.
 
@@ -101,6 +108,13 @@ path.
 **Delegation over accumulation.** The main thread plans and reconciles;
 specialists do the work. Everything Claude Code already provides was deleted from
 the prompt rather than described.
+
+**Three layers, and only one of them is prose.** The harness enforces
+`disallowedTools`, the output-style flag and the hook matcher, with no model
+cooperation involved — `disallowedTools: [Agent, Task]` is why one-level
+delegation is a guarantee rather than a request. One hook is our own code, and it
+has a test. Everything else — every agent body, every skill, the output style
+itself — is prose, and holds exactly as well as a prompt holds.
 
 **Nothing injects per tool call.** The dominant cost in comparable plugins is not
 startup context, it is per-tool-call and per-`Stop` injection. There is none

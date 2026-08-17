@@ -46,6 +46,12 @@ Acceptable: a test that runs; a request or query whose response you read; a file
 that provably exists in the expected shape; output diffed against the stated
 spec; a source actually fetched.
 
+For a deliverable meant to work without you — a README, a runbook, a setup guide
+— the check is a fresh agent that receives it and nothing else, then **executes**
+it rather than reviewing it, and reports every place it stalled. Its own context
+cannot paper over a gap it was never given, which is what makes the stalls
+trustworthy.
+
 Report skips honestly. If a check could not be run, say so and say why — never
 imply a result you did not observe.
 

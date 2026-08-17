@@ -24,6 +24,16 @@ Claude Code has no equivalent, so structural queries fall back to `Grep`. The
 side effect: `force-for-plugin` overrides your `outputStyle` while omc-slim is
 enabled. Disabling the plugin reverts it.
 
+**No standing-rule delivery.** A correction you make in one session does not
+survive into the next, and nothing re-states it when a later message needs it.
+[ballast](https://github.com/svy04/ballast) solves this with a `UserPromptSubmit`
+hook that injects matching rules from a JSON catalog. We did not adopt it: it is
+per-message injection, its `block` action refuses a prompt where every mechanism
+here is advisory, and its value depends on a catalog you must write by hand. The
+delegation contract carries constraints into the brief instead, which also
+reaches subagents — where a prompt hook by design does not. Use `CLAUDE.md` for
+anything that must persist.
+
 **Measured, honestly, and repeatably.** Full method and caveats in
 [`docs/BENCHMARK.md`](./BENCHMARK.md). One prompt naming no technology
 ("build a CLI that finds duplicate files"), three arms, held-out grading fixture,
@@ -73,7 +83,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,406 tok** | see above |
+| **omc-slim** | **~4,462 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -81,9 +91,9 @@ July 2026. In that dataset **sophistication correlates negatively with results**
 the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
-**omc-slim is the most expensive row in that table**, at 7.5× Karpathy and ~1,740
+**omc-slim is the most expensive row in that table**, at 7.6× Karpathy and ~1,800
 tokens above oh-my-claudecode. It has grown on net across every release —
-2,774 at v0.1.0 against 4,406 today — though not monotonically: v0.6.9 cut 250
+2,774 at v0.1.0 against 4,462 today — though not monotonically: v0.6.9 cut 250
 tokens and v0.7.6 cut 48. Each increase was individually justified — adopted
 behaviours, an anti-context-anxiety instruction, a skill roster the listing could
 not be trusted to provide — and they still sum. That is the exact failure mode

@@ -16,6 +16,13 @@ read, and adopt upstream changes deliberately rather than by memory.
 | [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) | `2c606141` (2026-04-20) | "Surgical changes" outright; the whole file as a compression target |
 | `~/.claude/CLAUDE.md` | sha256 `e1894ef55a06…` (4,230 B) | Ownership language bans, no early stopping, no permission-to-continue, evidence over plausibility |
 | `~/.claude/skills/fable-mode/SKILL.md` | sha256 `c48cbc5cf0c9…` (7,516 B) | Stage map, one failable artefact per stage, backward re-runs, warning threshold, the two self-critique questions, find-and-replace safety |
+| [svy04/ballast](https://github.com/svy04/ballast) | `acdf495b` (2026-08-17), v0.8.0 | Constraints do not travel to a subagent; a passing check expires; the zero-context executor; dead ends and a next first action in the progress file; the hook-harness pattern and a debug env var |
+
+ballast was read whole and mostly refused: its `memory/` tree writes into the
+user's project and duplicates native memory, `skill-forge` generates surface, and
+its five-label claim taxonomy restates rules already in `verification-planning`.
+Its `UserPromptSubmit` rule hook is deliberately not adopted — see
+[LIMITATIONS.md](./LIMITATIONS.md).
 
 Three further packs were read and deliberately **not** adopted wholesale — see
 [`RESEARCH.md`](../RESEARCH.md) §6d for why. Their disciplines informed the
@@ -56,11 +63,11 @@ before deleting.
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 218 rows, and growing with each release:
+lives — 223 rows, and growing with each release:
 
 ```bash
 ./scripts/check-coverage.sh
-# 218/218 adopted behaviours present.
+# 223/223 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 

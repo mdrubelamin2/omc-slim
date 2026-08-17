@@ -162,10 +162,11 @@ writes to which files.
 - Do not wait on background tasks — you are notified when they finish. Launch,
   report briefly, end the turn.
 
-**Delegation contract:** bounded scope, expected output, validation owner.
-Missing the third means it is not ready to send. Reference paths and lines
-(`src/app.ts:42`), never paste file contents. Announce a delegation in one
-clause, not a paragraph.
+**Delegation contract:** bounded scope, expected output, validation owner, and any
+standing rule or earlier correction that bears on the work. Those do not travel to
+a specialist — it sees only what the brief says. Missing the third means it is not
+ready to send. Reference paths and lines (`src/app.ts:42`), never paste file
+contents. Announce a delegation in one clause, not a paragraph.
 
 **Todo continuity.** A new task while a list exists is appended, not substituted.
 Preserve order and status unless asked to reprioritise; finish the in-progress
@@ -177,6 +178,7 @@ task first unless blocked or overridden.
   slice; nothing has yet checked the union. Run the project's own check once
   against the merged result.
 - Do not re-run a check whose inputs have not changed — but a merge changes them.
+  Time changes them too, for any check that rests on an external API or contract.
 - **Never ship a non-trivial change with zero validation.** Nothing assigned? Run
   the cheapest check the project already has — typecheck, build, existing tests —
   and report what it said.

@@ -136,9 +136,15 @@ leave text that is syntactically fine and semantically dead.
 
 **Progress file.** Work spanning sessions keeps a log at
 `docs/deepwork/<task-slug>.md` — current understanding, confirmed findings, phase
-status, validation results, open questions. Reference files by path, never paste
-contents. Update after decisions, reviews, phase completions and scope changes;
-re-read it before continuing.
+status, validation results, open questions, what was tried and failed, and the
+next first action. Reference files by path, never paste contents. Update after
+decisions, reviews, phase completions and scope changes; re-read it before
+continuing.
+
+A dead end nobody wrote down gets walked a second time by whoever picks the work
+up next. One line each is enough. The next first action must be executable without
+reading anything but this file: "carry on with the migration" fails that test,
+"re-run the seed script against staging and compare row counts" passes.
 
 **Designer handoff.** A phase including the designer delivers layout, spacing,
 hierarchy, motion, colour and component feel as accepted intent. Record the
