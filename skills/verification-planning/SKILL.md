@@ -64,6 +64,12 @@ something you know is there. A guard you just wrote earns the same treatment: ru
 it against a state where the fault existed and confirm it fires. If neither finds
 what you planted, the check is broken and proves nothing about the code.
 
+**Some changes are not live in the session that made them.** Prompt text, output
+styles, hooks, plugin manifests and harness settings load when a session starts,
+so the session you edited them in still holds the old copy. A check run there
+measures what you replaced, and passes or fails for the wrong reason. Start a
+fresh session before believing the result, or record it as unverified.
+
 **A check you tolerate failing is a check you have stopped reading.** A known-red
 result teaches everyone to skip that output, so the next real failure arrives
 already hidden. Repair it, narrow its scope to what it can honestly assert, or

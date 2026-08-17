@@ -283,6 +283,7 @@ ORIGINS = {
     'ballast':              ('tracked',    'ballast',             'svy04/ballast'),
     'ani-skills':           ('tracked',    'ani-skills',          'aniruddha-adhikary/skills'),
     'powerball':            ('tracked',    'powerball-harness',   'tim-hub/powerball-harness'),
+    'superpowers':          ('tracked',    'superpowers',         'obra/superpowers'),
     'ponytail':             ('documented', None,                  'DietrichGebert/ponytail'),
     'caveman':              ('documented', None,                  'JuliusBrussee/caveman'),
     'wait-what':            ('documented', None,                  '`wait-what` skill'),

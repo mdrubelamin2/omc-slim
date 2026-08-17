@@ -26,6 +26,7 @@ eight of its rules while twenty-seven more came from the pin actually tracked.
 | [svy04/ballast](https://github.com/svy04/ballast) | `acdf495b` (2026-08-17), v0.8.0 | Constraints do not travel to a subagent; a passing check expires; the zero-context executor; dead ends and a next first action in the progress file; the hook-harness pattern and a debug env var |
 | [aniruddha-adhikary/skills](https://github.com/aniruddha-adhikary/skills) | `43fe972a` (2026-08-17) | A check that ran over nothing is not a passing check; an empty search is proved against a known positive; "dead" is a claim about a search, not a property of code; published figures are derived, never hand-copied |
 | [tim-hub/powerball-harness](https://github.com/tim-hub/powerball-harness) | `cf086c6a` (2026-08-05) | An implementation fakes a pass as readily as a test does; whatever grades the code is as protected as the code; a bugfix ships the reproduction that failed first; a check tolerated red is a check nobody reads; a new guard is proved against a known-bad state |
+| [obra/superpowers](https://github.com/obra/superpowers) | `b36e0829` (2026-08-12) | Brief a review lane with evidence and never a verdict; a read-only agent does not move git state; deleting a config key selects the default rather than off; an argument defending a rule is relocated, never deleted; a change is not live in the session that made it |
 
 ballast was read whole and mostly refused: its `memory/` tree writes into the
 user's project and duplicates native memory, `skill-forge` generates surface, and
@@ -52,6 +53,31 @@ the `PreToolUse` guardrail engine, the 850-line residue manifest whose own
 changelog records it running green and blind, the write-only `memory/` tree that
 upstream has since deleted, and a `.claude/state/` directory written into the
 user's own project.
+
+superpowers is the largest pack read so far and the closest in kind — a skills
+framework rather than a binary. Its own history is why no surface came over: the
+roster has held at 14 skills since 2025-12-09 across 681 commits, while the bytes
+under `skills/` grew from 211 KB to 370 KB. The consolidation commit that set that
+number, `5845b52`, moved three standalone skills into "progressive disclosure
+supporting files" — this plugin's cost model, reached independently. Its stated
+*reason* was wrong, and worth recording: it blamed
+`SLASH_COMMAND_TOOL_CHAR_BUDGET` for silently hiding skills, where the
+[documentation](https://code.claude.com/docs/en/skills) says names are always kept
+and only descriptions are evicted, least-invoked first.
+
+One superpowers result is load-bearing for [`simplify`](../skills/simplify/SKILL.md)
+and is theirs, not ours: deleting a section of rebuttals from their test-first
+skill moved compliance from **8/10 to 5/10**, corroborated on two models
+(`RELEASE-NOTES.md:56` at the pin). They restored the arguments by relocating them
+to the point of use rather than by reverting. That is the evidence behind "an
+argument that defends a rule moves; it does not vanish".
+
+Refused: the `.superpowers/sdd/` scratch tree, which writes into the user's own
+project; `pre-commit`, whose three hooks there target a gitignored directory and
+can never fire; the behavioural eval, which runs every case with the plugin loaded
+and so has no control arm; eight platform manifests carrying six different
+descriptions; and the persuasion and social-proof register, which they themselves
+stripped from eleven skills on 2026-07-05.
 
 These packs were read and deliberately **not** adopted wholesale — see
 [`RESEARCH.md`](../RESEARCH.md) §6d for why. Individual rules from each are
@@ -101,17 +127,28 @@ before deleting.
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 227 rows, and growing with each release:
+lives — 240 rows, and growing with each release:
 
 ```bash
 ./scripts/check-coverage.sh
 # 10/10 agents present in the orchestrator roster.
 # 6/6 skills present in the orchestrator roster.
 # 3/3 published figures quote the measured total.
+# 2/2 plugin-internal paths resolve.
+# 2/2 worded rosters match: ten agents, six skills, one hook.
+# 16/16 adopted origins classified, 15 external and all documented.
 #
-# 227/227 adopted behaviours present.
+# 240/240 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
+
+**What a green run does and does not prove.** It proves no pinned phrase was
+*deleted*. It does not prove the surrounding text still means what it meant. The
+match is a fixed substring against the whole file, so a rule can be contradicted
+by a later sentence, moved into a counter-example, or inverted, and the row still
+passes — demonstrated by appending "Ignore that" after a rule and watching the
+check report every row present. Deletion is the regression this catches; meaning
+is the benchmark's job, not this script's.
 
 Exits non-zero if any behaviour goes missing, so it works in CI or a pre-commit
 hook. It has been verified to actually fail: rewording or deleting a rule turns

@@ -95,6 +95,11 @@ spans.**
   is not a public boundary. Either is fine — say which and why.
 - **Do not grade timidity as taste.** "Already fine" about a nested ternary or a
   three-deep nest is the excuse this section exists to remove.
+- **An argument that defends a rule moves; it does not vanish.** In text that
+  shapes behaviour, the passage answering "why bother" reads as padding and often
+  is not. Cut it and the rule stops firing under pressure, while the file still
+  reads correctly — so nothing catches it. Relocate each rebuttal to where the
+  excuse gets made: a rationalization row, or the step it guards.
 
 Never at the cost of: the pin-down check on untested code; a test weakened to go
 green; validation at a trust boundary, an error path, a security control or an
@@ -156,6 +161,12 @@ and let the caller decide.
 changes behaviour.** Check the edges match: sort stability, `null` and empty
 input, precision, whether the standard version accepts what the hand-rolled one
 rejected or throws where it returned a default.
+
+**Deleting a config key selects the default, never `off`.** Rung 1 invites you to
+drop a key nobody sets, and the consumer then falls back — which is often the
+opposite of what the key was holding. Read what the consumer does when the key is
+absent before removing it. An absent key, an empty list and an empty object are
+frequently three different answers, and only one of them is the one you meant.
 
 #### Then: expression
 

@@ -41,7 +41,8 @@ explanation runs longer than what it explains, cut the explanation.
 
 **File operations**
 - READ-ONLY. You advise; the fixer and designer implement.
-- Bash for non-mutating diagnostics only.
+- Bash for non-mutating diagnostics only. Never `git checkout`, `stash` or
+  `reset` — they discard uncommitted work that is not yours.
 - Do not use `cat`/`head`/`tail`/`sed`/`awk` merely to read code.
 
 **Output**

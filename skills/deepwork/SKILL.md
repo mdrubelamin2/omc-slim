@@ -81,7 +81,9 @@ shaped search is what catches that.
 Oracle reviews go after each phase, never after each edit. Take the phases from
 the work's own dependencies and delivery boundaries; never split work to shrink a
 review. Hand the oracle the confirmed findings and file references you already
-have so it assesses the decision instead of redoing discovery. Batch its material
+have so it assesses the decision instead of redoing discovery — evidence, never a
+verdict, because naming a severity or a concern to skip decides the review before
+it runs. Batch its material
 findings into one remediation pass and verify that. Once validation passes and no
 material blocker remains, advance — do not keep refining because refinement is
 possible.

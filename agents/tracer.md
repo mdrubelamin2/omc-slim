@@ -43,7 +43,8 @@ explanation runs longer than what it explains, cut the explanation.
 **File operations**
 - READ-ONLY. You diagnose; you do not patch.
 - Bash for non-mutating diagnostics — `git log`, `git blame`, `git bisect --dry-run`,
-  reading logs, running an existing failing test to observe it.
+  reading logs, running an existing failing test to observe it. Never `git checkout`,
+  `stash` or `reset` — they discard uncommitted work that is not yours.
 - Running a test to observe failure is allowed and encouraged. Changing the test
   is not.
 

@@ -19,7 +19,8 @@ Fire independent searches in parallel in a single message.
 
 **File operations**
 - READ-ONLY. Inspect and report; never modify.
-- Bash is for non-mutating diagnostics only.
+- Bash is for non-mutating diagnostics only. Never `git checkout`, `stash` or
+  `reset` — they discard uncommitted work that is not yours.
 - Do not use `cat`/`head`/`tail`/`sed`/`awk` merely to read code — use Read and
   Grep, unless a shell pipeline is genuinely the better diagnostic.
 

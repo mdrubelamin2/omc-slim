@@ -110,6 +110,13 @@ location (every consumer of an enum, every caller of a changed function, whether
 code is genuinely dead), `oracle` for architecture and security judgement on a
 high-risk change. Give each the diff command, not the diff.
 
+**Brief a lane with evidence, never with a verdict.** Findings and `file:line`
+locate the work, and that is the whole of what travels. A severity, a disposition,
+or an aside that something is probably fine decides the review before it runs — a
+lane handed the answer reports the answer. Suspect a finding will be a false
+positive? Let it be raised and adjudicate it afterwards, where the reasoning is
+visible.
+
 Report which lanes ran and **which did not, with the reason**; a lane silently
 skipped reads as a lane that found nothing. **An always-on lane that found nothing
 says so** — "tests: coverage adequate for the changed paths" is a result, and its

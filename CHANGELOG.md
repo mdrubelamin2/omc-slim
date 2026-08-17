@@ -5,6 +5,55 @@ Notable releases. Full reasoning for each is in
 
 ## Unreleased
 
+Adopted from [obra/superpowers](https://github.com/obra/superpowers), pinned at
+`b36e0829`. Five rules, **zero static context** — every one lands in an agent or
+skill body, which loads on demand. Static holds at 4,485 tokens. No new skill, no
+new agent, no new hook: that repo has held its own roster at 14 skills since
+2025-12-09 while the bytes behind it grew 75%, which is this plugin's cost model
+arrived at independently.
+
+**Briefing a review lane with a verdict decides the review before it runs.**
+`review` and `deepwork` now say to pass findings and `file:line` and nothing else.
+Naming a severity, or a concern to skip, is coaching rather than locating, and
+upstream recorded a real run where a controller told a reviewer "Minor at most"
+and the flaw shipped. The reviewer's half was already covered; only the
+orchestrator's was missing.
+
+**"Read-only" did not say the working tree.** `explorer`, `oracle` and `tracer`
+already restricted Bash to non-mutating diagnostics, but nothing said that covers
+git state, and all three can run `git checkout`, `stash` or `reset`. Three
+clauses, one per agent.
+
+**`simplify` could cause two failures it did not warn about.** Deleting a config
+key selects the consumer's default rather than turning something off, and an
+absent field, an empty list and an empty object are often three different answers.
+Separately, cutting the passage that defends a rule reads as removing padding: the
+file still reads correctly and the rule stops firing, so nothing catches it.
+Rebuttals now relocate to the point of use instead of being deleted.
+
+**A change is not live in the session that made it.** Prompt text, output styles,
+hooks and manifests load at session start, so a check run in the editing session
+measures what was replaced. `verification-planning` says to start a fresh session
+or record the result as unverified.
+
+**Shell scripts are now linted.** `scripts/check-shell.sh` runs `shellcheck` at
+`--severity=warning` over all 8 shell files — clean on the first run, so this is
+a guard against future regressions rather than a cleanup. It finds files by
+shebang as well as extension, includes untracked files, prints the count beside
+the verdict, and refuses to call a missing `shellcheck` a pass.
+
+**Disclosed: the coverage check passes on a self-contradicting prompt.** Appending
+"Ignore that…" after a rule, leaving every pinned substring intact, still reports
+all rows present. That ceiling is now written into
+[MAINTAINERS.md](./MAINTAINERS.md) and [PROVENANCE.md](./docs/PROVENANCE.md)
+rather than left implicit. Deletion is what the check catches; meaning is the
+benchmark's job. The two stale `227` row counts in PROVENANCE.md are corrected to
+240 in the same pass.
+
+Proof: 8 mutants against the new coverage rows, each dropping exactly one row at
+the named location; 4 provenance assertions for the new origin; 3 failure paths
+for the shell gate. 15 proofs, each against a verified-green control.
+
 Adopted from [svy04/ballast](https://github.com/svy04/ballast), pinned at
 `acdf495b` in [`UPSTREAM.tsv`](./UPSTREAM.tsv). Most of that plugin was read and
 refused — see [PROVENANCE.md](./docs/PROVENANCE.md).

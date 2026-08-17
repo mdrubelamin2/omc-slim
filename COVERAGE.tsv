@@ -252,3 +252,17 @@ powerball	config-is-as-protected-as-code	fixer	Whatever grades the code is as pr
 powerball	bugfix-ships-its-reproduction	fixer	watch it fail against the unfixed code
 powerball	tolerated-red-check-is-unread	verification-planning	a check you have stopped reading
 powerball	new-guard-proved-against-known-bad	verification-planning	run it against a state where the fault existed
+# obra/superpowers — a 14-skill agentic framework, read whole at b36e0829.
+# Its roster has been frozen at 14 for eight months while skill bytes grew 75%,
+# which is this plugin's cost model reached independently. So rules came over and
+# surface did not: no new skill, no new agent, no hook. Five rules fit; the
+# scratch workspace, the dead pre-commit config, the control-free behavioural
+# eval and the cross-platform manifests were refused.
+superpowers	brief-with-evidence-not-verdict	review	Brief a lane with evidence, never with a verdict
+superpowers	brief-with-evidence-not-verdict	deepwork	evidence, never a verdict
+superpowers	readonly-does-not-move-git-state	explorer	they discard uncommitted work that is not yours
+superpowers	readonly-does-not-move-git-state	oracle	they discard uncommitted work that is not yours
+superpowers	readonly-does-not-move-git-state	tracer	they discard uncommitted work that is not yours
+superpowers	deleting-config-selects-the-default	simplify	Deleting a config key selects the default
+superpowers	rebuttal-relocates-never-vanishes	simplify	An argument that defends a rule moves
+superpowers	change-not-live-in-this-session	verification-planning	not live in the session that made them

@@ -393,6 +393,25 @@ Whitespace is normalised first so line-wrapped prose still matches; without that
 normalisation a rule that happens to wrap across two lines reads as absent, which
 produced a false alarm the first time this was checked by hand.
 
+**Know the ceiling on that check.** A fixed substring proves the phrase is still
+in the file. It cannot see meaning, so three edits pass it while destroying the
+rule: contradicting it in the next sentence, relocating it into an example or a
+counter-example, and inverting the sentence around the matched span. This was
+demonstrated, not assumed — appending "Ignore that: shipping at a good stopping
+point is correct" after `no-early-stop` left the run reporting every row present.
+Deletion is what this catches. For meaning, the benchmark at `scripts/bench/` is
+the instrument, and `obra/superpowers` measured a deletion costing 3/10 of a
+behaviour with the file still reading correctly. Do not widen the patterns to
+compensate; a longer substring fails the same three ways.
+
+**Shell scripts are linted by `./scripts/check-shell.sh`** at
+`--severity=warning`, which is where defects live rather than opinion. It finds
+files by shebang as well as by `.sh`, and includes untracked files — a new script
+is linted before it is committed, which is when it is most likely to be wrong. It
+prints the file count beside the verdict and treats zero as unproven. A missing
+`shellcheck` binary exits 0 with an explicit "this is not a pass", so the absence
+of an optional tool never blocks a contributor and never reads as a green run.
+
 When rewording an adopted rule, update its pattern in the same commit. When
 deliberately dropping one, delete the row and say why in the commit message — a
 silent drop is exactly the failure this prevents.
