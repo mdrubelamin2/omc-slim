@@ -27,8 +27,10 @@ string, so digest inputs must normalise first (`{cores: 8}` and `{cores: "8"}`
 hash differently); a "today" key covering only midnight-to-now; two features
 bucketing the same data hourly and daily.
 
-**Completeness — the one lane that requires reading outside the diff.** A member
-the change forgot is not in the diff, so only this lane can find it.
+## Completeness — always
+
+**The one lane that reads outside the diff**, because a member the change forgot
+is not in the diff and no other lane can reach it.
 
 - **A new enum value, status, tier or type constant** — grep its *siblings* and
   read every file that switches on, filters by, persists or displays them. Check

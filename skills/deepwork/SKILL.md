@@ -11,11 +11,10 @@ reconcile; you are not the implementation worker.
 ## When NOT to use this
 
 One obvious correct approach **and** a single pass — do it directly. **Both
-conditions, not either:** knowing exactly what to do is not the same as being able
-to do it in one pass, and an obvious fix that still has to land correctly in four
-places is not a single pass. Touching several files is not by itself a reason.
-Ceremony on a trivial task buries the answer, but skipping the stage map on work
-that needed one is the more expensive mistake.
+conditions, not either:** knowing what to do is not the same as doing it in one
+pass, and an obvious fix that must land correctly in four places is not one pass.
+Touching several files is not by itself a reason. Ceremony on a trivial task
+buries the answer, but skipping the stage map when it was needed costs more.
 
 Use it when one shot would plausibly miss something: dependent phases,
 cross-cutting architectural change, an unsafe-to-partially-ship migration,
@@ -39,22 +38,19 @@ The map is living, not a contract. Update it when what you learn invalidates the
 plan — and say that you did.
 
 **An assumption that shrinks the deliverable is a question, not an assumption.**
-An assumption that fills a gap is stated and worked past. One that removes work is
-a scope cut made on the caller's behalf, and it is a gate: surface it before the
-map runs, never in the report an hour later. Where the request names a set — *all*
-the pages, *every* endpoint — this applies to each member you propose to leave
-out, and "it looked different from the others" is the reason to ask, not the
-reason to skip.
+One that fills a gap is stated and worked past; one that removes work is a scope
+cut made on the caller's behalf, so it is a gate — surface it before the map runs,
+never in the report an hour later. Where the request names a set, that covers
+every member you propose to leave out: "it looked different from the others" is
+the reason to ask, not the reason to skip.
 
 ## 2. Delegate independent work
 
 Stages that do not depend on each other: dispatch them in one message so they run
-concurrently. Brief each specialist with its task, its expected output, and the
-context it needs from earlier stages.
-
-Good: "research X while Y is implemented", "process these three files", "verify
-this independently". Bad: splitting one coherent thought across lanes to use more
-agents.
+concurrently, each briefed with its task, its expected output, and the context it
+needs from earlier stages. Good: "research X while Y is implemented", "process
+these three files", "verify this independently". Bad: splitting one coherent
+thought across lanes to use more agents.
 
 **Keep delegation one level deep** — enforced, not advisory. Specialists cannot
 spawn agents, so a stage needing its own fan-out must be split into parallel lanes
@@ -74,12 +70,11 @@ The loop runs backward too: **if a fix invalidates an earlier stage, re-run that
 stage's check before continuing.** An error caught at stage 3 is trivial; at stage
 8 it is not.
 
-**Set-shaped work closes by diffing the set.** When the request covers *all* of
-something, the final check re-runs the enumeration that defined it and lists every
-member you did not touch, each with a reason. "Already conformant" is a reason;
-absence from the list is not. Derive the set from a command and show it — one glob
-can miss a whole subtree, and a second, differently shaped search is what catches
-that.
+**Set-shaped work closes by diffing the set.** Re-run the enumeration that defined
+it and list every member you did not touch, each with a reason. "Already
+conformant" is a reason; absence from the list is not. Derive the set from a
+command and show it — one glob misses a whole subtree, and a second, differently
+shaped search is what catches that.
 
 ### Review gates
 

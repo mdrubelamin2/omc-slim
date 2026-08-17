@@ -105,7 +105,7 @@ gstack	base-branch-resolution-cascade	review	then `origin/HEAD`, then `main`, th
 gstack	read-whole-diff-before-flagging	review	Read the whole diff before flagging
 gstack	intent-before-quality	review	Scope creep
 gstack	deliverable-not-the-machinery	review	handles a deliverable is not the deliverable
-gstack	enum-completeness-outside-diff	review/checklists.md	requires reading outside the
+gstack	enum-completeness-outside-diff	review/checklists.md	one lane that reads outside the diff
 gstack	quote-the-code-gate	review	Quote the code, or you do not have a finding
 gstack	no-gaming-the-quote-gate	review	do not invent a higher confidence
 gstack	framework-declares-elsewhere	review	quote the construct that *creates* the symbol
@@ -212,6 +212,20 @@ audit	set-shaped-work-closes-by-diff	deepwork	Set-shaped work closes by diffing 
 audit	second-search-corroborates-set	deepwork	differently shaped search
 audit	review-the-set-not-the-diff	review	review the set, not the diff
 audit	missed-member-absent-from-diff	review	absent from the diff by definition
-audit	derive-set-from-goal	review	Derive the set from the goal
 audit	completeness-lane-generalised	review/checklists.md	A member the change forgot is not in the diff
 audit	enumerate-from-goal-not-old-impl	review/checklists.md	from the goal, not from the old implementation
+audit	fixer-project-rules-outrank-habits	fixer	The project's rules outrank your habits
+audit	fixer-canonical-example-is-the-spec	fixer	nearest existing implementation of the pattern
+audit	fixer-second-dialect-is-a-regression	fixer	A second dialect of an established pattern
+audit	fixer-do-not-reopen-closed-bug	fixer	Do not re-open a closed bug
+audit	fixer-blame-before-removing-a-guard	fixer	a commit that says *fix* is a regression waiting
+audit	fixer-prior-art-for-approach	fixer	applies to the approach, not only the signature
+audit	fixer-no-narration-comments	fixer	plainest tell of generated code
+audit	fixer-linear-flow	fixer	every indent level is a branch the reader must hold
+audit	fixer-single-reason-to-change	fixer	cannot name without "and" is two
+audit	fixer-modular-one-direction	fixer	Modular, pointing one way
+audit	fixer-dry-of-knowledge	fixer	DRY of knowledge, not of characters
+audit	fixer-self-explanatory-names	fixer	Reaching for a comment to explain *what* a line
+audit	fixer-no-boolean-flag-params	fixer	No boolean flag parameters
+audit	fixer-do-not-leave-it-to-simplify	fixer	leave `simplify` to clean up after you
+audit	fixer-no-thinking-out-loud	fixer	never think out loud in the file

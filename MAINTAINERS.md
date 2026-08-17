@@ -1634,3 +1634,136 @@ It also caught three consequences the migration created and the diff alone would
 have justified: `PageHeader` hardcodes `<h2>` so no document has an `h1`; the old
 `getPageShellStyle` padding was deleted with no `children` slot to replace it; and
 the new breadcrumb renders plain text with no `/` route to link to.
+
+---
+
+## v0.7.9 — the compression pass that paid structurally instead
+
+`deepwork` 1,388 → 1,356 words. `review` 5,426 → 5,386 across its three files.
+**−1.1% overall**, the fourth file set to land on the same floor, so this is now
+settled: a rules file compresses once, structurally, and prose passes after that
+return noise.
+
+The pass earned its keep by finding something else.
+
+### I had duplicated a rule and then referenced a lane that did not exist
+
+v0.7.8 added the set-completeness rule in two places — `SKILL.md` step 2 and the
+`checklists.md` lane — with both stating "absent from the diff" and both stating
+"derive from the goal". About 90 duplicated words, written a day earlier by me.
+
+Worse: step 2 said *"the completeness lane"*, and there was no such lane.
+Completeness was a **subsection of Correctness**. Two consequences neither the
+manifest nor a read-through catches:
+
+- on a diff over the fan-out threshold, lanes are dispatched one subagent each
+  from the lane table — a subsection is never dispatched;
+- *"an always-on lane that found nothing says so"* applies to lanes, so the one
+  lane whose whole purpose is finding an omission had no obligation to report
+  finding none.
+
+Completeness is now its own always-on row. Step 2 keeps the principle in one
+sentence and points at the lane; the lane keeps the three concrete shapes, so a
+dispatched subagent receives them.
+
+One `COVERAGE.tsv` row was deleted deliberately — `derive-set-from-goal`, whose
+rule now lives wholly in the lane under `enumerate-from-goal-not-old-impl`. Rows
+go away with a reason in the commit message, never silently.
+
+### Verified, both fixtures rebuilt byte-identical
+
+`review` on the set-gap fixture: `completeness` appears by name in the lane list,
+and `project-list.tsx` is reported at 8/10 — "the fifth authenticated page
+(`src/router.tsx:11`) was not migrated", cited to the router rather than to the
+diff. It ranked second behind the deleted page shell this time rather than first,
+which is defensible: the shell finding breaks all four pages that *were* migrated.
+It also caught a new one — the breadcrumb reads `Home / Teams` above a heading
+reading `Team`.
+
+`deepwork` on the header fixture: nine of ten pages unified including all five
+settings routes, dashboard untouched, and the closing enumeration present in the
+report. The scope-cut gate survived rewording, which was the risk worth testing —
+v0.6.9 is the precedent for a proven rule quietly ceasing to fire after a
+compression pass touched its wording. It also caught six defects across two review
+rounds: breadcrumbs linking to `/` and `/settings`, neither of which exists;
+a raw `<a>` full-reloading the page; every page dropped to `<h3>` with no `h1`
+above it; and a lost `<header>` landmark.
+
+---
+
+## v0.8.0 — fixer writes to the same standard the reviewers hold
+
+`fixer` had the ponytail ladder, cause-not-symptom, the installed-toolset rule and
+a verification floor. It had nothing about the **shape** of what it writes, and
+nothing stopping it re-introducing a fixed bug. Both are now closed.
+
+### Four disciplines it was missing
+
+**The project's rules outrank your habits.** Read `CLAUDE.md`/`AGENTS.md`,
+`.claude/rules/` and the lint and type configuration before the first edit, then
+find the nearest existing implementation of the pattern — that file is the
+specification. *A second dialect of an established pattern is a regression even
+when the code is correct.*
+
+**Do not re-open a closed bug.** Code that looks wrong is sometimes a scar. Before
+deleting a guard, an ordering constraint, a retry or an odd comment, run
+`git blame`: a line introduced by a commit that says *fix* is a regression waiting
+to be re-introduced. This is `simplify`'s Chesterton's Fence, which the writer
+lane never had.
+
+**Prior art applies to the approach, not only the signature.** `fixer` has no web
+access by design, so before hand-writing backoff, rate limiting, diffing, parsing
+or anything cryptographic it names the problem for the caller to route.
+
+**The shape of what you write** — linear, one reason to change, modular pointing
+one way, DRY of knowledge rather than of characters, self-explanatory names, no
+boolean flag parameters. Closing line: a function past ~50 lines, a nested ternary
+or a mutating `get*` are review findings, so *do not ship them and leave `simplify`
+to clean up after you.* The writer should not rely on the backstop.
+
+Comments were widened past narration to cover thinking out loud in the file —
+"we need to handle the case where…", "I went with X because it felt cleaner". That
+is a conversation, not a comment.
+
+### Measured, four traps in one fixture
+
+A project rule requiring `Result<T>` and forbidding exponential backoff, a
+canonical `syncClients` to match, a hand-roll temptation, and a `!Number.isFinite`
+guard added by `fix: NaN from the vendor feed was corrupting invoice totals` — with
+the prompt explicitly inviting a tidy-up of that file.
+
+All four held. The refusal is the one worth quoting, because the invitation to
+delete was explicit:
+
+> The one line that reads as redundant is the `Number.isFinite` guard from
+> `e426d54`. TypeScript says `amount` is a `number`; the vendor feed says otherwise
+> and sends `""`, which arrives as `NaN`. Deleting that guard reintroduces the
+> invoice-total corruption you fixed yesterday. I left the file alone.
+
+It matched the sibling line for line, kept the fixed 3×1s retry, threw nothing,
+and reported honestly that nothing was compiled because the repo has no toolchain
+— then proposed the test that would pin the retry count and spacing.
+
+**Caveat on that run:** it predates the shape rules, and the output was clean partly
+because a canonical sibling existed to copy.
+
+### The shape rules, tested with nothing to copy
+
+Second fixture: an empty repo, one `Row` type, and a task naming **three optional
+behaviours** — csv or json, exclude archived, group by client, plus a total line.
+That is an invitation to `formatReport(rows, true, false, true)`.
+
+110 lines, **zero comment lines**, and none needed:
+
+| Rule | Result |
+|---|---|
+| No boolean flag parameters | a `ReportOptions` object, unprompted |
+| One reason to change | seven functions, each nameable without "and" |
+| DRY of knowledge | `sumAmounts` and `groupByClient` shared by both formatters |
+| Self-explanatory | `filteredRows`, `csvRowLine`, `groupPayload` — no `data`/`temp` |
+| Linear | `formatReport` is six lines, top to bottom |
+| No thinking out loud | zero comments in a file that reads without them |
+
+It also exceeded the one-check-behind floor — wrote 14 tests, ran them, and
+disclosed the real ceiling: "the tests run under Node 24's type stripping, which
+erases annotations without checking them. Types are unverified."
