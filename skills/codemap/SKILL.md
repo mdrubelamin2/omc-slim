@@ -1,17 +1,12 @@
 ---
 name: codemap
-description: Generate hierarchical codemaps for an UNFAMILIAR repository — one codemap.md per directory plus a root atlas. Use when asked to map or document a codebase, or before substantial work on a repository nobody has read yet. Expensive and it writes files across the tree, so state the cost and get a yes before starting.
+description: Writes hierarchical codemap.md files across an UNFAMILIAR repo plus a root atlas and an AGENTS.md section. Expensive, one agent per directory, and it mutates the repo — state the cost and get an explicit yes first.
+when_to_use: '"map this codebase", "document this repo". On request only; if the repo is small enough to read, read it.'
 ---
 
 # Codemap Skill
 
 You help users understand and map repositories by creating hierarchical codemaps.
-
-## When to Use
-
-- User asks to understand/map a repository
-- User wants codebase documentation
-- Starting substantial work on an unfamiliar codebase
 
 ## Announce before you start
 
@@ -24,6 +19,12 @@ So: say what it will cost and what it will write, and get a yes first. Reaching
 for it unprompted is correct; doing so silently is not.
 
 If the repository is small enough to simply read, read it instead.
+
+## When to Use
+
+- User asks to understand/map a repository
+- User wants codebase documentation
+- Starting substantial work on an unfamiliar codebase
 
 ## Workflow
 
@@ -62,7 +63,7 @@ This creates:
 - `.slim/codemap.json` - File and folder hashes for change detection
 - Empty `codemap.md` files in all relevant subdirectories
 
-4. **Delegate codemap writing to Fixer agents** - Spawn one fixer per folder to read code and create or update its specific `codemap.md` file.
+4. **Delegate codemap writing to Fixer agents** - Dispatch one fixer per folder, using the brief in "Dispatching a codemap fixer" below.
 
 ### Step 3: Detect Changes (If state already exists)
 
@@ -79,7 +80,7 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" changes \
    - Modified files
    - Affected folders
 
-3. **Only update affected codemaps** - Spawn one fixer per affected folder to update its `codemap.md`.
+3. **Only update affected codemaps** - Dispatch one fixer per affected folder, using the same brief.
 4. **Run update** to save new state:
 
 ```bash
@@ -118,9 +119,42 @@ For deep work on a specific folder, also read that folder's `codemap.md`.
 
 This is idempotent - repeated codemap runs will detect the existing section and skip. No duplication.
 
+## Dispatching a codemap fixer
+
+Fixer writes these files, because the alternatives cannot. Explorer, oracle and
+tracer are read-only, so they can survey a directory but never produce the file.
+Designer writes, but only UI.
+
+Fixer executes a specification and does not research one. So the brief below is
+the specification. It fixes the output path, the required headings, the exact
+files to read, and a check the fixer can actually run. Send one brief per
+directory.
+
+> Write `<dir>/codemap.md`, replacing whatever is there now.
+>
+> Read only these files: `<the file list codemap.mjs reported for this dir>`.
+> You may also read one hop out — a file this directory imports — to see what a
+> call actually does. Describe only this directory: a neighbour you read is
+> context, not content. Where you need more than one hop, name the path and stop.
+>
+> Read the tests for this directory even though they are excluded from the map.
+> They are the densest statement of intended behaviour you will find, and the
+> map is about intent. Do not describe them; use them.
+>
+> Use exactly these four `##` headings, in this order: Responsibility, Design,
+> Flow, Integration. `<paste the "Codemap Content" section of this skill here,
+> including the example>`
+>
+> Verification you must run and report: every path you cite resolves under the
+> repo root, and the file carries all four headings. Both are `test -f` and
+> `grep` — report the counts, not a claim.
+
+That check proves the citations resolve and the shape is right. It does not
+prove the prose is accurate, so read the returned codemap before accepting it.
+
 ## Codemap Content
 
-Fixers are responsible for writing `codemap.md` files during this workflow. Use precise technical terminology to document the implementation:
+Fixers write the `codemap.md` files during this workflow, one per directory. Use precise technical terminology to document the implementation:
 
 - **Responsibility** - Define the specific role of this directory using standard software engineering terms (e.g., "Service Layer", "Data Access Object", "Middleware").
 - **Design Patterns** - Identify and name specific patterns used (e.g., "Observer", "Singleton", "Factory", "Strategy"). Detail the abstractions and interfaces.

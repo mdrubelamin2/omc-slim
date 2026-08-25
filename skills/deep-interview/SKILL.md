@@ -1,11 +1,7 @@
 ---
 name: deep-interview
-description: >
-  Socratic requirements interview with an explicit ambiguity gate. Use before
-  building anything from a vague idea, when a request has several valid readings,
-  or when the cost of building the wrong thing is high. Produces a written spec
-  and stops for approval before any code is written. Do not use for well-specified
-  tasks — it is overhead there.
+description: Interviews the user one question at a time before anything is built, then writes a spec file (goal, out of scope, acceptance criteria, verification plan) and STOPS for approval before any code.
+when_to_use: '"build me X" with no user or why, "I have an idea", "help me work out what I want". Not for interrogating an existing plan — use agent-skills:interview-me.'
 ---
 
 # Deep Interview
@@ -13,14 +9,26 @@ description: >
 Vague requirements produce confidently wrong software. This skill refuses to
 start building until the ambiguity is low enough that building is safe.
 
-Adapted from oh-my-claudecode's `deep-interview`, which in turn credits the
-Ouroboros convergence-gate pattern.
+## Invoked on purpose? Then run.
+
+**An explicit invocation is a decision already made.** The user typed the command,
+so the question of whether to interview is settled — do not re-open it, and do
+not answer a request to be interviewed with a paragraph explaining that the
+request was clear. That is the most annoying possible response to being asked
+for help.
+
+Score the ambiguity anyway. The score is cheap, it is the gate the rest of this
+skill runs on, and it answers the question better than a judgement call: a
+genuinely specific request scores at or below the threshold in one pass, and you
+proceed to the spec with the score shown. That is a two-line answer, not a
+refusal.
 
 ## When this is the wrong tool
 
-Stop and say so if the request is already specific. Interviewing someone who has
-already told you exactly what they want is not diligence, it is friction. A
-one-line bug fix does not need a spec.
+This guard is for the case where nothing was invoked and you are deciding
+yourself. Stop and say so if the request is already specific. Interviewing
+someone who has already told you exactly what they want is not diligence, it is
+friction. A one-line bug fix does not need a spec.
 
 ## Procedure
 
@@ -55,7 +63,7 @@ Rules for questions:
   into collaboration.
 
 If the user answers vaguely, note the dimension is still open and ask once more
-with a sharper question. Do not ask a third time — record it as an accepted
+with a sharper question. Do not ask a fourth time — record it as an accepted
 unknown and move on.
 
 ### 3. Rescore, and either loop or stop
@@ -71,7 +79,7 @@ Total       11 → 4  — gate passed
 ```
 
 Loop at most **four rounds**. If the total is still above 4 after four rounds,
-stop interviewing and say plainly which dimensions remain unresolved and what
+stop interviewing. Say plainly which dimensions remain unresolved and what
 the risk of proceeding is. An unresolvable ambiguity is a finding, not a failure
 — sometimes the honest answer is "nobody knows yet, let's prototype".
 
@@ -113,5 +121,10 @@ then wait for explicit approval.
 This gate is the entire value of the skill. A spec written and then immediately
 acted on without confirmation is just a slower way to build the wrong thing.
 
-Once approved, hand the spec to the orchestrator and let it plan lanes from the
-acceptance criteria.
+Once approved, plan the implementation lanes from the acceptance criteria. Give
+every lane the spec path as its brief.
+
+## Credit
+
+Adapted from oh-my-claudecode's `deep-interview`, which in turn credits the
+Ouroboros convergence-gate pattern.

@@ -1,6 +1,7 @@
 ---
 name: simplify
-description: Simplifies code for clarity without changing behavior, and deletes what should never have been written — speculative abstraction, config nobody sets, hand-rolled equivalents of standard library or platform features. Use for readability, maintainability, complexity reduction, and anything described as over-engineered or bloated, once behavior is understood.
+description: 'DELETES code that should never have been written — speculative abstraction, config nobody sets, hand-rolled equivalents of the standard library or platform — and simplifies the rest with behaviour preserved exactly. Chesterton fence: nothing comes out until it is known why it went in.'
+when_to_use: '"make this simpler", "why is this so complicated", "clean this up", "this is over-engineered", "too much boilerplate", "we do not need this abstraction". Not for renaming or formatting tidy-ups — use agent-skills:code-simplification.'
 ---
 
 # Code Simplification
@@ -9,49 +10,51 @@ Cut complexity, preserve behaviour exactly. The goal is not fewer lines — it i
 code faster to read, change and debug. One test: **would a new team member
 understand this faster than the original?**
 
-**Use it when** the implementation is heavier than the problem, review flags
-complexity, or you meet deep nesting, long functions, unclear names, logic
-scattered across files, or duplication left by a merge.
+**Use it when** the implementation is heavier than the problem, or review flags
+complexity. Use it when you meet deep nesting, long functions, unclear names,
+logic scattered across files, or duplication left by a merge.
 
-**Skip it when** the code is already clean, you do not yet understand it, it is
-performance-critical and the simpler form is measurably slower, or the module is
-about to be rewritten. Skip any block with an explicit do-not-touch marker
-(`simplify-ignore`, `@preserve`, a comment naming a reason) — honour it and say
-you skipped it.
+**Skip it when** you do not yet understand the code, or the module is about to
+be rewritten. Skip it too when the code is performance-critical and the simpler
+form is measurably slower. **"Already clean" is not on that list unless you can
+show it.** It holds only when nothing in the tables below fires. A nested
+ternary or a three-deep nest refutes it, so it never outranks *Be brave about
+size*. Skip any block with an explicit do-not-touch marker (`simplify-ignore`,
+`@preserve`, a comment naming a reason) — honour it and say you skipped it.
 
 ## The Five Principles
 
 **1. Preserve behavior exactly.** Inputs, outputs, side effects, error behaviour,
 ordering and edge cases stay identical. Unsure? Do not make the change.
 
-- A test that has to change for your simplification to pass means **you changed
-  behaviour** — revert. Editing the test destroys the only evidence you had.
-- Nothing tested it? **A green suite proves nothing.** Before touching non-trivial
-  logic with no coverage, write the smallest check that pins current behaviour,
-  run it against the **original** to confirm it passes, then simplify. Without
-  that check you are editing on faith.
+- **A test is the evidence, so the test decides.** A test that has to change for
+  your simplification to pass means **you changed behaviour** — revert. Editing
+  the test destroys the only evidence you had. Nothing tested it? **A green suite
+  proves nothing.** Before touching non-trivial logic with no coverage, write the
+  smallest check that pins current behaviour. Run it against the **original** to
+  confirm it passes, then simplify. Without that check you are editing on faith.
 
-**2. Follow project conventions.** Read `AGENTS.md` / `CLAUDE.md`, study how
-neighbouring code solves the same problem, match its imports, naming, function
+**2. Follow project conventions.** Read `AGENTS.md` / `CLAUDE.md`, and study how
+neighbouring code solves the same problem. Match its imports, naming, function
 style, error handling and type depth. Simplification that breaks consistency is
 churn. Conventions come from the repository, never from your preferred dialect.
 
 **3. Clarity over cleverness.** Explicit beats compact whenever compact needs a
 mental pause; keep a name that carries meaning even at a few extra lines. Delete
 comments restating the code, **keep comments that explain why** — intent is the
-one thing code cannot say for itself. **Comment volume is its own smell**: a
-function needing a note every third line needs splitting or renaming instead, and
-a comment surviving only because the name is bad goes *after* the rename.
+one thing code cannot say for itself. **Comment volume is its own smell.** A
+function needing a note every third line needs splitting or renaming instead. A
+comment surviving only because the name is bad goes *after* the rename.
 
-**4. Balance.** Over-simplification is real: do not inline away a meaningful name,
-merge unrelated logic, or optimise for line count. Do not remove an abstraction
-that earns its place — but **"serves extensibility" is not earning it.** One
-**pays rent when a second** implementation exists *today*, or a test really
-substitutes at that seam. One implementation and no substitution is the `yagni:`
-case: inline it. Evidence now, not a story about later.
+**4. Balance.** Over-simplification is real: do not inline away a meaningful
+name, merge unrelated logic, or optimise for line count. Do not remove an
+abstraction that earns its place — but **"serves extensibility" is not earning
+it.** One **pays rent when a second** implementation exists *today*, or a test
+really substitutes at that seam. One implementation and no substitution is the
+`yagni:` case: inline it. Evidence now, not a story about later.
 
 **5. Scope — unrequested, not small.** Default to recently modified code and avoid
-drive-by refactors, but the guard is on *unrequested* work: asked to simplify a
+drive-by refactors. But the guard is on *unrequested* work: asked to simplify a
 module, restructure a subsystem or rethink an approach, that **is** the scope.
 Follow one problem across every file it occupies. Where the real problem is the
 design rather than its expression, say so instead of polishing — name the
@@ -68,7 +71,7 @@ Cited in reviews, bounded so they do not fight each other.
 - **DRY — of knowledge, not of characters.** Code that must change together for
   the same reason is duplicated knowledge; unify it. Code that merely looks alike
   is coincidence; leave it. **Where DRY and YAGNI appear to collide, the
-  tiebreaker is the rule of three** — a wrong abstraction costs more than the
+  tiebreaker is the rule of three.** A wrong abstraction costs more than the
   duplication it replaced, because every later case bends to fit.
 - **Single responsibility** — one reason to change. Can you name what it does
   without "and"?
@@ -84,7 +87,8 @@ Cited in reviews, bounded so they do not fight each other.
 The default failure is timidity: renaming a variable, straightening one
 conditional, then calling a four-file tangle "already right-sized". Principle 5
 already licenses the size — **refactor as many files as the problem actually
-spans.**
+spans.** **Do not grade timidity as taste.** "Already fine" about a nested
+ternary or a three-deep nest is the excuse this section exists to remove.
 
 - **Restructure, do not only rearrange.** Wrong seams, a god object, inheritance
   expressing one behaviour, state threaded through five layers — replace it.
@@ -93,34 +97,31 @@ spans.**
   than removing it. Internal: migrate callers and delete. Exported: **deleting it
   is an API change**, so collapse to a one-line alias, or migrate callers if this
   is not a public boundary. Either is fine — say which and why.
-- **Do not grade timidity as taste.** "Already fine" about a nested ternary or a
-  three-deep nest is the excuse this section exists to remove.
 - **An argument that defends a rule moves; it does not vanish.** In text that
   shapes behaviour, the passage answering "why bother" reads as padding and often
   is not. Cut it and the rule stops firing under pressure, while the file still
   reads correctly — so nothing catches it. Relocate each rebuttal to where the
   excuse gets made: a rationalization row, or the step it guards.
 
-Never at the cost of: the pin-down check on untested code; a test weakened to go
-green; validation at a trust boundary, an error path, a security control or an
-accessibility affordance; or silence — a large restructure is named and its
-**blast radius stated** before it starts, because spending it is the caller's
-decision.
+Never at the cost of the always-on floor the main thread already holds — see
+*Never simplified away* in the output style. Never at the cost of this skill's own
+two: the pin-down check on untested code, and a test weakened to go green. And
+never at the cost of silence: a large restructure is named and its **blast radius
+stated** before it starts. Spending it is the caller's decision.
 
 ## Process
 
 ### 1. Understand first
 
 **Chesterton's Fence** — a fence comes down only once you know why it went up.
-Before changing anything: what is this responsible for, what calls it, what are
-its edge and error paths, do tests define its behaviour, and might it exist for
-performance, a platform constraint or a past incident? Check `git blame` — for one
-command the commit message is often the whole answer.
+Before changing anything, answer four questions. What is this responsible for,
+and what calls it? What are its edge and error paths, and do tests define its
+behaviour? Might it exist for performance, a platform constraint or a past
+incident? Check `git blame` — for one command the commit message is often the
+whole answer. Cannot answer? Read more. Accumulated complexity often has no
+reason and is just residue from pressure, but you learn that by checking.
 
-Cannot answer? Read more. Accumulated complexity often has no reason and is just
-residue from pressure, but you learn that by checking.
-
-**A comment is a fence too.** Delete one that restates the code freely; one you do
+**A comment is a fence too.** Delete one that restates the code freely. One you do
 not *understand* gets `git blame` first, because the cryptic line about ordering
 is usually the scar from an outage.
 
@@ -135,21 +136,21 @@ Whoever wrote this was meant to climb it beforehand; you are the backstop. Stop 
 the first rung that holds.
 
 1. **Need to exist at all?** Speculative need, an unused export, a config key
-   nobody sets, a flag with one value, scaffolding nothing extends — delete, and
-   re-add when something needs it.
+   nobody sets, a flag with one value, scaffolding nothing extends. Delete it,
+   and re-add when something needs it.
 2. **Already in this codebase?** Re-implementing what lives a few files over is
    the commonest waste there is.
 3. **Does the standard library do it?** A hand-rolled deep clone, debounce, date
-   parse, UUID or group-by is the highest-value deletion available, and the one a
-   clarity-focused pass walks past — hand-rolled code is often perfectly
-   *readable*.
+   parse, UUID or group-by is the highest-value deletion available. A
+   clarity-focused pass walks past it, because hand-rolled code is often
+   perfectly *readable*.
 4. **Native platform feature?** CSS over JS, a DB constraint over app code, a
    built-in control over a widget library.
 5. **An already-installed dependency?** Use it. Never add one for what a few lines
    do.
 
-Tag each finding: `delete:` dead code or speculative feature, replacement
-nothing · `stdlib:` name the function · `native:` name the platform feature ·
+Tag each finding. `delete:` dead code or speculative feature, replacement
+nothing · `stdlib:` name the function · `native:` name the platform feature.
 `yagni:` one implementation, config nobody sets, layer with one caller ·
 `shrink:` same logic, fewer lines, show the shorter form.
 
@@ -159,14 +160,15 @@ and let the caller decide.
 
 **Swapping in a standard implementation is where "simplification" silently
 changes behaviour.** Check the edges match: sort stability, `null` and empty
-input, precision, whether the standard version accepts what the hand-rolled one
-rejected or throws where it returned a default.
+input, precision. Check whether the standard version accepts what the
+hand-rolled one rejected, or throws where it returned a default.
 
-**Deleting a config key selects the default, never `off`.** Rung 1 invites you to
-drop a key nobody sets, and the consumer then falls back — which is often the
-opposite of what the key was holding. Read what the consumer does when the key is
-absent before removing it. An absent key, an empty list and an empty object are
-frequently three different answers, and only one of them is the one you meant.
+**Deleting a config key selects the default, never `off`.** Rung 1 invites you
+to drop a key nobody sets, and the consumer then falls back. That is often the
+opposite of what the key was holding. Read what the consumer does when the key
+is absent before removing it. An absent key, an empty list and an empty object
+are frequently three different answers, and only one of them is the one you
+meant.
 
 #### Then: expression
 
@@ -201,20 +203,22 @@ frequently three different answers, and only one of them is the one you meant.
 
 ### 3. Apply incrementally
 
-One at a time: make the change, then check preservation with evidence
-proportionate to the risk — the pinned check for logic you touched, plus whatever
-the repository's release instructions require. Keep it only while that evidence
-holds.
+**Batch size is a ladder; take the lowest rung that fits the work.** One change
+at a time is the default: make the change, then check preservation with evidence
+proportionate to the risk. That is the pinned check for logic you touched, plus
+whatever the repository's release instructions require. Keep the change only
+while that evidence holds. Batch beyond one only what you can attribute — **if
+verification fails after several simplifications, bisect them rather than
+guessing.** Above roughly 500 lines, **stop hand-editing**: use a codemod or AST
+transform, verified on a sample before you trust the whole run. That top rung
+replaces the two below it, because a mechanical rewrite is attributed by its rule
+rather than by its edits.
 
-- Batch only what you can attribute. **If verification fails after several
-  simplifications, bisect them rather than guessing.**
 - Keep refactoring commits **separate from feature and bug-fix commits**. Mixed
   history is harder to review and revert.
-- **Mark any ceiling you deliberately leave** — a global lock, an O(n²) scan over
-  a list you know stays small, a naive heuristic — naming the limit and the
-  upgrade path in a comment. Unmarked ceilings get rediscovered the hard way.
-- Above roughly 500 lines, **stop hand-editing**: use a codemod or AST transform,
-  verified on a sample before you trust the whole run.
+- **Mark any ceiling you deliberately leave**: a global lock, an O(n²) scan over a
+  list you know stays small, a naive heuristic. Name the limit and the upgrade
+  path in a comment. Unmarked ceilings get rediscovered the hard way.
 
 ### 4. Verify
 
@@ -232,13 +236,16 @@ saying so is a result.
 
 ## Red flags
 
-A test had to change · the result is longer or harder to follow · renaming toward
-your taste rather than the project's · error handling removed to "clean it up" ·
-simplifying code you do not fully understand · one batch nobody can review or
-bisect · refactoring code *unrelated* to the task · a nested ternary or three-deep
-nest left as "already fine" · a full forwarding function kept where an alias or
-caller migration would do · stopping at one file when the *same* problem continues
-into others.
+- A test had to change
+- The result is longer or harder to follow
+- Renaming toward your taste rather than the project's
+- Error handling removed to "clean it up"
+- Simplifying code you do not fully understand
+- One batch nobody can review or bisect
+- Refactoring code *unrelated* to the task
+- A nested ternary or three-deep nest left as "already fine"
+- A full forwarding function kept where an alias or caller migration would do
+- Stopping at one file when the *same* problem continues into others
 
 ## Rationalizations to refuse
 
