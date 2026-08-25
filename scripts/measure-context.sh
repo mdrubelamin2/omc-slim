@@ -19,7 +19,6 @@
 # Not counted, because none of it is static:
 #   - agent and skill BODIES, loaded only when that specialist runs
 #   - hooks/*, which run out of process and inject nothing
-#   - .mcp.json servers, whose tool schemas the harness defers
 #
 #   ./scripts/measure-context.sh          # table
 #   ./scripts/measure-context.sh --terse  # one number, for scripting
@@ -42,10 +41,16 @@ body_chars() {
 #
 # Leading indent is stripped because YAML folds it away — the model never sees
 # it. Left in, it over-reported by ~25 tokens across the roster.
+#
+# `when_to_use` is counted with `description` because the harness appends it to
+# the description in the skill listing, so it is loaded on every request just the
+# same. Counting only `description` under-reported the skill roster by 1,308
+# chars (~327 tokens) the day `when_to_use` was introduced — a published figure
+# that omits an always-on field is the understatement this script exists to stop.
 desc_chars() {
   awk '
-    /^description:[[:space:]]*[>|]/ { inblock=1; next }
-    /^description:/                 { sub(/^description:[[:space:]]*/,""); print; next }
+    /^(description|when_to_use):[[:space:]]*[>|]/ { inblock=1; next }
+    /^(description|when_to_use):/ { sub(/^(description|when_to_use):[[:space:]]*/,""); print; next }
     inblock && /^[[:space:]]+[^[:space:]]/ { sub(/^[[:space:]]+/,""); print; next }
     inblock                         { inblock=0 }
   ' "$1" | wc -c | tr -d ' '
@@ -85,7 +90,7 @@ printf '  %-34s %8d  %10d\n' "$skill_n skill descriptions"  "$skill_c" "$(tok $s
 printf '  %-34s %8s  %10s\n' "" "--------" "----------"
 printf '  %-34s %8d  %10d\n' "static context"               "$total_c" "$(tok $total_c)"
 printf '\n'
-printf 'Paid on every request. Agent and skill bodies, hooks and MCP schemas\n'
+printf 'Paid on every request. Agent and skill bodies and hooks\n'
 printf 'are excluded — none of them load until something invokes them.\n\n'
 printf 'Accuracy: chars/4 is the original hand method (RESEARCH.md:200), kept so\n'
 printf 'the version series stays comparable. It runs roughly 5-15%% high on dense\n'

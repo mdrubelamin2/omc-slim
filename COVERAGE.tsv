@@ -110,11 +110,13 @@ gstack	quote-the-code-gate	review	Quote the code, or you do not have a finding
 gstack	no-gaming-the-quote-gate	review	do not invent a higher confidence
 gstack	framework-declares-elsewhere	review	quote the construct that *creates* the symbol
 gstack	symmetric-burden-on-clearance	review	not a finding *and not a clearance*
-gstack	confidence-controls-display	review	5 or below do not report at all
-gstack	critical-survives-low-confidence	review	survives at low confidence
+# RETIRED 2026-08-25 — owner reversed the suppression rule; low-confidence findings
+# now route to Open questions instead of being deleted. See review-confidence-routing.
+# gstack	confidence-controls-display	review	5 or below do not report at all
+gstack	critical-survives-low-confidence	review	survives at any confidence
 gstack	lane-triggers-by-scope	review	Runs when
 gstack	auth-scope-is-size-independent	review	at any size
-gstack	size-floor-skips-lanes	review	roughly 50 changed lines
+gstack	size-picks-who-runs-the-lane	review	roughly 50 changed lines
 gstack	dispatch-lanes-in-one-message	review	in parallel, in one message
 gstack	report-lanes-that-did-not-run	review	which did not, with the reason
 gstack	adversarial-pass-always	review	one adversarial pass, always
@@ -125,7 +127,8 @@ gstack	critical-asks-mechanical-fixes	review	Critical findings lean towards aski
 gstack	batch-asks-into-one-question	review	Batch every ask into **one** question
 gstack	review-never-publishes	review	Never commit, push or open a PR
 gstack	suppression-list	review	Do not flag
-code-review-official	confidence-threshold-suppresses	review	do not report at all
+# RETIRED 2026-08-25 — same reversal as confidence-controls-display above.
+# code-review-official	confidence-threshold-suppresses	review	do not report at all
 addy	approve-on-net-improvement	review	definitely improves the health
 addy	no-blocking-on-taste	review	not how you would have written it
 addy	sycophancy-is-a-failure	review	Sycophancy is the other failure
@@ -266,3 +269,9 @@ superpowers	readonly-does-not-move-git-state	tracer	they discard uncommitted wor
 superpowers	deleting-config-selects-the-default	simplify	Deleting a config key selects the default
 superpowers	rebuttal-relocates-never-vanishes	simplify	An argument that defends a rule moves
 superpowers	change-not-live-in-this-session	verification-planning	not live in the session that made them
+audit	exemption-scopes-length-only	output-styles	exempts length, and nothing else
+audit	safety-never-simplified-away	output-styles	Never simplified away
+audit	no-context-anxiety	output-styles	Do not manage the context window
+audit	todo-continuity	output-styles	appended, not substituted
+audit	parallel-writer-scoping	output-styles	only where file scopes do not overlap
+audit	design-handoff-intent	output-styles	are intentional

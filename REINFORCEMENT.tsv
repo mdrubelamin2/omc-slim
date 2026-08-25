@@ -1,0 +1,140 @@
+# Reinforcement that must stay attached to the rule it reinforces.
+#
+# COVERAGE.tsv pins rules. It cannot pin reinforcement — the sentences that make
+# a rule actually fire. 51dfbcc: a compression pass kept every pinned phrase,
+# dropped the clause explaining one of them, and measured behaviour broke while
+# all 87 coverage rows still passed. These rows are that gap.
+#
+# Each row pins an anchor phrase plus the phrases that must appear in the SAME
+# NEIGHBOURHOOD as the anchor. The neighbourhood is the containing paragraph: the
+# block between blank lines. Not the whole file — a rewrite that guts a rule
+# almost always leaves its words somewhere else in the document.
+#
+# Matching is a case-folded FIXED SUBSTRING, not regex. Whitespace is normalised
+# exactly as check-coverage.sh normalises it, so line-wrapped prose still
+# matches. If the anchor appears more than once, the row passes when ANY one
+# occurrence carries every co-occurrence.
+#
+# where          resolves as it does in COVERAGE.tsv: `output-styles`, an agent
+#                name, a skill name, or `skill/file.md`.
+# anchor         the pinned phrase; may already be pinned in COVERAGE.tsv.
+# must_cooccur   `|`-separated, ALL required, never empty. An empty list asserts
+#                nothing and is a broken row, not a passing one.
+#
+# Checked by scripts/check-reinforcement.sh. Exit 1 on any gutted rule.
+#
+# rule	where	anchor	must_cooccur
+near-synonyms	output-styles	dozens of near-synonyms	does not quietly skip a step under pressure|Invoking the right skill beats improvising the same procedure worse|not by what surfaces first
+two-scopes	output-styles	two scopes	the project's `.claude/`|the user's `~/.claude/`|most machines carry far more at the user level|misses nearly everything
+roster-is-a-floor	output-styles	roster is a floor, not a ceiling	equally available and often better|Survey before planning and name the tool in the delegation
+deferred-tools	output-styles	ToolSearch	an unsearched tool is invisible, not absent
+read-the-artefact-first	output-styles	Read the artefact first	Brevity applies to solutions, never to reading|An assumption stated as a finding poisons everything downstream|the smallest change in the wrong place is a second bug
+stale-recall	output-styles	Your recalled knowledge is stale	checked against a current source, never recalled|an unsourced external claim is indistinguishable from a recalled one
+prior-art-before-inventing	output-styles	look for prior art first	a named algorithm, a standard, an RFC, a reviewed implementation|beats one derived in one pass|never the depth of the reading
+search-before-you-write	output-styles	Does it already exist?	Re-implementing what lives a few files over is the most common waste|Does it need to exist at all?
+grep-every-caller	output-styles	Grep every caller	One guard in the shared function beats a guard in each caller|patching only the named path leaves every sibling broken
+account-for-the-full-set	output-styles	What is the full set?	every page, all the endpoints, each consumer|Account for the members you are not touching
+ships-whole	output-styles	ships whole	error paths, edge cases|Cutting a feature is a decision to state|cutting error handling is a defect to hide
+surgical-scope	output-styles	unrequested	never against *large* work|Surgical scope, not timid scope|asked to rewrite, redesign or rethink, that **is** the scope
+never-simplified-away	output-styles	Never simplified away	input validation at trust boundaries|error handling that prevents data loss|security controls|accessibility basics|anything explicitly requested
+weakening-a-check	output-styles	"Looks right" is not a check	a check is evidence only while it can still fail|weakening an assertion, widening a type or swallowing an error|Never imply a result you did not observe
+own-it-and-finish-it	output-styles	descriptions, never exits	good stopping point|a named blocker with evidence is a result|asking *which* reading is right before starting is encouraged
+handle-it-directly	output-styles	one isolated, low-risk action	briefing a specialist would cost more than doing it|never a running count|three small fixes in a row are three small fixes
+delegation-contract	output-styles	Delegation contract	bounded scope, expected output, validation owner|any rule in this file or earlier correction that bears on the work|Missing the third means it is not ready to send
+todo-continuity	output-styles	Todo continuity	appended, not substituted|Preserve order and status|finish the in-progress task first
+reconcile-the-union	output-styles	Each verified only its own slice	nothing has yet checked the union|Run the project's own check once against the merged result
+zero-validation	output-styles	zero validation	the cheapest check the project already has|typecheck, build, existing tests|report what it said
+review-is-a-second-pass	output-styles	cannot be the pass that clears it	Non-trivial writer output goes through `review`|somewhere the code was not written
+concision-is-not-less-work	output-styles	Concision governs how you write	never to verify less, read less or finish less|is the deliverable, and is given in full
+in-full-exempts-length-only	output-styles	exempts length, and nothing else	one idea per sentence, twenty-five words|A long answer is many short sentences, never permission to write loose ones
+context-window	output-styles	Do not manage the context window	Capacity is the harness's job|never propose compacting unless the user raises it|never out of fear of a limit
+surgical-scope	fixer	bounds *whose* work you do	not how large the work is|If the task is a rewrite, rewrite it fully|Do not improve adjacent code
+never-simplify-away	fixer	Input validation at trust boundaries	Error handling that prevents data loss|Security controls|Accessibility basics|Anything explicitly requested|correct on edge cases
+zero-validation	fixer	zero validation	the cheapest check the project already has|report what it said
+simplify-scope	simplify	the guard is on *unrequested* work	that **is** the scope|Follow one problem across every file it occupies|name the restructure and let the caller decide
+one-level-delegation	deepwork	Keep delegation one level deep	enforced, not advisory|Specialists cannot spawn agents|split into parallel lanes
+introspection-is-not-a-check	deepwork	is not a check	will also pass its own introspection|mark its output unverified
+introspection-is-not-a-check	verification-planning	is not a check	A check must be able to fail|will also pass its own introspection
+design-handoff	output-styles	are intentional	do not normalise them flat later|Mechanical follow-up|back to the designer
+search-before-write	output-styles	Search before you write	before the first edit, every time
+search-q-exists	output-styles	Does it already exist?	Re-implementing what lives a few files over|Does it need to exist at all?
+search-q-callers	output-styles	Who else calls this?	One guard in the shared function|leaves every sibling broken
+search-q-full-set	output-styles	What is the full set?	places the request did not name|Account for the members you are not touching
+plan-before-edit	output-styles	Plan before the first edit	the stage map comes first|ships two layers and reports success
+evidence-not-plausibility	output-styles	Evidence, not plausibility	State goals so they can fail|the smallest runnable thing that breaks when it breaks
+register-simple-english	output-styles	Simplified Technical English (ASD-STE100)	not baby talk and not|fragments
+lead-with-answer	output-styles	Lead with the answer	No preamble, no restating the request|no summary unless asked
+explorer-output-cap	explorer	Hard cap: 150 lines total	return the most relevant 150|(N more matches)|a truncated set is worse than no set
+explorer-proposes-nothing	explorer	Never suggest a fix	a refactor, or a next step|That is the caller's job
+explorer-shell-is-read-only	explorer	Bash is for non-mutating diagnostics only	Never `git checkout`, `stash` or `reset`|discard uncommitted work that is not yours
+explorer-negative-result	explorer	If you found nothing	say so in one line|name where you looked
+oracle-verify-before-flag	oracle	Never report a fault you have not confirmed present	grep it, diff it, run it, read the source|A warning raised because evidence was not found, rather than because a fault was found, is itself an error|manufactures doubt and sends the caller chasing ghosts|Absence of evidence is not the finding
+oracle-advises-never-implements	oracle	You advise; the fixer and designer implement	Never `git checkout`, `stash` or `reset`|discard uncommitted work that is not yours
+oracle-root-causes	oracle	Find root causes, not symptoms	Grep every caller before blaming one
+oracle-claims-carry-locations	oracle	A claim about code without a location is a guess	Cite `file.ts:line`
+oracle-verdict-first	oracle	Rank findings by severity	Lead with the verdict|do not pad with minor style notes when the question was architectural
+tracer-first-plausible-story	tracer	Your failure mode is committing to the first plausible story	You are called when the cause is not known|Resist it
+tracer-three-hypotheses	tracer	Generate at least three competing hypotheses	before gathering evidence|If you can only think of one, you have not understood the system yet
+tracer-falsify	tracer	gather evidence both for and against	Actively look for the thing that would falsify it|A hypothesis you only confirmed is untested
+tracer-diagnoses-never-patches	tracer	You diagnose; you do not patch	Running a test to observe failure is allowed and encouraged|Changing the test is not
+tracer-ambiguity-is-an-answer	tracer	Never end with a confident single cause when the evidence supports two	Reporting genuine ambiguity is a correct answer
+librarian-toolset-both-scopes	librarian	Your toolset is not fixed	the project's `.claude/`|the user's `~/.claude/`|most machines carry far more at the user level|never assume the repository is the whole inventory|A server's name may say nothing useful
+librarian-specialist-first	librarian	Start with a specialist server where one exists	version-aware|beats a search engine
+librarian-web-is-normal	librarian	go straight to the open web	That is the normal path, not|this plugin ships no MCP servers|Say which route you took
+librarian-mandate-web-pass	librarian	at least one open-web pass	it does not tell you what changed|Carry the URL and the date into the finding|not a claim
+librarian-installed-source-first	librarian	Read the installed source before you read anything about it	ground truth|cannot be a false positive|breaks against what is installed
+librarian-pin-the-version	librarian	Use the shell to pin down which version	the lockfile|never from a search result about what projects generally use
+librarian-web-answers-what-disk-cannot	librarian	The web answers what disk cannot	deprecated last month|disk wins and you say so|the code that will actually run
+librarian-prior-art	librarian	Report whether the problem is already solved	the named algorithm, the standard or RFC that defines the behaviour|Name it, say who relies on it, and say what it costs to adopt|actionable rather than trivia
+librarian-no-established-solution	librarian	there is no established solution	It is a real finding and it licenses the caller to build something bespoke
+librarian-say-you-dont-know	librarian	If the docs do not cover it, say so and report what they *do* cover	A confident answer assembled from adjacent facts is the failure mode of this role
+librarian-sources-travel	librarian	Every load-bearing claim gets a source	No source, no claim
+designer-timidity-is-the-failure	designer	the default failure mode of this role is timidity	producing something correct, generic and forgettable|Commit to a point of view|Where a choice is between safe and interesting, and both serve the user, take interesting
+designer-stale-recall	designer	Framework APIs move and your recollection of them has a cutoff	Confirm a component API, a config key or a CSS feature against the installed version or current docs|rather than recalling it
+designer-accessibility-not-optional	designer	Accessibility is not optional	semantic markup, focus states, contrast, keyboard paths, reduced-motion|A beautiful interface nobody can operate is a failed one
+designer-review-mode-locations	designer	report concrete problems with locations	has a 2.1:1 contrast ratio and no focus ring|not "consider improving accessibility"
+designer-zero-validation	designer	Never return a non-trivial change with zero validation	make it user-visible where possible|at minimum build it and confirm it renders|Report results and skips accurately
+codemap-cost-is-real	codemap	This skill is expensive	it reads the whole tree and spawns one fixer per directory|writes files into the user's repository|a `codemap.md` in every mapped directory|`.slim/codemap.json`, and a section in root `AGENTS.md`
+codemap-announce-gate	codemap	say what it will cost and what it will write, and get a yes first	Reaching for it unprompted is correct; doing so silently is not
+codemap-exclusions-mandatory	codemap	Exclude (MANDATORY)	Do NOT include tests, documentation, or translations|Respect `.gitignore` automatically
+codemap-agents-md-idempotent	codemap	skip this step	already contains a `## Repository Map` section|the reference is already set up
+codemap-registration-reason	codemap	auto-loads `AGENTS.md` into agent context on every session	To ensure agents automatically discover and use the codemap|update (or create) `AGENTS.md` at the repo root
+council-cost-first	council	Cost first.	Three `oracle` dispatches plus a synthesis pass|get a yes before starting|For anything short of irreversible, one `oracle` is the right call and this skill is waste
+council-one-framing	council	A seat given a different framing is not an independent read	One question, stated once, in the same words for every seat|it is a different question
+council-gamma-evidence-only	council	A seat that quietly switches to opinion is this role's failure mode	Answer from evidence in this repository, not from general best practice|If the codebase does not settle the question, say that explicitly rather than substituting general knowledge
+council-no-wholesale-reread	council	Do not repeat the seats' reading wholesale	re-reading everything costs tokens for no new information
+council-settle-contradictions	council	directly contradictory claims about a specific line	Settle it, and say that you did
+council-correlated-error	council	correlated error is possible	not by model *provider*|They share a common training lineage|weaker evidence than genuine cross-vendor consensus would be
+council-state-the-caveat	council	note this limitation explicitly in Remaining Uncertainty	If consensus is unanimous on a high-stakes question|Do not present agreement among three related models as independent confirmation
+deep-interview-wrong-tool	deep-interview	Stop and say so if the request is already specific	Interviewing someone who has already told you exactly what they want is not diligence, it is friction|A one-line bug fix does not need a spec
+deep-interview-threshold	deep-interview	Threshold: proceed to build only at 4 or below	Sum the scores|Report the starting score to the user so the gate is visible, not implied
+deep-interview-round-cap	deep-interview	Loop at most	four rounds|If the total is still above 4 after four rounds|say plainly which dimensions remain unresolved and what the risk of proceeding is|An unresolvable ambiguity is a finding, not a failure
+deep-interview-approval-gate	deep-interview	Do not start implementing	Present the spec path and a three-line summary|wait for explicit approval
+deep-interview-gate-is-the-value	deep-interview	This gate is the entire value of the skill	A spec written and then immediately acted on without confirmation is just a slower way to build the wrong thing
+review-quote-gate	review	Quote the code, or you do not have a finding	quote the construct that *creates* the symbol|the bar is "I read the source that defines this", not "I grepped and missed it"|Cannot quote it, it is speculation|do not invent a higher confidence
+review-cite-gate	review	Cite the source, or you do not have a claim	checked against a current source, **never recalled**|the most expensive false positive there is|carry the source into the finding|an unsourced external claim is indistinguishable from a recalled one
+review-confidence-routing	review	3 to 5 goes to Open questions	the question you could not settle|Below 3 you have a hunch|hunches are noise
+review-critical-survives	review	survives at any confidence	never a blocker|the cost of missing it is asymmetric|deleted before anyone sees it
+review-severity-by-consequence	review	fix before merge	a security hole, data loss or broken behaviour, do not ship|a real improvement, the author's call|a dramatic hole nothing can reach ranks below a dull one on the public path
+review-lane-silence-is-not-a-result	review	An always-on lane that found nothing says so	Report which lanes ran and **which did not, with the reason**|a lane silently skipped reads as a lane that found nothing|its absence is indistinguishable from never having looked
+review-filter-at-the-end	review	Filter at the end, never while looking	Surface everything during discovery|Filtering instructions are followed faithfully, so a filter applied while reading suppresses the bug before it is ever seen|permission to look less hard
+review-brief-with-evidence	review	Brief a lane with evidence, never with a verdict	locate the work|decides the review before it runs|a lane handed the answer reports the answer
+review-lanes-trigger-on-content	review	Every lane triggers on the diff's content, never on its length	a migration is a schema change at 30 lines and at 3,000|too small to review
+review-size-picks-who-not-whether	review	Size decides only	who runs the lane, not whether it runs|a lane the table triggers gets run and reported
+fixer-webfetch-not-research	fixer	`WebFetch` is allowed for a page the caller named	Reading one URL you were handed is execution|going looking is research|cannot be stale about this project
+deepwork-reversible-not-obvious	deepwork	Reversibility is not the same as obviousness	no precedent in this repository still earns one competing option|building the wrong shape confidently
+deepwork-generate-freely	deepwork	Generate freely; report at most three	The cap is on what you write down|a generation cap is how the second idea never gets had
+council-test-the-shared-premise	council	check what all three assumed	A premise every seat shared is invisible|agreement about training, not about the codebase|go test that one thing against the repository
+orchestrator-is-the-fan-out	output-styles	You are the only place fan-out can happen	Specialists cannot spawn agents|has to be planned here, before dispatch|three lanes in one message
+deepwork-research-is-a-stage	deepwork	Research is a stage, not a reflex	plans the wrong work in the right order|never that the plan was current
+deepwork-named-source-or-nothing	deepwork	checked, found nothing	silence is not an answer|neither is your own memory
+deepwork-scale-never-skip	deepwork	Scale the pass, never skip it	still owes questions 2 and 3|Only question 1 scales with consequence
+deepwork-research-continues	deepwork	Research does not stop at the plan	a fact you assumed rather than checked|before the stage closes
+deepwork-attack-the-premise	deepwork	attack the premise instead	The first idea constrains the next three|move the constraint rather than the design
+deepwork-first-idea-may-be-right	deepwork	the first idea was right	An alternative you generated and killed is evidence|a blind spot you cannot see
+deepwork-grounding-does-not-scale	deepwork	Depth scales; grounding does not	None of it decides whether you check|cannot calibrate depth against facts you have not checked
+deep-interview-explicit-runs	deep-interview	An explicit invocation is a decision already made	do not re-open it|the most annoying possible response
+deep-interview-score-anyway	deep-interview	Score the ambiguity anyway	it is the gate the rest of this skill runs on|a two-line answer, not a refusal
+deep-interview-guard-is-for-autofire	deep-interview	This guard is for the case where nothing was invoked	Stop and say so if the request is already specific
+deepwork-explicit-runs	deepwork	Invoked on purpose? Then run	the question is settled|the most annoying possible response|Scale the work down if it deserves less
+librarian-bash-non-mutating	librarian	Bash is for non-mutating diagnostics only	Never `git checkout`|never anything that writes|changes the tree the caller is working in

@@ -47,6 +47,14 @@ while IFS=$'\t' read -r origin rule where pattern; do
     missing=$((missing + 1)); continue
   fi
 
+  # An empty pattern matches every file, so a row asserting nothing would count
+  # as a covered behaviour and pad the total. A row with a missing or blank
+  # fourth column is a broken row, not a passing one.
+  if [ -z "${pattern// /}" ]; then
+    printf '  EMPTY PATTERN %-32s asserts nothing (row has no pattern column)\n' "$rule"
+    missing=$((missing + 1)); continue
+  fi
+
   # Collapse all whitespace to single spaces so line-wrapped prose still
   # matches. Without this, a rule that happens to wrap across two lines reads
   # as absent — which cost a false alarm the first time this was run by hand.
@@ -70,17 +78,11 @@ import re, glob, os, sys
 root = sys.argv[1]
 style = open(os.path.join(root, 'output-styles/omc-slim.md')).read()
 
-def expand(m):
-    # "councillor-alpha / -beta / -gamma" -> the three full names, so the
-    # shorthand the prose uses still matches the files on disk.
-    parts = [p.strip() for p in m.group(0).split('/')]
-    prefix = parts[0].split('-')[0]
-    return ' '.join([parts[0]] + [f'{prefix}-{p.lstrip("-")}' for p in parts[1:]])
-
 def section(start, end):
+    # Anchors must stay unique and in this order; style.index raises otherwise.
     a = style.index(start)
     b = style.index(end, a)
-    return re.sub(r'[a-z]+-[a-z]+(?:\s*/\s*-[a-z]+)+', expand, style[a:b])
+    return style[a:b]
 
 rosters = {
     'agent': (section('**Agents**', '**Skills:**'),
@@ -183,7 +185,7 @@ PY
 # user's repo. A link checker calls those three broken on day one, and a check
 # that is born red is a check nobody reads.
 python3 - "$ROOT" <<'PY' || exit 1
-import glob, json, os, re, sys
+import glob, json, os, re, subprocess, sys
 root = sys.argv[1]
 bad = 0
 
@@ -210,7 +212,9 @@ elif not bad:
 
 WORDS = {1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six',
          7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten', 11: 'eleven',
-         12: 'twelve', 13: 'thirteen', 14: 'fourteen', 15: 'fifteen'}
+         12: 'twelve', 13: 'thirteen', 14: 'fourteen', 15: 'fifteen',
+         16: 'sixteen', 17: 'seventeen', 18: 'eighteen', 19: 'nineteen',
+         20: 'twenty'}
 agents = len(glob.glob(os.path.join(root, 'agents/*.md')))
 skills = len(glob.glob(os.path.join(root, 'skills/*/SKILL.md')))
 hooks_cfg = json.load(open(os.path.join(root, 'hooks/hooks.json')))
@@ -230,6 +234,12 @@ roster_sites = [
     # the copy a marketplace shows, so it is the one strangers read first.
     ('.claude-plugin/plugin.json',
      f'{word(agents)} specialists, {word(skills)} skills, {word(hooks)} advisory {hookword}'),
+    # PROVENANCE.md pastes this checker's own output as a sample. That block has
+    # now gone stale TWICE — CHANGELOG.md records correcting two stale row counts
+    # in it one release ago, and every line of it was wrong again by the next.
+    # A doc that quotes a checker and is not checked by it will always drift.
+    ('docs/PROVENANCE.md',
+     f'{word(agents)} agents, {word(skills)} skills, {word(hooks)} {hookword}'),
 ]
 matched = 0
 for path, expect in roster_sites:
@@ -244,9 +254,113 @@ if matched == len(roster_sites):
     print(f'{matched}/{matched} worded rosters match: {word(agents)} agents, '
           f'{word(skills)} skills, {word(hooks)} {hookword}.')
 
+# The README quotes how many cases the hook suite runs and how many mutants the
+# mutation suite kills.
+suite_counts = []
+for label, script, pattern in [
+    ('test cases', 'hooks/verify-deliverables.test.mjs', r'(\d+)/(\d+) passed'),
+    ('mutants', 'hooks/verify-deliverables.mutate.mjs', r'score: (\d+)/(\d+) killed'),
+]:
+    try:
+        # OMC_SLIM_HOOK_PATH redirects the suite at a different file. The
+        # mutation runner sets it deliberately for its sandbox; anything in the
+        # caller's shell would make this gate test some other file and pass.
+        # That is the same failure the sandbox rewrite closed, moved from disk
+        # to environment, so strip it rather than trust the caller.
+        env = {k: v for k, v in os.environ.items() if k != 'OMC_SLIM_HOOK_PATH'}
+        # 17 mutants x the runner's own 120s per-mutant ceiling is well past
+        # any sane wall clock; 40 min is a hang guard, not a budget.
+        proc = subprocess.run(['node', os.path.join(root, script)],
+                              capture_output=True, text=True, timeout=2400,
+                              env=env)
+        out = proc.stdout
+        # The runner prints its score BEFORE it exits non-zero on a failed
+        # restore, so matching the score line alone reports green while a mutant
+        # sits on disk. Read the exit code, not just the output.
+        if proc.returncode != 0:
+            print(f'  SUITE FAILED  {script} exited {proc.returncode}')
+            bad += 1
+            continue
+    except Exception as exc:
+        print(f'  SUITE FAILED  {script} did not run: {exc}')
+        bad += 1
+        continue
+    m = re.search(pattern, out)
+    if not m:
+        print(f'  SUITE FAILED  {script} printed no "{label}" total')
+        bad += 1
+        continue
+    got, total = int(m.group(1)), int(m.group(2))
+    if got != total:
+        print(f'  SUITE FAILED  {script}: {got}/{total} {label}')
+        bad += 1
+        continue
+    suite_counts.append((label, script, total))
+
+# The same sample block quotes the row total. Enrol it too, or the counts and the
+# total drift apart independently.
+prov = open(os.path.join(root, 'docs/PROVENANCE.md')).read()
+rows = sum(1 for ln in open(os.path.join(root, 'COVERAGE.tsv'))
+           if ln.strip() and not ln.lstrip().startswith('#'))
+for literal in (f'{rows}/{rows} adopted behaviours present.', f'{rows} rows'):
+    if literal not in prov:
+        print(f'  STALE SAMPLE  docs/PROVENANCE.md does not quote "{literal}"')
+        bad += 1
+
+readme = re.sub(' +', ' ', open(os.path.join(root, 'README.md')).read().replace('\n', ' ')).lower()
+for label, script, total in suite_counts:
+    if word(total).lower() not in readme and str(total) not in readme:
+        print(f'  STALE COUNT   README does not state {total} {label} for {script}')
+        bad += 1
+if len(suite_counts) == 2 and not bad:
+    print(f'{suite_counts[0][2]} test cases and {suite_counts[1][2]} mutants, '
+          f'both stated in README.')
+
 if bad:
     raise SystemExit(1)
 PY
+
+# --- frontmatter parses ---------------------------------------------------
+# An agent whose YAML frontmatter fails to parse loads with its name taken from
+# the filename and EVERY OTHER FIELD SILENTLY DROPPED — including
+# disallowedTools, which is the only harness-enforced guarantee this plugin has.
+# It happened: a rewritten description beginning with a double quote, and several
+# containing ": ", broke all six agents at once while every other check stayed
+# green. Quote any description containing a colon-space or a leading quote.
+python3 - "$ROOT" <<'FMPY' || exit 1
+import glob, os, sys
+root = sys.argv[1]
+try:
+    import yaml
+except ImportError:
+    print('  SKIPPED       PyYAML not installed; frontmatter unparsed')
+    raise SystemExit(0)
+
+bad = 0
+files = sorted(glob.glob(os.path.join(root, 'agents/*.md')))
+files += sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md')))
+for path in files:
+    rel = os.path.relpath(path, root)
+    text = open(path).read()
+    if not text.startswith('---'):
+        print('  NO FRONTMATTER ' + rel)
+        bad += 1
+        continue
+    try:
+        data = yaml.safe_load(text.split('---', 2)[1])
+    except Exception as exc:
+        print('  UNPARSEABLE   ' + rel)
+        print('                  ' + str(exc).splitlines()[0][:88])
+        print('                  every field but name is dropped at runtime')
+        bad += 1
+        continue
+    if not isinstance(data, dict) or 'name' not in data or 'description' not in data:
+        print('  BAD KEYS      ' + rel + ' needs name and description')
+        bad += 1
+if bad:
+    raise SystemExit(1)
+print(str(len(files)) + '/' + str(len(files)) + ' frontmatter blocks parse.')
+FMPY
 
 # --- adoption provenance --------------------------------------------------
 # COVERAGE.tsv records what this plugin took and from where. Two things must stay
@@ -288,7 +402,10 @@ ORIGINS = {
     'caveman':              ('documented', None,                  'JuliusBrussee/caveman'),
     'wait-what':            ('documented', None,                  '`wait-what` skill'),
     'omc-official':         ('documented', None,                  'bundled simplification skill'),
-    'code-review-official': ('documented', None,                  'bundled `code-review` plugin'),
+    # RETIRED 2026-08-25 — its single adopted rule (a hard confidence floor that
+    # suppressed findings) was deliberately reversed. No rows remain, so the origin
+    # leaves ORIGINS rather than sitting here classifying nothing.
+    # 'code-review-official': ('documented', None,               'bundled `code-review` plugin'),
 }
 
 pinned = {}
