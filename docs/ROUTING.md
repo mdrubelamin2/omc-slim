@@ -7,8 +7,9 @@ explicit call. It is for anyone deciding whether to trust automatic routing, or
 to invoke a skill by name instead.
 
 Measured across natural prompts that named no component and no plugin, with no
-instruction to delegate. **12 of the 15 components measured fire on their own.**
-The sixteenth, `review`, has not been tested either way.
+instruction to delegate. **12 of the 16 components then shipping fired on their own.** `review` was
+never tested either way. That roster no longer exists: four council agents
+became one skill, so 16 components are now 13.
 
 | Fires unprompted | |
 |---|---|
@@ -17,11 +18,11 @@ The sixteenth, `review`, has not been tested either way.
 | `oracle` | "is this design going to hold up?" — ran `explorer` first, then reviewed |
 | `tracer` | "this bug keeps coming back, I've fixed it twice" |
 | `designer` | "this login form looks awful" |
-| `council` + all 3 seats + synthesiser | "Postgres or DynamoDB? I want more than one opinion" |
+| `council` (skill) | "Postgres or DynamoDB? I want more than one opinion" — fired as four agents; now one skill, retest pending |
 | `deep-interview` | "I want to build something, not sure what yet" |
 | `codemap` | fires on an unmistakable task shape — a large, unfamiliar repo — not on wording |
 | `verification-planning` | "how do I prove this refactor didn't break anything?" |
-| `gh_grep`, `context7` | reached through `librarian` |
+| a documentation MCP | reached through `librarian`, when your project or user config provides one |
 
 `codemap` correctly declined a 15-file toy and fired unprompted on a 362-file,
 41k-LOC repository, writing 26 `codemap.md` files across 8 parallel `fixer`
@@ -122,7 +123,7 @@ On a machine with **103 skills installed, 24 had no description** in the model's
 listing — across four plugins, two of them ours. A skill with no description
 cannot be matched and will never auto-fire. This is why the orchestrator carries
 its own skill roster rather than trusting the listing, and it is a reason to be
-suspicious of any plugin that ships a large skill count. omc-slim ships six, and
+suspicious of any plugin that ships a large skill count. omc-slim ships seven, and
 adding more would make this worse for everything you have installed.
 
 ## `/config` will still say "default" — that is expected

@@ -10,7 +10,7 @@ deciding whether to trust those numbers.
 reasoning effort and analytical stance — not by model *provider*. They share a
 training lineage, so correlated error is possible: they can be confidently wrong
 together. Unanimous agreement here is weaker evidence than genuine cross-vendor
-consensus. The `council` agent is instructed to say so.
+consensus. The `council` skill is instructed to say so.
 
 **No per-agent temperature.** Claude Code agent frontmatter has no
 `temperature`. The upstream `designer` ran at 0.7 deliberately; that is
@@ -20,9 +20,24 @@ compensated for in prose, which is not the same thing.
 Claude Code has no equivalent, so structural queries fall back to `Grep`. The
 `explorer` is weaker than its ancestor on "find every function shaped like this".
 
-**It changes your output style.** Stated again because it is the only global
-side effect: `force-for-plugin` overrides your `outputStyle` while omc-slim is
-enabled. Disabling the plugin reverts it.
+**It changes your output style.** `force-for-plugin` overrides your `outputStyle`
+while omc-slim is enabled. Disabling the plugin reverts it.
+
+**It used to connect two remote MCP servers, and this page denied it.** Until
+v0.8.3 both this page and the README called the output style "the only global
+side effect". That was false. `.mcp.json` shipped `context7`
+(`mcp.context7.com`) and `gh_grep` (`mcp.grep.app`), and Claude Code starts a
+plugin's MCP servers automatically — there is no per-server prompt. They loaded
+namespaced, as `mcp__plugin_omc-slim_context7__*`, so library names and
+code-search strings reached two third-party hosts. It was disclosed in
+`RESEARCH.md` and `MAINTAINERS.md` and in neither of the two places a user
+actually reads, which is the same as not disclosing it.
+
+`.mcp.json` has been removed rather than documented. `librarian` finds whatever
+documentation servers your project or user config provides, so the capability
+survives wherever you already have it, and the plugin no longer decides on your
+behalf which hosts your queries reach. See
+[the audit](./AUDIT-2026-08-25.md) for how it was found.
 
 **No standing-rule delivery.** A correction you make in one session does not
 survive into the next, and nothing re-states it when a later message needs it.
@@ -33,6 +48,13 @@ here is advisory, and its value depends on a catalog you must write by hand. The
 delegation contract carries constraints into the brief instead, which also
 reaches subagents — where a prompt hook by design does not. Use `CLAUDE.md` for
 anything that must persist.
+
+**These numbers describe a build that no longer exists.** They were measured
+against the pre-restructure prompts. Since then every agent and skill has been
+restructured, four agents became one skill, and the output style was reorganised
+— so the artefact under test is not the artefact that ships. `scripts/bench/` has
+not been re-run. Treat the table below as the last known measurement of an
+earlier version, not as a claim about the current one, until it is.
 
 **Measured, honestly, and repeatably.** Full method and caveats in
 [`docs/BENCHMARK.md`](./BENCHMARK.md). One prompt naming no technology
@@ -83,7 +105,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,485 tok** | see above |
+| **omc-slim** | **~4,594 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -92,7 +114,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,485 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,594 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

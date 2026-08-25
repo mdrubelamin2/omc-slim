@@ -120,7 +120,7 @@ plugin agent is `omc-slim:fixer`.
 |---|---|
 | `fixer\|designer` | **no** |
 | `omc-slim:fixer\|omc-slim:designer` | yes |
-| `(.*:)?(fixer\|designer)` | yes ← what we ship |
+| `^(.*:)?(fixer\|designer)$` | yes ← what we ship |
 
 We ship the third form because it survives the plugin being installed under a
 different name. The second form works today and breaks silently on a rename —
@@ -399,6 +399,23 @@ rule: contradicting it in the next sentence, relocating it into an example or a
 counter-example, and inverting the sentence around the matched span. This was
 demonstrated, not assumed — appending "Ignore that: shipping at a good stopping
 point is correct" after `no-early-stop` left the run reporting every row present.
+`REINFORCEMENT.tsv` and `scripts/check-reinforcement.sh` are the second gate.
+`COVERAGE.tsv` proves a rule's phrase is present; it cannot prove the phrase
+still carries its rule. Two commits record that difference costing real
+behaviour — `51dfbcc`, where compression dropped a reinforcing clause and all 87
+rows still passed, and `9ee0438`, where collapsing three lane rows that each read
+"always" stopped the tests lane reporting. A reinforcement row pins an anchor
+plus the phrases that must sit in the **same paragraph** as it, and reports
+`GUTTED` when a rule keeps its name and loses its reasoning.
+
+`scripts/bench/smoke-contracts.sh` is the behavioural gate. Every other check is
+structural, and structural green missed a live mutant on disk and six agents
+whose frontmatter failed to parse, both in one session. It runs
+`claude -p --plugin-dir`, the only invocation that loads the working tree rather
+than the installed cache, and asserts both that `subagent_stats` reports the
+expected agent actually spawned and that its output still honours its contract.
+Three of thirteen components, about $2, dry run by default.
+
 Deletion is what this catches. For meaning, the benchmark at `scripts/bench/` is
 the instrument, and `obra/superpowers` measured a deletion costing 3/10 of a
 behaviour with the file still reading correctly. Do not widen the patterns to
@@ -538,7 +555,7 @@ Independent reasons to keep it denied elsewhere, regardless of the above:
 
 - `fixer`, `designer` — a writer spawning writers is a runaway-edit risk the
   orchestrator cannot see or reconcile.
-- `councillor-*` — nesting would let seats consult each other and destroy the
+- `councillor-*` (retired v0.8.4; the council is a skill now) — nesting would let seats consult each other and destroy the
   independence that makes a council worth more than one opinion.
 
 Revisit if the parent-waits-for-child behaviour becomes reliable, and only with a

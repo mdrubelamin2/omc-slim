@@ -127,18 +127,27 @@ before deleting.
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 240 rows, and growing with each release:
+lives — 244 rows, and growing with each release:
+
+`COVERAGE.tsv` proves a rule's phrase survived. It cannot prove the phrase still
+carries its rule: `51dfbcc` and `9ee0438` each record a compression pass where
+every row passed and measured behaviour broke, because the sentence that made the
+rule fire had been cut while its name survived.
+[`REINFORCEMENT.tsv`](../REINFORCEMENT.tsv) closes that — an anchor plus the
+phrases that must appear in the **same paragraph**, checked by
+`./scripts/check-reinforcement.sh`, which reports `GUTTED` when a rule keeps its
+name and loses its reasoning. Run both.
 
 ```bash
 ./scripts/check-coverage.sh
-# 10/10 agents present in the orchestrator roster.
-# 6/6 skills present in the orchestrator roster.
+# 6/6 agents present in the orchestrator roster.
+# 7/7 skills present in the orchestrator roster.
 # 3/3 published figures quote the measured total.
 # 2/2 plugin-internal paths resolve.
-# 2/2 worded rosters match: ten agents, six skills, one hook.
-# 16/16 adopted origins classified, 15 external and all documented.
+# 2/2 worded rosters match: six agents, seven skills, one hook.
+# 15/15 adopted origins classified, 14 external and all documented.
 #
-# 240/240 adopted behaviours present.
+# 244/244 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 

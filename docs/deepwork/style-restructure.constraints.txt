@@ -1,0 +1,79 @@
+PINS THAT MUST SURVIVE VERBATIM: 35
+  - descriptions, never exits
+  - good stopping point
+  - permission to continue
+  - Looks right is not a check
+  - assumption stated as a finding
+  - unrequested
+  - ships whole
+  - Read the artefact first
+  - Brevity applies to solutions, never to reading
+  - Your recalled knowledge is stale
+  - Look for prior art first
+  - never the depth of the reading
+  - wearing a passing badge
+  - zero validation
+  - floor, not a ceiling
+  - unsearched tool is invisible
+  - across several subsystems at once
+  - beats improvising the same procedure worse
+  - Plan before the first edit, not after it
+  - arrive from **two scopes**
+  - compete with dozens of near-synonyms
+  - cannot be the pass that clears it
+  - Simplified Technical English (ASD-STE100)
+  - One idea per sentence
+  - name who does what
+  - One word, one meaning
+  - the project's own words for its own concepts
+  - break noun stacks apart
+  - before a conclusion the reader cannot place
+  - terseness is fewer sentences, never broken ones
+  - never past twenty-five
+  - A parenthetical list becomes its own sentence
+  - do not travel to a specialist
+  - Time changes them too
+  - a suite that matched zero tests still exits green
+
+SECTION INVENTORY (chars / ~tok / pins held):
+  # Role                                            125     31   0
+  # Your specialists                               2378    594   2
+  # Standards you hold every lane to               3723    930  11
+  # Workflow                                       3360    840   5
+  # Communication                                  2397    599   9
+  TOTAL                                           11983   2995  35
+
+=== HARD CONSTRAINTS ON THE REWRITE (explorer lane, verified) ===
+
+1. ANCHOR ORDER IS LOAD-BEARING. check-coverage.sh:89-96 slices the file with
+   style.index(): '**Agents**' < '**Skills:**' < 'roster is a floor', in BYTE
+   ORDER. Reorder them -> unhandled ValueError + traceback, not a message.
+   Duplicate any one of them -> span mis-slices -> mass UNLISTED for agents that
+   ARE listed. Each string must stay unique and in that relative order.
+
+2. NEVER BOLD A SINGLE LOWERCASE TOKEN INSIDE THE ROSTER SPANS.
+   GHOST regex check-coverage.sh:106 = \*\*([a-z][a-z-]+)\*\*
+   Confirmed to fire on **writes**, **cheap**, **read-only**.
+   Safe: multi-word bolds (**two scopes**) and capitalised (**Invoking**).
+   The file currently uses *writes* single-asterisk at :27-28. KEEP IT.
+
+3. NO '---' HORIZONTAL RULE IN THE BODY. measure-context.sh:36 treats the first
+   two ^--- lines as frontmatter regardless of position. A rule promoted above
+   the real closing delimiter silently reclassifies body as frontmatter.
+   A file with NO frontmatter returns 0 chars -- not "counted whole" as its own
+   comment claims -- cascading to STALE FIGURE at README.md:6 and
+   LIMITATIONS.md:101,110.
+
+4. ANY change to body char count fires 3 STALE FIGURE sites. Resync via
+   measure-context.sh --terse. This is a clean error, not a silent one.
+
+5. 41 COVERAGE rows now target output-styles. Weak pins that could pass BY
+   ACCIDENT in a rewritten file, and therefore need REINFORCEMENT.tsv rows:
+   'unrequested' (one common word), 'ships whole', 'are intentional',
+   'zero validation', 'floor, not a ceiling'.
+   NOTE: pin 'floor, not a ceiling' does NOT match script anchor
+   'roster is a floor'. They are different strings. Both must survive.
+
+6. Nothing parses the frontmatter keys. Only the '---' delimiter PAIR is
+   load-bearing in this repo. force-for-plugin/keep-coding-instructions are
+   runtime contracts, unenforced locally.

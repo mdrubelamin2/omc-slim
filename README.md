@@ -2,20 +2,25 @@
 
 **A small pantheon of specialist agents for Claude Code.**
 
-Ten agents, six skills, one hook. The main thread stops being the implementer and
-becomes a planner that delegates, verifies and reconciles. It costs **~4,485
+Six agents, seven skills, one hook. The main thread stops being the implementer and
+becomes a planner that delegates, verifies and reconciles. It costs **~4,594
 tokens of static context**, injects **zero bytes on the tool-call path**, and
 inherits whatever MCP servers and skills your project already has.
 
-Measured at n=3 against a plain session: **18% cheaper at equal correctness**,
-shipping the smallest tool of the three setups tested.
+On one single-file CLI task, n=3 per arm, it averaged **18% less than a plain
+session** ($1.01 vs $1.24) with non-overlapping spreads, and shipped the smallest
+tool of the three setups tested. All nine runs graded equally correct — so the
+grader could not separate them on quality, and no subagent ran in any arm. Read
+[BENCHMARK.md](./docs/BENCHMARK.md) before quoting that number — and note it
+measured the prompts as they were **before** the current restructure, so it
+describes an earlier build than the one you install.
 
 ```
 /plugin marketplace add mdrubelamin2/omc-slim
 /plugin install omc-slim@omc-slim
 ```
 
-No configuration, no API keys, no dependencies.
+No configuration, no API keys, no dependencies, no bundled MCP servers.
 
 ---
 
@@ -25,10 +30,22 @@ There isn't any. The orchestration output style applies automatically while the
 plugin is enabled, so the main thread works as a planner rather than diving
 straight into implementation.
 
-One thing to know: that flag overrides your `outputStyle` setting for as long as
-the plugin is enabled. It is the only global change this plugin makes. To opt
-out, run `/plugin disable omc-slim`. Output style is part of the system prompt,
-so changes take effect after `/clear` or in a new session.
+One thing to know: the output-style flag takes precedence over your `outputStyle`
+setting for as long as the plugin is enabled. It is the only global change this
+plugin makes — it ships no MCP servers, writes no files and touches no settings.
+To opt out, run `/plugin disable omc-slim`. Output style is part of the system
+prompt, so changes take effect after `/clear` or in a new session.
+
+**The plugin bundles no MCP servers, deliberately.** Up to v0.8.3 it shipped a
+`.mcp.json` that started `context7` and `grep.app` automatically — two remote
+third-party endpoints — while the README claimed the output style was the only
+global change. That was wrong, and the fix was to remove them rather than to
+document them. `librarian` discovers whatever documentation servers your project
+or user config already provides, so if you want those two, add them yourself:
+
+```
+claude mcp add --transport http context7 https://mcp.context7.com/mcp
+```
 
 To try it without installing:
 
@@ -64,11 +81,6 @@ roster costs what your session costs.
   Escalation, not a default review step.
 - **[tracer](./agents/tracer.md)** — *"I have fixed this twice and it keeps
   coming back."* Builds competing hypotheses and tries to falsify them.
-- **[council](./agents/council.md)** and three councillor seats
-  ([alpha](./agents/councillor-alpha.md), [beta](./agents/councillor-beta.md),
-  [gamma](./agents/councillor-gamma.md)) — *"I want more than one opinion before
-  we commit."* Three independent reads, then a synthesis. Expensive; for
-  irreversible decisions only.
 
 ## Skills
 
@@ -86,6 +98,10 @@ roster costs what your session costs.
 - **[codemap](./skills/codemap/SKILL.md)** — *"Nobody here has read this
   repository."* Writes a codemap per directory plus a root atlas. Expensive, and
   it says so before starting.
+- **[council](./skills/council/SKILL.md)** — *"I want more than one opinion
+  before we commit."* Dispatches `oracle` three times in parallel — risk-first,
+  simplicity-first, evidence-first — then synthesises. Very expensive; for
+  irreversible decisions only. Was four agent files until v0.8.4.
 
 ## The hook
 
@@ -94,14 +110,39 @@ write-capable agent actually wrote something, and tells **you** when it did not.
 It never blocks, always exits 0, and stays silent when it cannot tell.
 
 Those are claims, so they have a check: `node hooks/verify-deliverables.test.mjs`
-runs the hook as a child process against isolated fixtures — 13 cases asserting
+runs the hook as a child process against isolated fixtures — 14 cases asserting
 the exact set of keys it may emit, which is what makes "never blocks" falsifiable.
 And the check has a check: `verify-deliverables.mutate.mjs` breaks the hook
-fifteen ways and confirms the suite catches all fifteen. `OMC_SLIM_DEBUG=1` prints
+seventeen ways and confirms the suite catches all seventeen. `OMC_SLIM_DEBUG=1` prints
 which path it took, on stderr.
 
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
 path.
+
+## The two gates
+
+`COVERAGE.tsv` pins every adopted rule to the file that must still carry it, and
+`scripts/check-coverage.sh` fails if one disappears. That is presence, and
+presence is not enough: `51dfbcc` records a compression pass where all 87 rows
+passed and behaviour broke anyway, because the *reinforcing* sentence that made a
+rule fire had been cut while the rule's own phrase survived.
+
+So `REINFORCEMENT.tsv` pins the reinforcement too — an anchor plus the phrases
+that must appear **in the same paragraph** as that anchor. `scripts/check-reinforcement.sh`
+reports `GUTTED` when a rule keeps its name and loses its reasoning. Gutting one
+rule as a test gives `0 DROPPED` from the coverage gate and a named failure from
+this one. Run both:
+
+```
+./scripts/check-coverage.sh && ./scripts/check-reinforcement.sh
+```
+
+Both are structural: they prove the text is there and still carries its rule.
+Neither can tell you the agent still *behaves*. `scripts/bench/smoke-contracts.sh`
+is the one that can — it runs `claude -p --plugin-dir` against the working tree
+rather than the installed cache, and asserts both that the expected agent
+actually spawned and that its output honours its contract. It covers three of
+thirteen components, costs about $2, and dry-runs by default.
 
 ## How it works
 
@@ -144,9 +185,14 @@ boundary still holds.
 
 ## What fires on its own
 
-Twelve of the fifteen components measured route automatically, on natural prompts
-naming no component and no plugin. `deepwork` and `simplify` do not, and `review`
-has never been tested either way.
+Most components have been observed firing on natural prompts naming no component
+and no plugin. `deepwork` and `simplify` have never fired on their own, and
+`review` has never been tested either way.
+
+**These are notes, not an experiment.** No harness, dates or transcripts are
+committed, unlike `scripts/bench/`. And on builds that gate the `Agent` tool —
+Claude Code ships "do not call the AgentTool unless the user requested it" by
+default for Opus 5 — none of it fires without an explicit request.
 
 Full routing measurements, the `deepwork` workaround, and what to do if nothing
 delegates: **[docs/ROUTING.md](./docs/ROUTING.md)**.
@@ -156,7 +202,7 @@ delegates: **[docs/ROUTING.md](./docs/ROUTING.md)**.
 - `deepwork` will not auto-fire. Invoke it explicitly, or add one paragraph to
   your `CLAUDE.md` — see [routing](./docs/ROUTING.md).
 - `simplify` does not fire on natural language. Use `/omc-slim:simplify <target>`.
-- The `council` fires, but not reliably. Dispatch it explicitly when it matters.
+- The `council` skill does not reliably auto-fire. Invoke it explicitly when it matters.
 - No agent may spawn subagents. Nesting is possible but unreliable in one-shot
   mode; that was tested rather than assumed.
 

@@ -3,6 +3,79 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.8.4
+
+**Breaking: four agents removed.** `council` and the three `councillor-*` seats
+became one skill, `skills/council/SKILL.md`, which dispatches `oracle` three
+times with three stances and synthesises. The seats differed only by a stance
+paragraph; the rest was duplicated boilerplate, and a stance travels fine in a
+brief. Roster is now six agents and seven skills.
+
+**`.mcp.json` removed.** It shipped `context7` and `grep.app`, two remote HTTP
+servers that started automatically, while the README claimed the output style was
+the only global change. That was false. The servers are gone rather than
+documented; `librarian` finds whatever documentation servers your own config
+provides, and README says how to add these two yourself.
+
+**A second gate: `REINFORCEMENT.tsv` + `scripts/check-reinforcement.sh`.**
+`COVERAGE.tsv` proves a rule's phrase is present. It cannot prove the phrase
+still carries its rule, and this repo has two commits where that difference cost
+real behaviour — `51dfbcc` and `9ee0438`, both green at the time. A reinforcement
+row pins an anchor plus the phrases that must sit in the same paragraph, and
+reports `GUTTED` when a rule keeps its name and loses its reasoning. 114 rows.
+
+**A behavioural gate: `scripts/bench/smoke-contracts.sh`.** Structural checks
+missed a live mutant on disk and six agents whose frontmatter failed to parse,
+both in one session. This one runs `claude -p --plugin-dir` against the working
+tree — the installed cache is what a subagent otherwise loads — and asserts both
+that the expected agent spawned and that its output honours its contract.
+
+**All 13 prompts restructured**, ordered by the moment each rule fires rather
+than by topic. `fixer` 46 → 39 atomic rules, `simplify` 43 → 38, both under the
+N=40 threshold where instruction compliance degrades. Eleven contradictions
+resolved, four of which needed a precedence rule that did not exist.
+
+**Depth over cost, where the two conflicted.** `librarian` gained `Bash` and a
+rewritten research ladder that reads installed source before anything written
+about it, and requires a dated open-web pass on load-bearing claims — it
+previously ranked web search last and called using it doing the job badly.
+`fixer` gained `WebFetch` for a caller-named URL. `review` lanes now trigger on
+diff content rather than line count, so a 30-line migration gets schema review,
+and low-confidence findings route to Open questions instead of being deleted.
+`deepwork` gained a research stage that runs before the stage map.
+
+**`codemap.mjs`: unreadable files were silently invisible forever.** A file over
+2 GB throws `ERR_FS_FILE_TOO_LARGE` and a permission-denied file throws `EACCES`;
+both were caught and returned `''`. `changes` then compared `'' !== ''` as false,
+so such a file could never be reported as changed again, and the two causes were
+indistinguishable from each other and from an empty file. Unreadable files now
+carry a per-cause sentinel and the count is reported. Also fixed: it walked and
+wrote `codemap.md` inside `node_modules` with no root `.gitignore`; `.gitignore`
+negations were parsed as ordinary patterns and are now warned about explicitly;
+and `init` wrote artefacts its own include then matched, so `changes` immediately
+after `init` was never clean.
+
+**Ten miscalibrated caps raised.** `explorer` 40 → 150 lines, because `review`
+uses it to enumerate every consumer of an enum and a truncated set reads like a
+whole one. `librarian` code examples 20 → 50. `deep-interview` retries two →
+three. Re-review budgets gain a third pass while a Critical is open. `codemap`
+may read one hop out, and may read the tests it does not describe.
+`verification-planning` scales evidence to consequence rather than always
+minimising. The output style states that cheapest ranks below correct and below
+complete.
+
+**Fixed: the hook could hang forever.** A FIFO or character device reports size
+0, so the 64 MB cap waved it through and `readFileSync` blocked with no timeout,
+breaking "always exits 0". Now requires a regular file, via `lstat` rather than
+`stat`, which also stops it following a symlink. The mutation runner no longer
+writes to the tracked hook at all — mutants go to a temp sandbox — after two
+concurrent runs left a live mutant on disk with every gate reporting green.
+
+**Static context 4,485 → 4,594.** Up, not down. `measure-context.sh` was blind to
+`when_to_use`, which the harness appends to `description` and loads every
+session; counting it added 327 tokens that were always being paid. The rest is
+the cost of mandating research and unblocking divergence.
+
 ## v0.8.3
 
 Four packs adopted since v0.8.2 — ballast, aniruddha-adhikary/skills,
