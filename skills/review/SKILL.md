@@ -123,7 +123,7 @@ reported.
 **Ask a lane only for what its agent can return.** `explorer` locates: every
 consumer of an enum, every caller of a changed function, whether code is
 genuinely dead. It is forbidden to propose a fix or a next step, and it caps its
-output at 40 lines. Brief it for locations, and write the remedy yourself.
+output at 150 lines. Brief it for locations, and write the remedy yourself.
 `oracle` judges architecture and security on a high-risk change, and it does
 propose. Neither can dispatch another agent, so an external claim comes back to
 you unresolved and you are the one who sends it on.
