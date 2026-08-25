@@ -3,6 +3,23 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.8.5
+
+**Breaking: the `council` skill is removed.** It was the weakest-evidenced
+component shipping. Its three seats differ by analytical stance, not by model
+provider, so unanimity was never the independent confirmation the format implied
+— `docs/LIMITATIONS.md` said so and the skill was instructed to repeat the
+caveat. It also fired on one prompt in two, was the most expensive entry in the
+roster, and overlapped `oracle`, which already owns a second opinion on an
+irreversible call. Ask `oracle` instead; for a decision worth three reads, brief
+it three times yourself. Roster is now six agents and six skills.
+
+Removed with it: the roster line in the output style, eight `REINFORCEMENT.tsv`
+rows, and the `check_council` contract case and its two self-test fixtures in
+`scripts/bench/smoke-contracts.sh`. Historical records that mention the council —
+`RESEARCH.md`, `docs/AUDIT-2026-08-25.md`, `docs/deepwork/`, and the v0.8.4 entry
+below — are left as written, because they record what happened.
+
 ## v0.8.4
 
 **Breaking: four agents removed.** `council` and the three `councillor-*` seats

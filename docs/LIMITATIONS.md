@@ -6,12 +6,6 @@ This page lists what omc-slim does not do well, then gives the full benchmark
 method and numbers behind its cost and correctness claims. It is for anyone
 deciding whether to trust those numbers.
 
-**The council is weaker than it looks.** Its seats differ by model tier,
-reasoning effort and analytical stance — not by model *provider*. They share a
-training lineage, so correlated error is possible: they can be confidently wrong
-together. Unanimous agreement here is weaker evidence than genuine cross-vendor
-consensus. The `council` skill is instructed to say so.
-
 **No per-agent temperature.** Claude Code agent frontmatter has no
 `temperature`. The upstream `designer` ran at 0.7 deliberately; that is
 compensated for in prose, which is not the same thing.
@@ -105,7 +99,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,594 tok** | see above |
+| **omc-slim** | **~4,474 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -114,7 +108,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,594 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,474 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

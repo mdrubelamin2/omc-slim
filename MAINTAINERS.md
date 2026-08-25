@@ -17,9 +17,9 @@ originally did, and cost ~328 tokens of system prompt across three files —
 ### `tools: []` grants ALL tools
 
 An empty array is treated as unset, and the runtime advertises **All tools**. (Moot now that no agent uses `tools:`, but keep it in mind.)
-`council` originally used `tools: [Read]` for this reason. It now uses a
-denylist like every other agent: it still cannot mutate anything, and it can
-settle one disputed citation rather than being blind to it.
+The retired `council` agent originally used `tools: [Read]` for this reason;
+every read-only agent now uses a denylist instead, which still forbids mutation
+while leaving `Bash` available to settle a disputed citation.
 
 Verified by building throwaway agents:
 
@@ -240,7 +240,6 @@ even working?" report; the README answers it with a one-line check.
   weaker than upstream.
 - **No per-agent `temperature`.** Upstream ran `designer` at 0.7 deliberately.
   Compensated for in prose, which is not the same thing.
-- **Council seats share a provider.** See the caveat in `README.md`.
 
 ---
 
@@ -414,7 +413,8 @@ whose frontmatter failed to parse, both in one session. It runs
 `claude -p --plugin-dir`, the only invocation that loads the working tree rather
 than the installed cache, and asserts both that `subagent_stats` reports the
 expected agent actually spawned and that its output still honours its contract.
-Three of thirteen components, about $2, dry run by default.
+All twelve components, one `claude -p` call each, dry run by default. The "about
+$2" figure predates the expansion from three cases and has not been re-measured.
 
 Deletion is what this catches. For meaning, the benchmark at `scripts/bench/` is
 the instrument, and `obra/superpowers` measured a deletion costing 3/10 of a
@@ -555,8 +555,6 @@ Independent reasons to keep it denied elsewhere, regardless of the above:
 
 - `fixer`, `designer` — a writer spawning writers is a runaway-edit risk the
   orchestrator cannot see or reconcile.
-- `councillor-*` (retired v0.8.4; the council is a skill now) — nesting would let seats consult each other and destroy the
-  independence that makes a council worth more than one opinion.
 
 Revisit if the parent-waits-for-child behaviour becomes reliable, and only with a
 fixture large enough that delegation demonstrably pays.

@@ -141,10 +141,12 @@ name and loses its reasoning. Run both.
 ```bash
 ./scripts/check-coverage.sh
 # 6/6 agents present in the orchestrator roster.
-# 7/7 skills present in the orchestrator roster.
+# 6/6 skills present in the orchestrator roster.
 # 3/3 published figures quote the measured total.
 # 2/2 plugin-internal paths resolve.
-# 2/2 worded rosters match: six agents, seven skills, one hook.
+# 3/3 worded rosters match: six agents, six skills, one hook.
+# 14 test cases and 17 mutants, both stated in README.
+# 12/12 frontmatter blocks parse.
 # 15/15 adopted origins classified, 14 external and all documented.
 #
 # 244/244 adopted behaviours present.

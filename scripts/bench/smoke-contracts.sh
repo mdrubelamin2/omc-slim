@@ -146,14 +146,14 @@ check_tracer() {
 # A skill runs in the MAIN THREAD. `subagent_stats.spawned` therefore stays 0 for
 # most of them, and the envelope carries no skill-invocation field at all. So the
 # checkers below key on a DISTINCTIVE OUTPUT ARTEFACT — review's exact header
-# line, deep-interview's ambiguity table, deepwork's numbered stage map,
-# council's consensus level. That is weaker evidence, and the weakness is
+# line, deep-interview's ambiguity table, deepwork's numbered stage map. That is
+# weaker evidence, and the weakness is
 # specific: a model that never loaded the skill can in principle imitate the
 # format, and this would call that a pass. It proves the shape, not the run.
 #
-# Where a skill does dispatch — review above ~50 changed lines, council always —
-# the case ALSO asserts `subagent_stats` (the `skill:N` kind). That half is real
-# evidence, and those two cases are correspondingly stronger than the other five.
+# Where a skill does dispatch — review, above ~50 changed lines — the case ALSO
+# asserts `subagent_stats` (the `skill:N` kind). That half is real evidence, and
+# that case is correspondingly stronger than the other five.
 #
 # codemap is the one skill with evidence outside the text: its case asserts the
 # fixture filesystem was left alone, which no amount of format imitation fakes.
@@ -211,7 +211,7 @@ check_deep_interview() {
 # verbatim ("I reviewed it and it looks right" is not a check), so proposing that
 # as the evidence is a fail even when the phrase "evidence path" is present.
 #
-# This is the weakest case of the thirteen: the skill specifies no output format,
+# This is the weakest case of the twelve: the skill specifies no output format,
 # so there is no artefact only it emits.
 check_verification_planning() {
   local out; out="$(cat)"
@@ -256,21 +256,6 @@ check_codemap() {
     [ -z "$written" ] \
       && return 0 || { echo "wrote $written before the gate; the ask is not decoration"; return 1; }
   fi
-  return 0
-}
-
-# council: skills/council/SKILL.md:119-141 — the three seats named, and the
-# consensus level. Per-seat detail is what the caller paid three dispatches for,
-# so a collapsed single answer fails even when the answer is good.
-check_council() {
-  local out; out="$(cat)"
-  printf '%s' "$out" | grep -qi 'consensus level' \
-    || { echo "no 'Consensus level:' line; that is the summary's required field"; return 1; }
-  local seat
-  for seat in alpha beta gamma; do
-    printf '%s' "$out" | grep -qi "$seat" \
-      || { echo "seat $seat missing; a seat that failed is named, never silently omitted"; return 1; }
-  done
   return 0
 }
 
@@ -896,27 +881,6 @@ Shall I go ahead?
 EOF
   SMOKE_FIXTURE=""
 
-  expect check_council accept "consensus level and all three seats" <<'EOF'
-### Council Response
-Move to SQLite. Both alternatives lose durability at the same cost.
-
-### Per-Seat Details
-- alpha: a JSON file has no atomic write path; a crash mid-dump truncates it. High.
-- beta: sqlite3 is in the standard library, so this adds no dependency. High.
-- gamma: app/store.py:1 already documents "lost on restart" as a known gap. Medium.
-
-### Council Summary
-- Consensus level: unanimous
-- Remaining uncertainty: three seats of one lineage agreeing is weaker than
-  cross-vendor consensus; treat the agreement accordingly.
-EOF
-
-  expect check_council reject "collapsed into one answer, no seats" <<'EOF'
-### Council Response
-Move to SQLite — it is in the standard library and gives you durability and
-atomic writes for nothing. That is the recommendation.
-EOF
-
   # A fixture that fails to build fails its case with no evidence either way, and
   # nothing else in a dry run would notice. Build each one for real.
   echo
@@ -974,7 +938,7 @@ command -v claude >/dev/null 2>&1 || { echo "claude not on PATH"; exit 1; }
 # that builds a throwaway tree under $TMPDIR. Only the latter gets write tools.
 #
 # max-turns is per case because the work is not the same size: explorer answers
-# one question, council runs three oracles and a synthesis.
+# one question, deepwork plans a staged migration.
 # =============================================================================
 CASES=(
   # --- Agents: subagent_stats is real evidence -------------------------------
@@ -986,17 +950,16 @@ CASES=(
   "tracer|agent|check_tracer|fixture_tracer|18|Use the omc-slim tracer agent. render([\"9.0\", \"10.0\"]) returns \"10.0\" before \"9.0\". I already tried fixing the sort and it is still broken. Why?"
 
   # --- Skills: output shape is the evidence, and it is weaker ----------------
-  # review and council also assert subagent_stats; the other five cannot.
+  # review also asserts subagent_stats; the other five cannot.
   "review|skill:1|check_review|fixture_review|40|Use the omc-slim:review skill on the uncommitted changes in this repository."
   "deepwork|skill|check_deepwork|fixture_scratch|40|Use the omc-slim:deepwork skill. Migrate the in-memory store in app/store.py to SQLite without breaking the callers in app/api.py. Give me the stage map before doing anything."
   "deep-interview|skill|check_deep_interview|fixture_scratch|14|Use the omc-slim:deep-interview skill. I have an idea: build me a dashboard for this service."
   "verification-planning|skill|check_verification_planning|fixture_scratch|16|Use the omc-slim:verification-planning skill. How do I prove that switching app/store.py from a dict to SQLite did not break app/api.py?"
   "simplify|skill|check_simplify|fixture_simplify|28|Use the omc-slim:simplify skill on notify.py."
   "codemap|skill|check_codemap|fixture_codemap|10|Use the omc-slim:codemap skill on this repository."
-  "council|skill:3|check_council|fixture_scratch|45|I have already accepted the cost of three seats. Use the omc-slim:council skill. Should app/store.py move to SQLite or to a JSON file on disk? Data is already being written, so this is expensive to reverse."
 )
 
-# The denominator is read off disk, not hard-coded, so adding a fourteenth
+# The denominator is read off disk, not hard-coded, so adding a thirteenth
 # component and forgetting to smoke-test it turns this line red instead of
 # silently reporting full coverage of a smaller plugin.
 count_components() {

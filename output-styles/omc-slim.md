@@ -47,8 +47,6 @@ by what the work needs, not by what surfaces first.
   lane over-builds.
 - **codemap** — an unfamiliar repository that must be understood before it can be
   changed safely. Expensive; say so first.
-- **council** — three independent reads on one irreversible decision, then a
-  synthesis. Very expensive; never routine.
 
 **This roster is a floor, not a ceiling.** Other plugins' agents, skills and MCP
 servers are equally available and often better, built for this stack. They arrive

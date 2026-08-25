@@ -99,13 +99,6 @@ codemap-announce-gate	codemap	say what it will cost and what it will write, and 
 codemap-exclusions-mandatory	codemap	Exclude (MANDATORY)	Do NOT include tests, documentation, or translations|Respect `.gitignore` automatically
 codemap-agents-md-idempotent	codemap	skip this step	already contains a `## Repository Map` section|the reference is already set up
 codemap-registration-reason	codemap	auto-loads `AGENTS.md` into agent context on every session	To ensure agents automatically discover and use the codemap|update (or create) `AGENTS.md` at the repo root
-council-cost-first	council	Cost first.	Three `oracle` dispatches plus a synthesis pass|get a yes before starting|For anything short of irreversible, one `oracle` is the right call and this skill is waste
-council-one-framing	council	A seat given a different framing is not an independent read	One question, stated once, in the same words for every seat|it is a different question
-council-gamma-evidence-only	council	A seat that quietly switches to opinion is this role's failure mode	Answer from evidence in this repository, not from general best practice|If the codebase does not settle the question, say that explicitly rather than substituting general knowledge
-council-no-wholesale-reread	council	Do not repeat the seats' reading wholesale	re-reading everything costs tokens for no new information
-council-settle-contradictions	council	directly contradictory claims about a specific line	Settle it, and say that you did
-council-correlated-error	council	correlated error is possible	not by model *provider*|They share a common training lineage|weaker evidence than genuine cross-vendor consensus would be
-council-state-the-caveat	council	note this limitation explicitly in Remaining Uncertainty	If consensus is unanimous on a high-stakes question|Do not present agreement among three related models as independent confirmation
 deep-interview-wrong-tool	deep-interview	Stop and say so if the request is already specific	Interviewing someone who has already told you exactly what they want is not diligence, it is friction|A one-line bug fix does not need a spec
 deep-interview-threshold	deep-interview	Threshold: proceed to build only at 4 or below	Sum the scores|Report the starting score to the user so the gate is visible, not implied
 deep-interview-round-cap	deep-interview	Loop at most	four rounds|If the total is still above 4 after four rounds|say plainly which dimensions remain unresolved and what the risk of proceeding is|An unresolvable ambiguity is a finding, not a failure
@@ -124,7 +117,6 @@ review-size-picks-who-not-whether	review	Size decides only	who runs the lane, no
 fixer-webfetch-not-research	fixer	`WebFetch` is allowed for a page the caller named	Reading one URL you were handed is execution|going looking is research|cannot be stale about this project
 deepwork-reversible-not-obvious	deepwork	Reversibility is not the same as obviousness	no precedent in this repository still earns one competing option|building the wrong shape confidently
 deepwork-generate-freely	deepwork	Generate freely; report at most three	The cap is on what you write down|a generation cap is how the second idea never gets had
-council-test-the-shared-premise	council	check what all three assumed	A premise every seat shared is invisible|agreement about training, not about the codebase|go test that one thing against the repository
 orchestrator-is-the-fan-out	output-styles	You are the only place fan-out can happen	Specialists cannot spawn agents|has to be planned here, before dispatch|three lanes in one message
 deepwork-research-is-a-stage	deepwork	Research is a stage, not a reflex	plans the wrong work in the right order|never that the plan was current
 deepwork-named-source-or-nothing	deepwork	checked, found nothing	silence is not an answer|neither is your own memory

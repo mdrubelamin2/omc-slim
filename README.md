@@ -2,8 +2,8 @@
 
 **A small pantheon of specialist agents for Claude Code.**
 
-Six agents, seven skills, one hook. The main thread stops being the implementer and
-becomes a planner that delegates, verifies and reconciles. It costs **~4,594
+Six agents, six skills, one hook. The main thread stops being the implementer and
+becomes a planner that delegates, verifies and reconciles. It costs **~4,474
 tokens of static context**, injects **zero bytes on the tool-call path**, and
 inherits whatever MCP servers and skills your project already has.
 
@@ -98,10 +98,6 @@ roster costs what your session costs.
 - **[codemap](./skills/codemap/SKILL.md)** — *"Nobody here has read this
   repository."* Writes a codemap per directory plus a root atlas. Expensive, and
   it says so before starting.
-- **[council](./skills/council/SKILL.md)** — *"I want more than one opinion
-  before we commit."* Dispatches `oracle` three times in parallel — risk-first,
-  simplicity-first, evidence-first — then synthesises. Very expensive; for
-  irreversible decisions only. Was four agent files until v0.8.4.
 
 ## The hook
 
@@ -141,8 +137,10 @@ Both are structural: they prove the text is there and still carries its rule.
 Neither can tell you the agent still *behaves*. `scripts/bench/smoke-contracts.sh`
 is the one that can — it runs `claude -p --plugin-dir` against the working tree
 rather than the installed cache, and asserts both that the expected agent
-actually spawned and that its output honours its contract. It covers three of
-thirteen components, costs about $2, and dry-runs by default.
+actually spawned and that its output honours its contract. It covers all twelve
+components, one `claude -p` call each, and dry-runs by default — a full
+`--execute` run spends real money and the total has not been re-measured since
+the suite grew from three cases.
 
 ## How it works
 
@@ -202,7 +200,6 @@ delegates: **[docs/ROUTING.md](./docs/ROUTING.md)**.
 - `deepwork` will not auto-fire. Invoke it explicitly, or add one paragraph to
   your `CLAUDE.md` — see [routing](./docs/ROUTING.md).
 - `simplify` does not fire on natural language. Use `/omc-slim:simplify <target>`.
-- The `council` skill does not reliably auto-fire. Invoke it explicitly when it matters.
 - No agent may spawn subagents. Nesting is possible but unreliable in one-shot
   mode; that was tested rather than assumed.
 
