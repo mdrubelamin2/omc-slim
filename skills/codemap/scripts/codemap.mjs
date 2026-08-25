@@ -19,6 +19,29 @@ export const STATE_FILE = 'codemap.json';
 export const LEGACY_STATE_FILE = 'cartography.json';
 export const CODEMAP_FILE = 'codemap.md';
 
+// Directory names never worth mapping, pruned before .gitignore is consulted.
+// A repository without a .gitignore used to be walked into its dependencies,
+// which both drowned the file list and wrote a codemap.md inside node_modules.
+// A user .gitignore may add to this set; it is not required for these.
+export const ALWAYS_EXCLUDED_DIRS = new Set([
+  'node_modules',
+  'vendor',
+  '.git',
+  'dist',
+  'build',
+  'target',
+  '__pycache__',
+  '.venv',
+  'venv',
+]);
+
+// Marks a file whose contents could not be read. A read failure is not an empty
+// file: hashing both to '' made an unreadable file compare equal to itself
+// forever, so it could never be reported as changed. The sentinel carries the
+// cause, so a file that flips from EACCES to readable is a change, and it can
+// never collide with an md5 digest.
+export const UNREADABLE_PREFIX = '<unreadable:';
+
 export class PatternMatcher {
   regex;
 
@@ -61,10 +84,40 @@ export function loadGitignore(root) {
   const gitignorePath = path.join(root, '.gitignore');
   if (!existsSync(gitignorePath)) return [];
 
-  return readFileSync(gitignorePath, 'utf8')
+  const lines = readFileSync(gitignorePath, 'utf8')
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('#'));
+
+  // Negation is reported, not implemented. Git resolves '!' by last-match-wins
+  // and still refuses to re-include a file whose parent directory is excluded;
+  // PatternMatcher compiles one unordered alternation, so it can express
+  // neither rule. Half-implementing it would disagree with git in a new way, so
+  // the lines are dropped — but never in silence.
+  const negations = lines.filter((line) => line.startsWith('!'));
+  if (negations.length) {
+    console.warn(
+      `Warning: ${gitignorePath} has ${negations.length} '!' negation pattern(s); codemap does not support negation and ignores them.`,
+    );
+  }
+
+  return lines.filter((line) => !line.startsWith('!'));
+}
+
+function isWalkableDir(name) {
+  return !name.startsWith('.') && !ALWAYS_EXCLUDED_DIRS.has(name);
+}
+
+// This tool's own output. Hashing it would make `changes` dirty the moment
+// `init` finishes, because every codemap.md init writes matches the default
+// `**/*` include.
+function isGeneratedArtefact(relPath) {
+  return (
+    relPath === CODEMAP_FILE ||
+    relPath.endsWith(`/${CODEMAP_FILE}`) ||
+    relPath === STATE_DIR ||
+    relPath.startsWith(`${STATE_DIR}/`)
+  );
 }
 
 function walkFiles(root) {
@@ -74,7 +127,7 @@ function walkFiles(root) {
     for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
       const fullPath = path.join(currentDir, entry.name);
       if (entry.isDirectory()) {
-        if (!entry.name.startsWith('.')) {
+        if (isWalkableDir(entry.name)) {
           visit(fullPath);
         }
         continue;
@@ -108,6 +161,7 @@ export function selectFiles(
       relPath = relPath.slice(2);
     }
 
+    if (isGeneratedArtefact(relPath)) return false;
     if (gitignoreMatcher.matches(relPath)) return false;
     if (excludeMatcher.matches(relPath) && !exceptionSet.has(relPath)) {
       return false;
@@ -121,27 +175,53 @@ export function computeFileHash(filePath) {
   try {
     const buffer = readFileSync(filePath);
     return createHash('md5').update(buffer).digest('hex');
-  } catch {
-    return '';
+  } catch (error) {
+    const cause = error?.code ?? 'UNKNOWN';
+    return `${UNREADABLE_PREFIX}${cause}>`;
   }
 }
 
-export function computeFolderHash(folder, fileHashes) {
-  const folderFiles = Object.entries(fileHashes)
-    .filter(
-      ([filePath]) =>
-        filePath.startsWith(`${folder}/`) ||
-        (folder === '.' && !filePath.includes('/')),
-    )
-    .sort(([a], [b]) => a.localeCompare(b));
+export function isUnreadableHash(hash) {
+  return typeof hash === 'string' && hash.startsWith(UNREADABLE_PREFIX);
+}
 
-  if (!folderFiles.length) return '';
+// One pass that appends each file to every ancestor folder's bucket, rather
+// than rescanning every file once per folder — the old shape was
+// O(folders x files) and dominated `init` on wide trees.
+export function computeFolderHashes(fileHashes) {
+  const buckets = new Map();
+  const sortedPaths = Object.keys(fileHashes).sort((a, b) =>
+    a.localeCompare(b),
+  );
 
-  const hasher = createHash('md5');
-  for (const [filePath, hash] of folderFiles) {
-    hasher.update(`${filePath}:${hash}\n`);
+  for (const filePath of sortedPaths) {
+    const parts = filePath.split('/');
+    // A folder's hash covers its whole subtree; the root covers only the files
+    // sitting directly in it.
+    const owners =
+      parts.length === 1
+        ? ['.']
+        : parts.slice(0, -1).map((_, i) => parts.slice(0, i + 1).join('/'));
+
+    for (const folder of owners) {
+      const bucket = buckets.get(folder);
+      if (bucket) {
+        bucket.push(filePath);
+      } else {
+        buckets.set(folder, [filePath]);
+      }
+    }
   }
-  return hasher.digest('hex');
+
+  const folderHashes = {};
+  for (const [folder, filePaths] of buckets) {
+    const hasher = createHash('md5');
+    for (const filePath of filePaths) {
+      hasher.update(`${filePath}:${fileHashes[filePath]}\n`);
+    }
+    folderHashes[folder] = hasher.digest('hex');
+  }
+  return folderHashes;
 }
 
 export function getFoldersWithFiles(files, root) {
@@ -224,6 +304,23 @@ export function createEmptyCodemap(folderPath, folderName) {
   writeFileSync(codemapPath, content);
 }
 
+// An unreadable file can never be diffed by content, so the only way the user
+// learns it exists is here.
+function reportUnreadable(fileHashes) {
+  const unreadable = Object.entries(fileHashes)
+    .filter(([, hash]) => isUnreadableHash(hash))
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  if (!unreadable.length) return;
+
+  console.log(
+    `\n${unreadable.length} unreadable (tracked by failure cause, not content):`,
+  );
+  for (const [filePath, hash] of unreadable) {
+    console.log(`  ! ${filePath} ${hash}`);
+  }
+}
+
 function buildState(
   root,
   includePatterns,
@@ -238,9 +335,10 @@ function buildState(
   }
 
   const folders = getFoldersWithFiles(selectedFiles, root);
+  const computedHashes = computeFolderHashes(fileHashes);
   const folderHashes = {};
   for (const folder of folders) {
-    folderHashes[folder] = computeFolderHash(folder, fileHashes);
+    folderHashes[folder] = computedHashes[folder] ?? '';
   }
 
   const state = {
@@ -305,6 +403,7 @@ export function cmdInit({ root, include = [], exclude = [], exception = [] }) {
   }
 
   console.log(`Created ${folders.size} empty codemap.md files`);
+  reportUnreadable(state.file_hashes);
   return 0;
 }
 
@@ -351,6 +450,8 @@ export function cmdChanges({ root }) {
     .filter((filePath) => savedPaths.has(filePath))
     .filter((filePath) => currentHashes[filePath] !== savedHashes[filePath])
     .sort();
+
+  reportUnreadable(currentHashes);
 
   if (!added.length && !removed.length && !modified.length) {
     console.log('No changes detected.');
@@ -423,6 +524,7 @@ export function cmdUpdate({ root }) {
   console.log(
     `Updated ${STATE_DIR}/${STATE_FILE} with ${selectedFiles.length} files`,
   );
+  reportUnreadable(nextState.file_hashes);
   return 0;
 }
 
