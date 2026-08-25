@@ -2,7 +2,7 @@
   "hooks": {
     "SubagentStop": [
       {
-        "matcher": "(.*:)?(fixer|designer)",
+        "matcher": "^(.*:)?(fixer|designer)$",
         "hooks": [
           {
             "type": "command",

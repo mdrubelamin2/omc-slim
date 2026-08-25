@@ -20,7 +20,7 @@
  * stderr to the user, so this costs nothing when unset and nothing when set.
  */
 
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, lstatSync } from "node:fs";
 
 /** Specialists expected to produce file changes. Read-only agents are exempt. */
 const WRITE_AGENTS = new Set(["fixer", "designer"]);
@@ -73,7 +73,18 @@ function sawWriteTool(transcriptPath) {
 
   let size;
   try {
-    size = statSync(transcriptPath).size;
+    // lstat, not stat: a symlink is not a transcript we were handed, and
+    // following one turns this into an arbitrary-path read.
+    const st = lstatSync(transcriptPath);
+    // A FIFO or character device reports size 0, so the cap below waves it
+    // through and readFileSync then blocks forever with no timeout — the hook
+    // never emits and never exits, breaking "always exits 0". Only a regular
+    // file can be a transcript. Pinned by "non-regular transcript stays silent".
+    if (!st.isFile()) {
+      debug("cannot tell: not a regular file", transcriptPath);
+      return null;
+    }
+    size = st.size;
   } catch (err) {
     debug("cannot tell: stat failed", transcriptPath, err && err.message);
     return null;
@@ -154,8 +165,13 @@ function main() {
     data.agent_type ?? data.agentType ?? data.subagent_type ?? "",
   ).toLowerCase();
 
-  // Namespaced as "omc-slim:fixer" when installed as a plugin.
-  const bare = agent.includes(":") ? agent.slice(agent.indexOf(":") + 1) : agent;
+  // Namespaced as "omc-slim:fixer" when installed as a plugin. lastIndexOf, not
+  // indexOf: the matcher in hooks.json accepts any prefix ending in a colon, so
+  // a multi-level name must resolve to its final segment or the check goes
+  // silent on an agent it was configured to cover.
+  const bare = agent.includes(":")
+    ? agent.slice(agent.lastIndexOf(":") + 1)
+    : agent;
   if (!WRITE_AGENTS.has(bare)) return emit(null);
 
   // MUST be the subagent's own transcript, not `transcript_path` — that one is

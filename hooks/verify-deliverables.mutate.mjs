@@ -18,7 +18,15 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  mkdtempSync,
+  rmSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,6 +62,14 @@ const MUTANTS = [
    "if (size > MAX_TRANSCRIPT_BYTES) {",
    "if (false) {",
    "unbounded read"],
+  ["regular-file check removed",
+   "if (!st.isFile()) {",
+   "if (false) {",
+   "hangs forever on a FIFO or character device, breaking 'always exits 0'"],
+  ["lstat weakened to stat",
+   "const st = lstatSync(transcriptPath);",
+   "const st = statSync(transcriptPath);",
+   "follows a symlink to an arbitrary path"],
   ["parent transcript fallback",
    "data.agent_transcript_path ?? data.agentTranscriptPath ?? null",
    "data.agent_transcript_path ?? data.agentTranscriptPath ?? data.transcript_path ?? null",
@@ -87,7 +103,7 @@ const MUTANTS = [
    "process.exit(1);\n}",
    "breaks 'always exits 0'"],
   ["bare-name split removed",
-   'const bare = agent.includes(":") ? agent.slice(agent.indexOf(":") + 1) : agent;',
+   'const bare = agent.includes(":")\n    ? agent.slice(agent.lastIndexOf(":") + 1)\n    : agent;',
    "const bare = agent;",
    "namespaced agents stop being checked"],
   ["suppressOutput dropped",
@@ -99,6 +115,42 @@ const MUTANTS = [
    "  return pendingWrites.size > 0;",
    "the original bug the hook was written to avoid"],
 ];
+
+// --- mutants never touch the tracked file -------------------------------------
+// Each mutant is written to a throwaway copy under the OS temp dir, and the test
+// harness is pointed at it with OMC_SLIM_HOOK_PATH. The tracked hook is only
+// ever read.
+//
+// It used to be mutated in place and restored from PRISTINE. Two concurrent runs
+// corrupted each other: run B snapshotted while run A held a mutant, then
+// faithfully "restored" that mutant, and the sha256 line still said "match"
+// because it matched the snapshot B took. That shipped a
+// `WRITE_AGENTS = new Set(["fixer"])` mutant to disk, silently disabling the
+// designer check while every other gate reported green.
+//
+// A lock plus a pristine guard was the first fix. Both were wrong: the pristine
+// guard could not see a mutant whose `find` string occurs twice (String.replace
+// substitutes only the first, so `includes(find)` stays true), and its printed
+// remedy — `git checkout --` — discards uncommitted work. Not writing to the
+// tracked file removes the whole class instead of policing it.
+// Prefixed so a leaked dir is identifiable and sweepable. SIGKILL cannot be
+// caught, so the exit handler below is best-effort; sweep stale siblings first
+// rather than accumulating them in /tmp across killed runs.
+const SANDBOX = mkdtempSync(join(tmpdir(), "omc-slim-mutate-"));
+try {
+  for (const stale of readdirSync(tmpdir())) {
+    if (!stale.startsWith("omc-slim-mutate-")) continue;
+    const dir = join(tmpdir(), stale);
+    if (dir !== SANDBOX && Date.now() - statSync(dir).mtimeMs > 3_600_000) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+} catch {}
+process.on("exit", () => {
+  try {
+    rmSync(SANDBOX, { recursive: true, force: true });
+  } catch {}
+});
 
 let killed = 0;
 const survivors = [];
@@ -112,12 +164,13 @@ for (const [label, find, replace, consequence] of MUTANTS) {
     continue;
   }
 
-  writeFileSync(HOOK, PRISTINE.replace(find, replace));
+  const variant = join(SANDBOX, "verify-deliverables.mjs");
+  writeFileSync(variant, PRISTINE.replace(find, replace));
   const run = spawnSync(process.execPath, [TEST], {
     encoding: "utf8",
     timeout: 120_000,
+    env: { ...process.env, OMC_SLIM_HOOK_PATH: variant },
   });
-  writeFileSync(HOOK, PRISTINE);
 
   const output = (run.stdout || "") + (run.stderr || "");
   const failures = (output.match(/^FAIL/gm) || []).length;
@@ -131,7 +184,9 @@ for (const [label, find, replace, consequence] of MUTANTS) {
   }
 }
 
-writeFileSync(HOOK, PRISTINE);
+// The tracked hook was only ever read, so there is nothing to restore. Assert
+// that rather than trusting it: a future edit that reintroduces in-place
+// mutation should fail here rather than silently corrupt the tree.
 const restored = sha(readFileSync(HOOK, "utf8")) === PRISTINE_SHA;
 
 console.log(`\nscore: ${killed}/${MUTANTS.length} killed`);
@@ -143,7 +198,7 @@ if (survivors.length) {
   }
 }
 
-console.log(`hook restored: ${restored ? "yes (sha256 match)" : "NO — MISMATCH, check git diff"}`);
+console.log(`tracked hook untouched: ${restored ? "yes (sha256 match)" : "NO — THE TREE IS DIRTY, check git diff"}`);
 
 if (!restored) process.exit(2);
 process.exit(survivors.length === 0 ? 0 : 1);

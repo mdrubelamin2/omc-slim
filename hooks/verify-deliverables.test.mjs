@@ -2,7 +2,7 @@
 /**
  * omc-slim — verify-deliverables harness
  *
- * Runs verify-deliverables.mjs as a child process against thirteen cases and
+ * Runs verify-deliverables.mjs as a child process against fourteen cases and
  * checks only its observable contract (exit code / stdout JSON / stderr):
  *
  *   1. write agent, nothing written      -> warns
@@ -18,6 +18,7 @@
  *  11. 3 MB transcript, no writes        -> still scanned, warns
  *  12. OMC_SLIM_DEBUG=1                  -> traces on stderr, stdout stays JSON
  *  13. transcript over the 64 MB cap     -> never read, silent
+ *  14. FIFO transcript (non-regular file) -> not read, silent, does not hang
  *
  * Fixtures use the real transcript shape ($.message.content[]) so the depth
  * bound in collectBlocks is exercised as it is in production.
@@ -44,15 +45,19 @@ import {
   openSync,
   ftruncateSync,
   closeSync,
+  lstatSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const HOOK = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "verify-deliverables.mjs",
-);
+// The mutation runner points this at a throwaway copy so it never has to write a
+// mutant into the tracked file. Doing that in place corrupted the repo once: two
+// concurrent runs each snapshotted while the other held a mutant, and the
+// sha256 "restore verified" line matched the snapshot rather than the original.
+const HOOK =
+  process.env.OMC_SLIM_HOOK_PATH ??
+  join(dirname(fileURLToPath(import.meta.url)), "verify-deliverables.mjs");
 
 /** The cap the large-transcript fixture must exceed to prove anything. */
 const OLD_CAP_BYTES = 2 * 1024 * 1024;
@@ -457,6 +462,23 @@ const cases = [
             `fixture is ${size} bytes, under the ${CAP_BYTES}-byte cap`,
           );
         return payload("fixer", transcript, root);
+      }),
+    check: expectSilence,
+  },
+  {
+    // A FIFO stats as size 0, so the cap waves it through; readFileSync then
+    // blocks with no timeout and the hook never exits. That breaks "always
+    // exits 0" — the one invariant the README states in absolute terms. The
+    // spawnSync timeout in runHook surfaces a hang as status null, which
+    // outputViolation reports, so this case fails loudly if the guard is lost.
+    name: "non-regular transcript stays silent",
+    run: () =>
+      runHook((root) => {
+        const fifo = join(root, "agent.jsonl");
+        spawnSync("mkfifo", [fifo]);
+        if (!lstatSync(fifo).isFIFO())
+          throw new Error("fixture is not a FIFO");
+        return payload("fixer", fifo, root);
       }),
     check: expectSilence,
   },
