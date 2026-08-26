@@ -1,7 +1,7 @@
 ---
 name: deepwork
 description: 'Runs a migration, rewrite or cross-cutting refactor as staged execution: competing approaches, a written stage map, parallel lanes, one failable check per stage, a review gate between stages, and a skeptical self-critique.'
-when_to_use: '"this touches everything", "big refactor", "migrate X to Y", "rewrite this", "do not half-ship this", "do this properly". Work only correct once every layer lands together. Not routine multi-file edits, and not a plan someone else runs — use agent-skills:planning-and-task-breakdown.'
+when_to_use: '"this touches everything", "big refactor", "migrate X to Y", "rewrite this", "do not half-ship this", "do this properly". Work only correct once every layer lands together. Not routine multi-file edits, and not a plan someone else runs: this one executes the stages itself.'
 ---
 
 # Deepwork
@@ -72,7 +72,19 @@ that the plan was current.
 Three questions. Each closes with a **named source**, or an explicit "checked,
 found nothing" — silence is not an answer, and neither is your own memory.
 
-1. **Is this still how it is done?** Route it to `librarian`, which reads the
+**A stage check that fails twice is not a third attempt.** The second failure
+says the cause is not what you think it is, and a third guess costs more than
+finding out. Hand it to `omc-slim:tracer`, which is built for exactly the state
+you are in: a fix already tried, and the failure still unexplained.
+
+Survey the toolset before you write the map, not after. Both scopes carry
+components — the project's `.claude/` and the user's `~/.claude/`, which usually
+holds more — and a server built for this stack answers better than a generic
+lane. Names say nothing about subject, so read descriptions; `ToolSearch` reaches
+them where tools are deferred. Name the tool in the lane brief, because a
+specialist cannot survey on your behalf and inherits only what the brief says.
+
+1. **Is this still how it is done?** Route it to `omc-slim:librarian`, which reads the
    installed source before it reads anything about it, and carries a dated
    open-web pass into the finding where the claim is the kind the web can
    correct — or says it skipped one, and why. Your training has a cutoff; the
@@ -230,7 +242,7 @@ what the scan found.
 
 **Brief it for locations, never for judgements.** Duplication, responsibility
 overlap and a misplaced file are all conclusions about what was found, and
-`explorer` is forbidden to draw one — ask it to and you get either a refusal or
+`omc-slim:explorer` is forbidden to draw one — ask it to and you get either a refusal or
 a judgement from the agent least equipped to make it. Ask instead for the
 evidence a judgement needs: every file matching these two shapes, every import
 edge crossing this boundary, every caller of the symbols this phase moved. **You
@@ -305,7 +317,7 @@ restructure question and two agreed with each other. The third read git history,
 found `51dfbcc`, and overturned both — a confirmation-shaped review would have
 shipped the wrong answer.
 
-**Verify a problem before flagging it** — `verification-planning` holds the
+**Verify a problem before flagging it** — `omc-slim:verification-planning` holds the
 procedure. Absence of evidence is not the finding.
 
 ## Operational rules
@@ -315,7 +327,7 @@ three, stop and surface** them together — three small things pointing the same
 usually mean one real problem needing a decision.
 
 **Find-and-replace safety.** Anchor on word boundaries, and check the result —
-`fixer` runs the bulk edits and holds that procedure.
+`omc-slim:fixer` runs the bulk edits and holds that procedure.
 
 **Progress file.** Work spanning sessions keeps a log at
 `docs/deepwork/<task-slug>.md`. It holds current understanding, confirmed

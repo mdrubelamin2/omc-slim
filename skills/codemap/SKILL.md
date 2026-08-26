@@ -165,7 +165,8 @@ So in every file this skill writes: name the function, class, constant or export
 genuinely matters, name what bounds it — "the retry block inside `send`" — not
 where it happened to sit today.
 
-`review` is the exception that proves it. Its `file:line` gate is correct because
+`omc-slim:review` is the exception that proves it. Its `file:line` gate is right
+because
 a review reads a live tree in the same session, and the citation dies with it.
 Nothing written to disk gets that.
 

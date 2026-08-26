@@ -5,6 +5,33 @@ What each lane looks for. Read only the lanes in scope. Every item is a
 
 ---
 
+## What each specialist returns, and how to brief it
+
+Ask for what the agent can give you. A brief that asks for the wrong shape gets
+an answer in the wrong shape, and you cannot tell from the output.
+
+- **`omc-slim:explorer`** — locations. Every consumer of an enum, every caller of
+  a changed function, whether code is genuinely dead. It is forbidden to propose
+  a fix or a next step, so brief it for the map and write the remedy yourself.
+  Its 150-line cap binds a *survey* and yields to a complete enumeration: ask for
+  all of something and you get all of it, with the count on the first line — or a
+  partial set labelled with what it did not reach. **Read that label before
+  judging completeness against the set**, because a truncated set reads like a
+  whole one.
+- **`omc-slim:oracle`** — a judgement on a decision, and it does propose. Use it
+  where the question is architecture, security or data integrity, not where the
+  question is what the diff says.
+- **`omc-slim:tracer`** — ranked competing hypotheses, for a failure whose cause
+  you cannot explain or one a previous fix did not hold against. Not a lane: the
+  lane table triggers on the diff, and this triggers on a finding you could not
+  explain once you had one. It diagnoses and
+  does not patch, and it may return `undetermined`, which is not `ruled out`.
+- **`omc-slim:librarian`** — anything true outside this repository, carried back
+  with its source. You send it; a lane cannot.
+
+None of them can dispatch another agent. An external claim therefore comes back
+to you unresolved, and you are the one who sends it on.
+
 ## Correctness — always
 
 - Off-by-one, boundary, empty, null, single element, maximum size
@@ -50,7 +77,7 @@ in the diff, and no other lane can reach it.
 
 ## Simplicity — always
 
-The `simplify` skill's scope, applied as review: detect here, hand the fix over
+The `omc-slim:simplify` skill's scope, applied as review: detect here, hand the fix over
 when it runs past a line or two.
 
 - An abstraction with one implementation and no test substituting at the seam

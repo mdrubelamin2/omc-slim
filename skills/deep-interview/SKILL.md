@@ -1,7 +1,7 @@
 ---
 name: deep-interview
 description: Interviews the user one question at a time before anything is built, then writes a spec file (goal, out of scope, acceptance criteria, verification plan) and STOPS for approval before any code.
-when_to_use: '"build me X" with no user or why, "I have an idea", "help me work out what I want". Not for interrogating an existing plan — use agent-skills:interview-me.'
+when_to_use: '"build me X" with no user or why, "I have an idea", "help me work out what I want". Not for interrogating a plan that already exists: this runs before there is one.'
 ---
 
 # Deep Interview
@@ -91,7 +91,11 @@ the risk of proceeding is. An unresolvable ambiguity is a finding, not a failure
 
 ### 4. Write the spec
 
-Write it to `docs/specs/<slug>.md` (or a path the user prefers):
+Write it to `docs/specs/<slug>.md` (or a path the user prefers). The spec is what
+the next component consumes: `omc-slim:deepwork` when the work spans subsystems
+and must land together, `omc-slim:fixer` when it is a specified change, and
+`omc-slim:verification-planning` when the acceptance criteria need an evidence
+path before anyone builds. Hand over the file, not a summary of it.
 
 ```markdown
 # <Title>

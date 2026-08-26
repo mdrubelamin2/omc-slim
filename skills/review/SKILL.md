@@ -1,7 +1,7 @@
 ---
 name: review
 description: Reviews a diff across correctness, simplicity, security, tests, schema, API contract and performance at once, behind an evidence gate — every finding quotes file:line with severity and confidence — then FIXES what is mechanical.
-when_to_use: '"review my changes", "check this diff", "is this ready to ship", "look over my PR", "did I break anything". The gate before merging. Not for a report that touches no code — use agent-skills:code-review-and-quality.'
+when_to_use: '"review my changes", "check this diff", "is this ready to ship", "look over my PR", "did I break anything". The gate before merging. It reads a diff and fixes what is mechanical, so a change has to exist first.'
 ---
 
 # Code review
@@ -13,7 +13,7 @@ safe to ship* — not a change nobody could criticise.
 not perfect.** Never block because it is not how you would have written it.
 Sycophancy is the other failure: never soften a real finding to keep the peace.
 
-**Skip it** only when nothing changed since the last pass. Re-reviewing an
+**Skip it** only when nothing changed since the last pass: re-reviewing an
 unchanged tree finds nothing and costs everything.
 
 **Size is never a reason to skip a lane.** Four lanes below run on every diff,
@@ -78,9 +78,8 @@ behaviour change**, whatever the message says. Ask why.
 ## 4. Lanes
 
 **First, predict.** Before reading closely, name the three to five places this
-change is most likely to be wrong, then go and check each. Prediction turns
-passive reading into deliberate search, and the gap between what you predicted and
-what you found shows where you were blind.
+change is most likely to be wrong, then check each. The gap between what you
+predicted and what you found shows where you were blind.
 
 **Then find what judges this better than you can.** You have a cutoff; this
 repository has law you have not read.
@@ -127,22 +126,17 @@ each — give each **a path to a prepared diff file**, not the diff and not a
 command to derive one, plus its lane text and the evidence gates in section 5.
 Either way, a lane the table triggers gets run and reported.
 
-Write that file once, before dispatching: commit list, `--stat`, and
-`git diff -U10`. The output never enters your context, every lane reads the same
-bytes, and a lane needs **one Read instead of the 40–67 tool calls** measured
-when reviewers reconstruct the range themselves. One derivation, one base,
-checked once.
+Write it once before dispatching: commit list, `--stat`, `git diff -U10`. It
+never enters your context, every lane reads the same bytes, and a lane needs
+**one Read instead of the 40–67 tool calls** measured when reviewers reconstruct
+the range themselves.
 
-**Ask a lane only for what its agent can return.** `explorer` locates: every
-consumer of an enum, every caller of a changed function, whether code is
-genuinely dead. It is forbidden to propose a fix or a next step. Its 150-line
-cap binds a survey and **yields to a complete enumeration** — so when you need
-every consumer, say you want all of them, and you get all of them with the count
-on the first line, or a partial set labelled with what it did not reach. Read
-that label before judging completeness against the set. Brief it for locations, and write the remedy yourself.
-`oracle` judges architecture and security on a high-risk change, and it does
-propose. Neither can dispatch another agent, so an external claim comes back to
-you unresolved and you are the one who sends it on.
+**Ask a lane only for what its agent can return.** `omc-slim:explorer` returns
+locations and proposes nothing; `omc-slim:oracle` judges a decision and does
+propose; `omc-slim:tracer` returns ranked hypotheses when the cause is unexplained
+or a previous fix did not hold. None of them can dispatch another agent, so an
+external claim comes back to you unresolved and you are the one who sends it on.
+`checklists.md` holds what each returns and how to brief it.
 
 **Brief a lane with evidence, never with a verdict.** Findings and `file:line`
 locate the work, and that is the whole of what travels. A severity, a disposition,
@@ -209,7 +203,7 @@ repository. Anything from outside it is checked against a current source,
 **never recalled**. That covers an API signature, a default, a deprecation, a
 "recommended way", whether an advisory is reachable. A reviewer citing an
 argument that moved two versions ago is the most expensive false positive there
-is: specific, and it sounds researched. **You** send it to `librarian` or the
+is: specific, and it sounds researched. **You** send it to `omc-slim:librarian` or the
 documentation server for this stack; a dispatched lane cannot. Carry the source
 into the finding — an unsourced external claim is indistinguishable from a
 recalled one.
@@ -226,10 +220,9 @@ that would resolve it — then ask what input behaves differently before and aft
 If you cannot name one, or the "fix" changes nothing observable, **the finding
 was a false positive — drop it from the list and carry the count.** "3 candidates
 dropped: the proposed fix changed nothing observable" is one line, and it is the
-difference between a filter and a disappearance. A silent discard is the same
-self-issued verdict this skill refuses everywhere else. The mechanism is
-published — a fix-guided verification filter, which runs the proposed fix and
-drops the finding when nothing observable changes
+difference between a filter and a disappearance. The mechanism is published — a
+fix-guided verification filter, which runs the proposed fix and drops the finding
+when nothing observable changes
 ([arXiv:2603.00539](https://arxiv.org/abs/2603.00539)). **It never drops a
 Critical.** One you cannot yet cost out goes to Open questions, per the
 confidence rule below.
@@ -290,8 +283,8 @@ around. Correct is only the floor: where a meaningfully better approach existed,
 that is a finding too — *Optional*, unless the chosen one carries real risk.
 
 **Report at most five nits, then a count.** "…and 6 further minor points, say the
-word" is a complete disposition. A reviewer that lists every small thing trains
-the reader to skim all of it, and the structural finding goes with the rest.
+word" is a complete disposition. List every small thing and the reader skims all
+of it, structural finding included.
 
 **One structural problem beats ten nits.** If you have both, the structural
 problem *is* the review. Correctness and security are **read before style**, the
@@ -327,12 +320,11 @@ discussion. An import or variable *this diff* orphaned, a stale comment, a magic
 number, a version mismatch.
 
 Two things are deliberately not on that list. **Pre-existing dead code** is
-reported, never deleted — the orchestrator and `fixer` both say leave it and
-mention it, and `simplify` treats "dead" as an unproven claim about your search
-rather than a property of the code. And **a performance fix is never mechanical**:
-`performance.md` requires a before-and-after measurement and reverts anything
-inside the noise, which a review pass has no baseline to produce. A missing
-eager-load is a finding, not an edit. **Ask** where reasonable engineers could
+reported, never deleted — `omc-slim:simplify` treats "dead" as an unproven claim
+about your search rather than a property of the code. And **a performance fix is
+never mechanical**: `performance.md` requires a before-and-after measurement,
+which a review pass has no baseline to produce. A missing eager-load is a
+finding, not an edit. **Ask** where reasonable engineers could
 disagree, or where it changes user-visible behaviour, removes functionality,
 touches security or concurrency, or runs past a handful of lines. **Critical
 findings lean towards asking**; small mechanical ones lean towards fixing.
@@ -347,9 +339,9 @@ small the diff.
 Batch every ask into **one** question with a recommendation across the set. No
 asks, no question.
 
-More than a line or two of simplicity work, **hand it to `simplify`**. It has the
+More than a line or two of simplicity work, **hand it to `omc-slim:simplify`**. It has the
 pin-down check for untested code and this does not. Missing coverage goes to
-`verification-planning`.
+`omc-slim:verification-planning`.
 
 **Never commit, push or open a PR** from a review. Reviewing and publishing are
 different decisions.
@@ -369,7 +361,7 @@ Then stop. **This budget is per review run.** One review and **at most two
 re-reviews — three while a Critical is still open**, each stating where it is
 (`review attempt 2 of 3`). The extra pass is for an unresolved Critical only,
 never to re-confirm a mechanical fix. Under
-`deepwork` one run is one gate, so the marker carries the gate: `Gate 2 — review
+`omc-slim:deepwork` one run is one gate, so the marker carries the gate: `Gate 2 — review
 attempt 2 of 3`. A re-review covers what was unresolved and what the remediation
 broke; it **does not reopen concerns already accepted**. Spend one only when
 remediation changed the picture, or the concern survived focused evidence —

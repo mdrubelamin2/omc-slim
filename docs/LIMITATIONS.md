@@ -38,13 +38,36 @@ lines), and metavariable patterns over-match, so a thin outline must not be read
 as "nothing here". See
 [the research](./RESEARCH-2026-08-26.md#710-code-search-retrieval-and-deletion--measured-on-this-machine).
 
-**`maxTurns` is set on every agent and has never been observed firing.** Six
-agents carry a bound between 20 and 40 turns. The values are judgement, not
-measurement — nothing here establishes what a typical run costs — and **nothing
-in this repository verifies the harness honours the key at all.** If it is
-ignored, `explorer`'s instruction to "stop searching with turns in hand" budgets
-against a limit that does not exist, and no check would tell you. Treat the bound
-as a declared intent rather than a guarantee until a run is observed hitting it.
+**`maxTurns` was raised on a user report of runs being cut off mid-work.** The
+original bounds — 20 to 40 turns — were judgement with no measurement behind
+them. They are now 100 for the read-only agents, 120 for `tracer`, 200 for the
+two writers.
+
+**That report is the only evidence, and it is a report rather than a measurement.**
+Nobody here has observed the bound fire under controlled conditions, and the
+paragraph below still stands: nothing in this repository verifies the harness
+honours the key. Both readings are live — either the key is enforced and the old
+values were too low, or something else truncated those runs and the change is
+inert. Raising it is cheap and safe under both, which is why it was done anyway.
+
+The rule behind the direction, if not the exact figures: **a guard whose failure
+is silent is set well above observed legitimate work, never beside it.** Only a
+subagent's final message reaches its caller, so a truncated run can return
+*nothing*, silently, while a bound set too high costs one run on the rare case
+the guard exists for.
+
+The figures are not an order of magnitude above the observations and are not
+claimed to be. Across one review of this repository, subagent runs logged 13, 23,
+29, 30, 41, 56 and 63 tool uses. Tool calls are an upper bound on turns rather
+than a count of them, since a turn can carry several in parallel — so 100 is
+somewhere above 1.6× the largest observed run, and the true multiple is unknown
+and larger. What can be said plainly: 40 sat *inside* the observed range, and 100
+does not.
+
+**Nothing in this repository verifies the harness honours the key at all.** If it
+is ignored, `explorer`'s instruction to "stop searching with turns in hand"
+budgets against a limit that does not exist, and no check would tell you. Treat
+the bound as declared intent rather than a guarantee.
 
 **It changes your output style.** `force-for-plugin` overrides your `outputStyle`
 while omc-slim is enabled. Disabling the plugin reverts it.
@@ -66,19 +89,19 @@ behalf which hosts your queries reach. See
 [the audit](./AUDIT-2026-08-25.md) for how it was found.
 
 **The static figure is disciplined and the bodies are not.** v0.9.0 added roughly
-**5,495 tokens of on-invoke cost in one release, 4,841 corrected** — every addition individually
+**7,377 tokens of on-invoke cost in one release, 6,500 corrected** — every addition individually
 justified by measurement, and their sum unmeasured, which is the exact failure
 mode this project has criticised in others. `./scripts/measure-context.sh` now
 reports on-invoke cost per component so the next increase is visible while it
 happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md alone is 5,662 tokens on the chars/4 basis, ~4,988 corrected —
+SKILL.md, frontmatter included, is 5,625 tokens on the chars/4 basis, ~4,956 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**. It sits on the line: under on the corrected basis, over on
 chars/4. Its load-bearing rules are front-loaded and its lane mechanics live in
 `checklists.md`, which is where they were moved when this measurement was taken.
-That margin is 11 tokens, and it was bought back: an earlier v0.9.0 draft
+That margin is 44 tokens, and it was bought back: an earlier v0.9.0 draft
 measured 5,087 corrected and published 4,995, because the file grew by 419 chars
 after the number was taken and nothing re-derived it.
 
@@ -88,7 +111,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Twelve components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **32,533 chars/4, ~28,664 corrected**.
+The ceiling if every component fires once is **34,416 chars/4, ~30,323 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging
@@ -185,7 +208,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,487 tok** | see above |
+| **omc-slim** | **~4,519 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -194,7 +217,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,487 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,519 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

@@ -44,7 +44,7 @@ delegation-contract	output-styles	Delegation contract	bounded scope, expected ou
 todo-continuity	output-styles	Todo continuity	appended, not substituted|Preserve order and status|finish the in-progress task first
 reconcile-the-union	output-styles	Each verified only its own slice	nothing has yet checked the union|Run the project's own check once against the merged result
 zero-validation	output-styles	zero validation	the cheapest check the project already has|typecheck, build, existing tests|report what it said
-review-is-a-second-pass	output-styles	cannot be the pass that clears it	Non-trivial writer output goes through `review`|somewhere the code was not written
+review-is-a-second-pass	output-styles	cannot be the pass that clears it	Non-trivial writer output goes through `omc-slim:review`|somewhere the code was not written
 concision-is-not-less-work	output-styles	Concision governs how you write	never to verify less, read less or finish less|is the deliverable, and is given in full
 in-full-exempts-length-only	output-styles	exempts length, and nothing else	one idea per sentence, twenty-five words|A long answer is many short sentences, never permission to write loose ones
 context-window	output-styles	Do not manage the context window	Capacity is the harness's job|never propose compacting unless the user raises it|never out of fear of a limit

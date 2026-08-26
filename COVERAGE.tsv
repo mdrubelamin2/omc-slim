@@ -177,7 +177,7 @@ omo-slim	re-review-cap	review	at most two re-reviews
 omo-slim	re-review-scoped-to-unresolved	review	does not reopen concerns already accepted
 omo-slim	no-polish-for-its-own-sake	review	polishing because polishing is possible
 omo-slim	findings-in-final-message	review	in its final message
-audit	route-simplify-not-inline	review	hand it to `simplify`
+audit	route-simplify-not-inline	review	hand it to `omc-slim:simplify`
 audit	skip-unchanged-tree	review	Re-reviewing an unchanged tree
 audit	must-read-checklists	review	Read `checklists.md` now
 audit	performance-lane-precondition	review	applied or accepted, **open `performance.md`
@@ -230,7 +230,7 @@ audit	fixer-modular-one-direction	fixer	Modular, pointing one way
 audit	fixer-dry-of-knowledge	fixer	DRY of knowledge, not of characters
 audit	fixer-self-explanatory-names	fixer	Reaching for a comment to explain *what* a line
 audit	fixer-no-boolean-flag-params	fixer	No boolean flag parameters
-audit	fixer-do-not-leave-it-to-simplify	fixer	leave `simplify` to clean up after you
+audit	fixer-do-not-leave-it-to-simplify	fixer	leave `omc-slim:simplify` to clean up after you
 audit	fixer-no-thinking-out-loud	fixer	never think out loud in the file
 # ballast (svy04) — a memory/verification plugin. Five rules fit a delegation
 # plugin; the memory tree, skill-forge and the label taxonomy were refused.

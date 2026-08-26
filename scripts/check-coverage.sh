@@ -110,7 +110,7 @@ if bad:
 PY
 
 # --- published figures ----------------------------------------------------
-# Three sites across two documents quote the static-context total by hand, and by
+# Four sites across two documents quote the static-context total by hand, and by
 # v0.8.1 the README carried two different ones for the same plugin — see
 # CHANGELOG.md, v0.8.2, "Static context measured, not estimated". A line number
 # would have rotted here: this block's first citation pointed at a line that the
@@ -145,7 +145,42 @@ total = f'{int(measured):,}'
 # a README that quotes one basis without the other is the ambiguity that made
 # `claude plugin details` look like it contradicted us.
 corrected = f'{round(int(measured) / 1.135):,}'
+
+# The static total is not the only published figure, and it is not the one that
+# rots. The on-invoke figures were re-derived by hand three times in one release
+# and were wrong twice, because nothing checked them. Derive them here from the
+# same script and pin them too.
+full = subprocess.run([os.path.join(root, 'scripts/measure-context.sh')],
+                      capture_output=True, text=True).stdout
+ceil_m = re.search(r'if every one fires\s+(\d+)\s+(\d+)', full)
+if not ceil_m:
+    print('  UNMEASURED    measure-context.sh printed no on-invoke ceiling')
+    raise SystemExit(1)
+ceil_chars = int(ceil_m.group(1))
+ceiling = f'{ceil_chars // 4:,}'
+ceiling_corr = f'{round(ceil_chars / 4 / 1.135):,}'
+
+# review/SKILL.md is measured WHOLE, frontmatter included, because that is what
+# the harness re-attaches after compaction. Measuring the body alone flattered
+# the figure by 124 tokens and turned a 28-token overrun into an 81-token margin.
+review_bytes = os.path.getsize(os.path.join(root, 'skills/review/SKILL.md'))
+review_c4 = f'{review_bytes // 4:,}'
+review_corr = f'{round(review_bytes / 4 / 1.135):,}'
+if round(review_bytes / 4 / 1.135) >= 5000:
+    print(f'  OVER THE CAP  skills/review/SKILL.md is {review_corr} corrected tokens')
+    print('                  the post-compaction re-injection limit keeps the first 5,000')
+    bad_cap = 1
+else:
+    bad_cap = 0
+
 sites = [
+    ('docs/LIMITATIONS.md', f'**{ceiling} chars/4, ~{ceiling_corr} corrected**'),
+    ('docs/LIMITATIONS.md', f'is {review_c4} tokens on the chars/4 basis, ~{review_corr} corrected'),
+    # CHANGELOG is deliberately NOT enrolled. It is version-scoped history, and
+    # pinning a current figure into it forces rewriting what an earlier release
+    # actually shipped — which this repository did once, publishing v0.9.1's
+    # numbers inside the v0.9.0 entry.
+
     ('README.md',           f'~{corrected} tokens'),
     ('README.md',           f'**{total} on a chars/4 basis**'),
     ('docs/LIMITATIONS.md', f'**~{total} tok**'),
@@ -163,10 +198,10 @@ for path, literal in sites:
     text = re.sub(' +', ' ', open(os.path.join(root, path)).read().replace('\n', ' '))
     if literal in text:
         continue
-    print(f'  STALE FIGURE  {path} does not quote the measured {total} tokens')
+    print(f'  STALE FIGURE  {path} does not carry the measured figure')
     print(f'                  expected: {literal}')
     bad += 1
-if bad:
+if bad or bad_cap:
     print('\nUpdate those sites to match ./scripts/measure-context.sh, then re-run.')
     raise SystemExit(1)
 print(f'{len(sites)}/{len(sites)} published figures quote a measured basis '
@@ -433,7 +468,7 @@ files = [f for f in files if os.path.isfile(f)]
 bad = 0
 for path in sorted(set(files)):
     rel = os.path.relpath(path, root)
-    for lineno, line in enumerate(open(path, encoding='utf-8'), 1):
+    for lineno, line in enumerate(open(path, encoding='utf-8', errors='replace'), 1):
         for col, ch in enumerate(line, 1):
             cp = ord(ch)
             if cp == 0xFEFF and lineno == 1 and col == 1:
@@ -448,6 +483,168 @@ if bad:
     raise SystemExit(1)
 print(f'{len(set(files))}/{len(set(files))} text assets free of invisible characters.')
 UNIPY
+
+# --- every component is reachable from another one ------------------------
+# `tracer` shipped with ZERO inbound references while `oracle`'s description
+# claimed its trigger verbatim — "escalation for a bug that survived a first
+# fix". Nothing routed to it, because every routing sentence that needed a
+# bug-escalation target already had a nearer candidate. A component nothing
+# names is a component nothing reaches, and the contradiction sweep could not
+# see it: the rules did not conflict, the TRIGGERS overlapped.
+#
+# Entry points are exempt and must say why. Everything else earns an inbound
+# edge from some other component's prompt.
+python3 - "$ROOT" <<'REACHPY' || exit 1
+import glob, os, re, sys
+root = sys.argv[1]
+
+ENTRY_POINTS = {
+    # component: why nothing routes to it
+    'codemap': 'user-invoked on an unfamiliar repo, before any component runs',
+    'deep-interview': 'runs before there is a plan for anything to route from',
+}
+# An exemption for a component that no longer exists silently shrinks the
+# denominator, so the gate would report 9/9 while ten components needed checking.
+STALE_EXEMPTIONS = None  # set below, once the component list is known
+
+components = ([os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'agents/*.md'))]
+              + [os.path.basename(os.path.dirname(f))
+                 for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))])
+
+prompts = []
+for pat in ('agents/*.md', 'skills/*/*.md', 'output-styles/*.md'):
+    prompts += glob.glob(os.path.join(root, pat))
+
+bad = 0
+STALE_EXEMPTIONS = sorted(set(ENTRY_POINTS) - set(components))
+for stale in STALE_EXEMPTIONS:
+    print(f'  STALE EXEMPT  ENTRY_POINTS lists {stale}, which is not a component')
+    bad += 1
+
+for name in sorted(components):
+    inbound = []
+    for path in prompts:
+        rel = os.path.relpath(path, root)
+        # A component naming itself is not an inbound edge.
+        if rel == f'agents/{name}.md' or rel.startswith(f'skills/{name}/'):
+            continue
+        # The orchestrator roster lists everything by definition, so it cannot
+        # be the edge that proves reachability.
+        if rel.startswith('output-styles/'):
+            continue
+        # A citation is not a handoff. Strip fenced blocks and any Credit or
+        # Reference section before looking: `codemap` cites `omc-slim:review`
+        # inside an argument about line numbers, which is not an edge, and a
+        # component whose last surviving mention is that kind would go
+        # unreachable while this gate stayed green.
+        body = open(path, encoding='utf-8', errors='replace').read()
+        # Fence stripping is line-state, not regex. `^```.*?^```` pairs fences
+        # positionally, so an ODD fence count leaves the tail unstripped and a
+        # four-backtick wrapper gets closed by its own inner fence. Walking the
+        # lines is exact and unclosed fences swallow the remainder, which is the
+        # conservative direction: it drops text rather than counting it.
+        kept, fence = [], None
+        for ln in body.split('\n'):
+            marker = re.match(r'^(`{3,})', ln)
+            if fence is None and marker:
+                fence = marker.group(1)
+                continue
+            if fence is not None:
+                if marker and len(marker.group(1)) >= len(fence):
+                    fence = None
+                continue
+            kept.append(ln)
+        body = '\n'.join(kept)
+        body = re.sub(r'^#{1,6} +(Credit|Reference|Provenance|Source)s?\b.*?(?=^#{1,6} |\Z)',
+                      '', body, flags=re.M | re.S | re.I)
+        # `\b` sits between "r" and "-", so `omc-slim:tracer-lite` would satisfy
+        # `tracer`. Require the name to end the reference.
+        if re.search(rf'omc-slim:{re.escape(name)}(?![\w-])', body):
+            inbound.append(rel)
+    if not inbound and name not in ENTRY_POINTS:
+        print(f'  UNREACHABLE   {name} is named by no other component')
+        print('                  add the handoff, or list it as an entry point with a reason')
+        bad += 1
+if bad:
+    raise SystemExit(1)
+print(f'{len(components) - len(ENTRY_POINTS)}/{len(components) - len(ENTRY_POINTS)} '
+      f'non-entry components are reachable ({len(ENTRY_POINTS)} entry points).')
+REACHPY
+
+# --- no third-party components named in shipped prompts -------------------
+# An agent or skill body that names another plugin's component is a dead pointer
+# on any machine that does not have it, and it fails SILENTLY: the model reads
+# "use foo:bar instead", finds no foo:bar, and either invents a substitute or
+# does nothing. This plugin already applies the rule to MCP servers — describe
+# the CLASS of tool, never the vendor — and the same reasoning covers agents and
+# skills. Only `omc-slim:` names are guaranteed present wherever this is
+# installed. Boundaries are stated as capabilities: "not a first debugging pass",
+# never "use someone-else:their-skill".
+python3 - "$ROOT" <<'NSPY' || exit 1
+import glob, os, re, sys
+root = sys.argv[1]
+
+# A plugin-namespaced reference has a distinctive shape: two lowercase words
+# joined by a colon.
+#
+# The lookbehind does NOT exclude a backtick, and that is the whole point: this
+# repository writes every reference in backticks, so a lookbehind that skipped
+# them would be blind to the only form anyone actually writes. The first version
+# of this check had that bug and passed a backticked third-party pointer.
+REF = re.compile(r'(?<![\w/.-])([a-z][a-z0-9-]{2,}):([a-z][a-z0-9-]{2,})(?![\w/-])')
+ALLOWED_PREFIX = 'omc-slim'
+# Idioms that share the shape and mean something else. Enumerated rather than
+# pattern-matched, so a new one has to be a deliberate addition.
+ALLOWED_IDIOMS = {'file:line', 'file:lines', 'chars:tokens', 'key:value'}
+
+files = []
+for pat in ('agents/*.md', 'skills/*/*.md', 'output-styles/*.md'):
+    files += glob.glob(os.path.join(root, pat))
+
+# A BARE sibling name is the other half of the same problem. `fixer` in prose can
+# resolve to another plugin's agent of that name, and it does not read as a
+# reference at all to anything that counts edges — which is how one component's
+# handoff silently left the graph. A component naming itself is not a reference.
+COMPONENTS = ([os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'agents/*.md'))]
+              + [os.path.basename(os.path.dirname(f))
+                 for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))])
+BARE = re.compile(r'`(' + '|'.join(re.escape(c) for c in sorted(COMPONENTS)) + r')`')
+
+bad = 0
+for path in sorted(files):
+    rel = os.path.relpath(path, root)
+    own = (os.path.basename(path)[:-3] if rel.startswith('agents/')
+           else rel.split('/')[1] if rel.startswith('skills/') else None)
+    for lineno, line in enumerate(open(path, encoding='utf-8', errors='replace'), 1):
+        for m in REF.finditer(line.replace('`', '')):
+            if m.group(0) in ALLOWED_IDIOMS:
+                continue
+            if m.group(1) == ALLOWED_PREFIX:
+                # Inside our own namespace, the risk is a typo rather than a
+                # missing plugin — and it fails exactly as silently. This
+                # release added 51 of these pointers; none is checked by the
+                # reachability block, which only counts edges INTO components
+                # that exist.
+                if m.group(2) not in COMPONENTS:
+                    print(f'  NO SUCH       {rel}:{lineno} points at {m.group(0)!r}, '
+                          f'which is not a component')
+                    bad += 1
+                continue
+            print(f'  THIRD PARTY   {rel}:{lineno} names {m.group(0)!r}')
+            bad += 1
+        for m in BARE.finditer(line):
+            if m.group(1) == own:
+                continue
+            print(f'  BARE NAME     {rel}:{lineno} says {m.group(0)} — write '
+                  f'`omc-slim:{m.group(1)}`, which cannot resolve elsewhere')
+            bad += 1
+if bad:
+    print('\nShipped prompts may name only omc-slim components. Another plugin')
+    print('may not be installed, and the pointer fails silently when it is not.')
+    print('State the boundary as a capability instead.')
+    raise SystemExit(1)
+print(f'{len(files)}/{len(files)} prompt files name no third-party component.')
+NSPY
 
 # --- adoption provenance --------------------------------------------------
 # COVERAGE.tsv records what this plugin took and from where. Two things must stay

@@ -3,6 +3,55 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.1
+
+A review of v0.9.0, and the fixes it forced. No component was added or removed.
+
+**Shipped prompts may no longer name another plugin's component.** Eight such
+names shipped in v0.9.0 across seven descriptions — the always-loaded layer —
+each of them a pointer that resolves to nothing on a machine without that plugin
+and raises no error when it does. Every boundary is now stated as a capability:
+"not a first debugging pass" rather than "use someone-else:their-skill".
+`check-coverage.sh` fails on any `plugin:component` reference outside the
+`omc-slim` namespace, and on a typo *inside* it — `omc-slim:reviw` used to pass
+everything.
+
+**`tracer` was unreachable, and the cause was a trigger collision.** Nothing in
+any prompt named it, because `oracle`'s description claimed *"escalation for a
+bug that survived a first fix"* — `tracer`'s trigger, near-verbatim — while
+`oracle`'s body is about design throughout. The contradiction sweep could not see
+it: the rules did not conflict, the triggers did, and the only symptom was an
+absence. `oracle` now disclaims it, `fixer`, `review` and `deepwork` hand off to
+it, and it carries the same "dispatched as a lane, take the work" clause that
+stops `oracle` bouncing work back. A new gate asserts every component is named by
+another component's prompt, or is listed as an entry point with a reason.
+
+**Internal references are namespaced.** A bare `` `fixer` `` can resolve to
+another plugin's agent of that name, and it does not read as an edge to anything
+counting them — which is how `fixer`'s handoff to `simplify` silently left the
+graph. All 51 are now `omc-slim:<name>`, and the gate rejects the bare form.
+
+**`maxTurns` raised from 20-40 to 100/120/200**, on a user report of runs cut off
+mid-work. A guard whose failure is silent belongs well above legitimate work: a
+truncated subagent returns nothing to its caller and says nothing about why.
+Stated carefully, because v0.9.1's own draft overstated it — a user report is not
+a controlled observation, and nothing here verifies the harness honours the key.
+
+**The figures that rot are now pinned.** The static total was checked; the
+on-invoke delta, the ceiling and `review`'s own size were not, and those are
+exactly the three that were re-derived by hand and published wrong. `review` is
+measured **whole, frontmatter included**, because that is what the harness
+re-attaches — measuring the body alone flattered it by 124 tokens and turned a
+28-token overrun into an 81-token margin. It is now 5,625 chars/4, ~4,956
+corrected, 44 under the cap, and the gate fails if it ever goes over.
+
+**Also:** the hidden-character scan missed U+2066–U+2069, the Trojan Source set
+its own comment cites, and never read the two `.claude-plugin/*.json`
+descriptions — 45 assets scanned, now 58. The reachability check counted a
+citation inside a code fence as a handoff. `docs/LIMITATIONS.md` asserted the
+`maxTurns` truncation as observed fact eighteen lines above saying nothing had
+observed it. Static context 4,487 → 4,519.
+
 ## v0.9.0
 
 Everything here traces to
@@ -67,15 +116,14 @@ involved; the deadline is worth having anyway, and the source says so now.
 4,474 → 4,487. An earlier draft said "static context is unchanged; every addition
 landed in bodies", which was false in both halves. A later one said it *fell* to
 4,405 — true only while `codemap` carried `disable-model-invocation: true`, which
-removed its description from the listing. That flag was reverted before release,
-so the honest number is 13 tokens up.
+removed its description from the listing. That flag was reverted before release.
 Bodies grew **+5,495 chars/4, ~4,841 corrected, in one release** — individually
 justified, collectively unmeasured, which is the failure this project criticises
 in others. `measure-context.sh` now reports on-invoke cost per component so the
 next increase is visible while it happens. `review` is the heaviest — its SKILL.md is
 5,662 tokens on chars/4, ~4,988 corrected, against a 5,000-token
 post-compaction re-injection cap it sits either side of depending on the basis.
-It cleared that cap by 11 corrected tokens only after a review pass measured it
+It cleared that cap by 12 corrected tokens only after a review pass measured it
 at 5,087 and found this file publishing 4,995 — the file had grown 419 chars
 after the measurement, and nothing re-derived it. The binding limit is not that
 cap anyway: re-attached skills share a 25,000-token budget, most recent first.

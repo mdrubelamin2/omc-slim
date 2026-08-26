@@ -10,8 +10,8 @@ into your repository, and only when they run: `codemap` maps it, `deep-interview
 writes a spec, `deepwork` keeps a log. `codemap` says what it will write and
 waits for a yes; the other two write one file each, under `docs/`.
 
-Static context is **~3,953 tokens**. `./scripts/measure-context.sh` reports
-**4,487 on a chars/4 basis** and prints that correction itself, because the
+Static context is **~3,981 tokens**. `./scripts/measure-context.sh` reports
+**4,519 on a chars/4 basis** and prints that correction itself, because the
 chars/4 method measured **+13.5% high** against a real tokeniser
 ([audit](./docs/AUDIT-2026-08-25.md)). `claude plugin details omc-slim` reports a
 third, smaller number; it does not count the output style, which is the largest

@@ -1,7 +1,7 @@
 ---
 name: verification-planning
 description: 'Plans how to prove a change works or broke nothing: frames the claim, designs an evidence path from the system itself, and requires every check to be able to fail.'
-when_to_use: '"how do I prove this did not break anything", "how do I know this works", "what should I test". Not for writing the tests — use agent-skills:test-driven-development.'
+when_to_use: '"how do I prove this did not break anything", "how do I know this works", "what should I test". Not for writing the tests, only for deciding what would prove it. Judging a change that already exists is omc-slim:review.'
 ---
 
 # Verification Planning
@@ -11,6 +11,25 @@ when_to_use: '"how do I prove this did not break anything", "how do I know this 
 Use this skill proportionately. Small mechanical changes can follow ordinary
 project checks directly. For larger multi-phase work, let this skill establish
 the evidence path that later work follows.
+
+## Who runs it, and with what
+
+This skill plans; other components execute. Send the locating work to
+`omc-slim:explorer` — which checks already exist, what they cover — and the
+resulting edits to `omc-slim:fixer`. Where the plan is one stage of a larger
+migration, `omc-slim:deepwork` owns the sequencing and this owns each stage's
+failable check — and if you are already inside `omc-slim:deepwork`, this *is*
+that stage's check. Do not re-enter the sequencing skill to plan one stage of the
+plan you are already running.
+
+The evidence path uses whatever this machine actually has. A test runner, a
+browser or devtools server, a database or API client, a coverage tool: any of
+them turns an assertion into an observation. They arrive from the project's
+`.claude/` and the user's `~/.claude/`, their names say nothing about their
+subject, and `ToolSearch` reaches them where tools are deferred. Read the
+descriptions, prefer a tool built for this stack over a generic one, and name the
+route in the plan. Where nothing is installed, the project's own commands are the
+evidence path.
 
 ## Build an evidence path
 

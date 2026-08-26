@@ -89,6 +89,117 @@ Svelte question, with no web search. `fixer` independently found and used that
 server's `svelte-autofixer` code tool while its own prompt named no vendor at
 all.
 
+### Removing a name must leave a reason, not a refusal
+
+Seven descriptions dropped a third-party pointer in the same pass — eight names,
+since `designer` carried two. Four of the seven were rewritten as capability
+boundaries; two were left as bare refusals and a review caught them; `designer`
+kept a boundary of its own shape.
+
+`review` ended up saying *"Not for a report that touches no code"* with no
+destination — while `"look over my PR"` sits three words earlier in the same
+sentence as a positive trigger. The description then both claimed and disclaimed
+the same request, and the failure mode is the gate not firing at all. `deepwork`
+had the same shape at *"not a plan someone else runs"*.
+
+The pattern that works: say what the component *does* that excludes the case.
+`deep-interview`'s "this runs before there is a plan" is the model; `review` and
+`deepwork` were repaired to match it. A boundary explains itself and survives the
+neighbour being absent; a refusal needs the neighbour to make sense.
+
+**Watch the repair, too.** `review`'s replacement — "a change has to exist first"
+— excludes a *narrower* case than the sentence it replaced, which excluded
+report-only work. That is a deliberate widening, not a restatement.
+
+### Overlapping triggers orphan a component
+
+`tracer` shipped with **zero inbound references**. Nothing in any prompt named
+it, so nothing reached it except a direct request.
+
+The cause was not an oversight. `oracle`'s description claimed *"escalation for a
+bug that survived a first fix"* — `tracer`'s trigger, near-verbatim — while
+`oracle`'s body is about design and architecture throughout. The description is
+the always-loaded routing layer, so every sentence that needed a bug-escalation
+target had a nearer, already-referenced candidate, and `tracer` was never the
+answer to anything.
+
+**The v0.9.0 contradiction sweep could not see this.** It compared rules, and
+these rules did not conflict — the *triggers* overlapped. Two components can be
+individually coherent and still collide, and the collision only shows up as an
+absence: a component nobody routes to.
+
+`check-coverage.sh` now asserts reachability. Every agent and skill must be named
+by some other component's prompt, or be listed in `ENTRY_POINTS` with a reason.
+The orchestrator roster does not count as an edge, because it lists everything by
+definition. Two are exempt today: `codemap` runs before anything else does, and
+`deep-interview` runs before there is a plan to route from.
+
+Proved by renaming every `omc-slim:tracer` reference away, which reproduces the
+original bug: `UNREACHABLE tracer is named by no other component`.
+
+### A silent guard is set high, not tight
+
+`maxTurns` shipped at 20-40 in v0.9.0. A user reported runs being cut off
+mid-work, and it is now 100 for the read-only agents, 120 for `tracer`, 200 for
+`fixer` and `designer`.
+
+The reasoning, which applies to any guard whose failure the caller cannot see:
+only a subagent's final message reaches its caller, so a run that ends on its
+turn budget returns **nothing**, with no error and no partial output. A bound set
+too low destroys work invisibly; a bound set too high costs one run, on the rare
+case the guard exists for. Set it well above observed legitimate work.
+
+**Do not overstate the evidence.** A user report is not a controlled observation,
+and nothing here verifies the harness honours the key — the two claims sat 18
+lines apart in `docs/LIMITATIONS.md` contradicting each other until a review
+caught it. Raising the bound is cheap and correct whether or not the key is
+enforced; that is the argument, not a measurement.
+
+Observed, for whoever revisits this: subagent runs during one review of this repo
+logged 13 to 63 tool uses. Tool calls are an upper bound on turns, not a count of
+them, since a turn can carry several in parallel. So 100 is *somewhere above*
+1.6× the largest observed run — not an order of magnitude, and it should not be
+described as one. To settle it properly, build a throwaway agent with
+`maxTurns: 2` and dispatch it in a **fresh session**; a project agent added
+mid-session is invisible to the registry, which is why the first attempt failed.
+
+### Shipped prompts name only `omc-slim:` components
+
+The same rule as the vendor-name ban above, applied to agents and skills rather
+than MCP servers, and it is now checked: `check-coverage.sh` fails on any
+`plugin:component` reference in `agents/`, `skills/` or `output-styles/` whose
+prefix is not `omc-slim`. `file:line` is allowlisted.
+
+Naming another plugin's component is a **dead pointer that fails silently**.
+"Not a first debugging pass — use someone-else:their-skill" reads fine here and
+resolves to nothing on a machine that lacks it; the model then invents a
+substitute or does nothing, and no error is raised anywhere. Eight such names
+shipped in v0.9.0 across seven descriptions, which is the always-loaded layer.
+
+The fix is not to go silent about neighbours. It is two-sided:
+
+- **Internal edges are named, and namespaced.** `omc-slim:fixer`, never a bare
+  `fixer`, which can resolve to another plugin's agent of the same name. These
+  are guaranteed present wherever this plugin is installed.
+  **One exemption, deliberate:** the roster in the output style writes the twelve
+  names bare, because that block *defines* them — it is a menu, not a reference,
+  and namespacing every entry would cost static tokens to restate a prefix the
+  heading already establishes. Everything outside that block is namespaced. The
+  gate cannot see the difference, so this is a convention the roster relies on a
+  reader to keep.
+- **External capability is discovered, never named.** Every agent and skill that
+  would benefit says what *class* of tool would help — a structural search
+  server, an observability server, a docs server for this stack — and reaches it
+  by reading tool descriptions, with `ToolSearch` where tools are deferred. That
+  is the same mechanism proven blind against a server called `kb`.
+
+Boundaries in a description are therefore stated as capabilities: "not a first
+debugging pass: reproduce it and localise it before escalating here."
+
+After the rewrite the descriptions measured 15 tokens lighter — a net figure,
+since two of them gained a clause while eight names left. Not the point, but the
+direction.
+
 **Consequence: do not add `ToolSearch` or `Skill` to any agent's
 `disallowedTools`.** Denying either breaks discovery, and it breaks it silently —
 the agent will simply fall back to WebSearch and look like it is working.

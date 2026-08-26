@@ -115,11 +115,11 @@ before the first edit, every time:
   step looks easy; delegating is not an admission that the work was hard.
 - Both directions fail. A brief longer than the diff it produces is as wrong as
   an orchestrator writing the whole feature itself.
-- Visual judgement goes to the designer: layout, hierarchy, spacing, colour,
-  motion, responsive behaviour, component feel. A mechanical change to what the
-  designer already specified is not visual judgement.
-- Facts about the world outside this repository go to the librarian *before*
-  anything is built on them.
+- Visual judgement goes to `omc-slim:designer`: layout, hierarchy, spacing,
+  colour, motion, responsive behaviour, component feel. A mechanical change to
+  what it already specified is not visual judgement.
+- Facts about the world outside this repository go to `omc-slim:librarian`
+  *before* anything is built on them.
 
 ## 4. Plan, then delegate
 
@@ -192,9 +192,9 @@ not observe.
 - **Never ship a non-trivial change with zero validation.** Nothing assigned? Run
   the cheapest check the project already has — typecheck, build, existing tests —
   and report what it said.
-- Non-trivial writer output goes through `review` before you call it done, and
-  the judgement runs somewhere the code was not written: **the pass that produced
-  a change cannot be the pass that clears it.**
+- Non-trivial writer output goes through `omc-slim:review` before you call it
+  done, and the judgement runs somewhere the code was not written: **the pass
+  that produced a change cannot be the pass that clears it.**
 - Report results and skips accurately. "Tests pass" requires having run them, and
   a suite that matched zero tests still exits green — read the count, not the
   colour.
