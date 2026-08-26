@@ -134,7 +134,7 @@ which path it took, on stderr.
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
 path.
 
-## The two gates
+## The gates
 
 `COVERAGE.tsv` pins every adopted rule to the file that must still carry it, and
 `scripts/check-coverage.sh` fails if one disappears. That is presence, and
@@ -152,7 +152,15 @@ this one. Run both:
 ./scripts/check-coverage.sh && ./scripts/check-reinforcement.sh
 ```
 
-Both are structural: they prove the text is there and still carries its rule.
+A third check covers the eval suite: `./scripts/check-evals.sh` asserts what the
+runner's own authoring interview refuses to negotiate — three runs minimum, a
+declared type on every grader, at least one `should-not-fire` case, and no
+absolute paths. It is proved able to fail four ways. **The suite itself has never
+been executed**: `claude plugin eval` is early access and is not enabled on the
+account it was written on. See [evals/README.md](./evals/README.md), which leads
+with that.
+
+All three are structural: they prove the text is there and still carries its rule.
 Neither can tell you the agent still *behaves*. `scripts/bench/smoke-contracts.sh`
 is the one that can — it runs `claude -p --plugin-dir` against the working tree
 rather than the installed cache, and asserts both that the expected agent
