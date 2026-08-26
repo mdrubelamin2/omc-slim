@@ -2,7 +2,7 @@
 
 **A small pantheon of specialist agents for Claude Code.**
 
-Six agents, six skills, one hook. The main thread stops being the implementer and
+Six agents, six skills, two hooks. The main thread stops being the implementer and
 becomes a planner that delegates, verifies and reconciles. It injects **zero
 bytes on the tool-call path**, ships **no MCP servers**, and inherits whatever
 MCP servers and skills your project already has. Three components write files
@@ -10,8 +10,8 @@ into your repository, and only when they run: `codemap` maps it, `deep-interview
 writes a spec, `deepwork` keeps a log. `codemap` says what it will write and
 waits for a yes; the other two write one file each, under `docs/`.
 
-Static context is **~3,981 tokens**. `./scripts/measure-context.sh` reports
-**4,519 on a chars/4 basis** and prints that correction itself, because the
+Static context is **~4,075 tokens**. `./scripts/measure-context.sh` reports
+**4,625 on a chars/4 basis** and prints that correction itself, because the
 chars/4 method measured **+13.5% high** against a real tokeniser
 ([audit](./docs/AUDIT-2026-08-25.md)). `claude plugin details omc-slim` reports a
 third, smaller number; it does not count the output style, which is the largest
@@ -145,18 +145,29 @@ roster costs what your session costs.
   repository."* Writes a codemap per directory plus a root atlas. Expensive, and
   it says so before starting.
 
-## The hook
+## The hooks
 
-One hook, on `SubagentStop`, for `fixer` and `designer` only. It checks that a
-write-capable agent actually wrote something, and tells **you** when it did not.
-It never blocks, always exits 0, and stays silent when it cannot tell.
+Two, and neither can block anything. Both emit `systemMessage` only, always exit
+0, and stay silent when they cannot tell.
 
-Those are claims, so they have a check: `node hooks/verify-deliverables.test.mjs`
-runs the hook as a child process against isolated fixtures — 19 cases asserting
-the exact set of keys it may emit, which is what makes "never blocks" falsifiable.
-And the check has a check: `verify-deliverables.mutate.mjs` breaks the hook
-twenty-three ways and confirms the suite catches all twenty-three. `OMC_SLIM_DEBUG=1` prints
-which path it took, on stderr.
+**`SubagentStop`**, for `fixer` and `designer` only, checks that a write-capable
+agent actually wrote something and tells **you** when it did not.
+
+**`SessionStart`** checks whether another enabled plugin also sets
+`force-for-plugin` on an output style. Claude Code applies exactly one, picks it
+by plugin load order, and reports the loss at a log level nobody sees — so the
+orchestrator can go missing with no symptom except that work stops being
+delegated. The hook names the competing plugin and hands you the command that
+settles which style won. It reads plugin manifests off disk; it never reads your
+transcript, and it fires once per session, not on every compaction.
+
+Those are claims, so each has a check. `node hooks/verify-deliverables.test.mjs`
+runs 19 cases and `node hooks/check-output-style.test.mjs` runs 18, both against
+isolated fixtures, both asserting the exact set of keys the hook may emit — which
+is what makes "never blocks" falsifiable. And the checks have checks: the two
+`*.mutate.mjs` runners break the hooks twenty-three and eighteen ways and confirm
+the suites catch all forty-one. `OMC_SLIM_DEBUG=1` prints which path either took,
+on stderr.
 
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
 path.

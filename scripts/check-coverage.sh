@@ -308,10 +308,16 @@ if matched == len(roster_sites):
 # The README quotes how many cases the hook suite runs and how many mutants the
 # mutation suite kills.
 suite_counts = []
-for label, script, pattern in [
+# Both hooks are enrolled. A second hook whose suite nobody runs is the state
+# this gate exists to prevent, and its counts drift out of the README exactly
+# the way the first hook's did.
+SUITES = [
     ('test cases', 'hooks/verify-deliverables.test.mjs', r'(\d+)/(\d+) passed'),
     ('mutants', 'hooks/verify-deliverables.mutate.mjs', r'score: (\d+)/(\d+) killed'),
-]:
+    ('test cases', 'hooks/check-output-style.test.mjs', r'(\d+)/(\d+) passed'),
+    ('mutants', 'hooks/check-output-style.mutate.mjs', r'score: (\d+)/(\d+) killed'),
+]
+for label, script, pattern in SUITES:
     try:
         # OMC_SLIM_HOOK_PATH redirects the suite at a different file. The
         # mutation runner sets it deliberately for its sandbox; anything in the
@@ -368,9 +374,11 @@ for label, script, total in suite_counts:
     if word(total).lower() not in readme and str(total) not in readme:
         print(f'  STALE COUNT   README does not state {total} {label} for {script}')
         bad += 1
-if len(suite_counts) == 2 and not bad:
-    print(f'{suite_counts[0][2]} test cases and {suite_counts[1][2]} mutants, '
-          f'both stated in README.')
+if len(suite_counts) == len(SUITES) and not bad:
+    cases = sum(t for label, _, t in suite_counts if label == 'test cases')
+    mutants = sum(t for label, _, t in suite_counts if label == 'mutants')
+    print(f'{cases} hook test cases and {mutants} mutants across '
+          f'{len(suite_counts) // 2} suites, each total stated in README.')
 
 if bad:
     raise SystemExit(1)
@@ -691,6 +699,10 @@ ORIGINS = {
     'caveman':              ('documented', None,                  'JuliusBrussee/caveman'),
     'wait-what':            ('documented', None,                  '`wait-what` skill'),
     'omc-official':         ('documented', None,                  'bundled simplification skill'),
+    # A personal output style published as a screenshot in a post, so there is no
+    # repository and no commit to pin. PROVENANCE.md carries the post URL and the
+    # engagement figures instead, which is the only durable handle it has.
+    'eli5':                 ('documented', None,                  'lydiahallie/eli5'),
     # RETIRED 2026-08-25 — its single adopted rule (a hard confidence floor that
     # suppressed findings) was deliberately reversed. No rows remain, so the origin
     # leaves ORIGINS rather than sitting here classifying nothing.

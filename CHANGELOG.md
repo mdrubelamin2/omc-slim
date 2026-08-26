@@ -45,12 +45,56 @@ re-attaches — measuring the body alone flattered it by 124 tokens and turned a
 28-token overrun into an 81-token margin. It is now 5,625 chars/4, ~4,956
 corrected, 44 under the cap, and the gate fails if it ever goes over.
 
+**A second hook, on `SessionStart`, because the plugin cannot otherwise report
+its own absence.** omc-slim *is* its output style. Claude Code resolves the
+active one with `Object.values(...).filter(forceForPlugin)[0]` — first match
+wins, ordered by plugin load — and logs the loss at a level nobody reads. So a
+second style-forcing plugin, installed for an unrelated reason, can leave every
+component loaded and nothing orchestrating. `check-output-style` reads
+`enabledPlugins`, the install manifest and each plugin's style frontmatter, then
+names the competing plugin. It cannot see which style actually won, because the
+SessionStart payload carries five fields and none of them is the output style, so
+it reports the condition and hands over the command that settles it. Advisory
+like its sibling: `systemMessage` only, always exit 0, silent when it cannot
+tell, and once per session rather than at every compaction.
+
+**The reported cause turned out not to be a cause.** The report was that changing
+your output style disabled the orchestrator. The resolver never reads the user's
+`outputStyle` while any plugin forces a style — verified against a project
+explicitly pinned to `Explanatory`, which still ran `omc-slim:omc-slim`. Our own
+docs had only ever tested the setting *unset*, so the stronger claim they were
+making was true but unproven. Now both are verified, and the real cause is
+documented in `LIMITATIONS.md` instead.
+
+**18 cases and 18 mutants for the new hook**, and the mutation suite earned its
+place immediately: it found a fixture passing for the wrong reason. The
+"documents the flag in its body" case used an inline mention, which the line
+anchors reject on their own — so it would have passed even if the hook had
+stopped reading only the frontmatter. Seven of the eighteen mutants make the hook
+fire when it should not, because a false alarm about a disabled plugin costs more
+than a missed collision. `hooks/mutate-runner.mjs` now holds the sandbox
+discipline both suites share.
+
+**Two rules adopted from a published personal output style.** A piece of work now
+closes with what you did, whether it worked, and what the user does next — the
+middle one carrying evidence, never a claim standing in for it. And a decision
+handed to the user is capped at three options; `AskUserQuestion` permits four,
+and `review` already batched asks into one question with a recommendation, but
+nothing capped the count. Both come from
+[`lydiahallie/eli5`](https://x.com/lydiahallie/status/2080378470111256907)
+(23 July 2026, 287,008 views). Four of its seven sentences already shipped here.
+Its register — "talk to me like I'm 5" — was refused, because this plugin's
+Communication section says *not baby talk and not fragments*; the same call
+`PROVENANCE.md` records against caveman. The source style says two options; three
+is the deliberate middle, because a genuine three-way call should not have to be
+split in half.
+
 **Also:** the hidden-character scan missed U+2066–U+2069, the Trojan Source set
 its own comment cites, and never read the two `.claude-plugin/*.json`
 descriptions — 45 assets scanned, now 58. The reachability check counted a
 citation inside a code fence as a handoff. `docs/LIMITATIONS.md` asserted the
 `maxTurns` truncation as observed fact eighteen lines above saying nothing had
-observed it. Static context 4,487 → 4,519.
+observed it. Static context 4,487 → 4,625 chars/4, ~4,075 corrected.
 
 ## v0.9.0
 

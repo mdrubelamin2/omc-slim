@@ -37,7 +37,7 @@ Its `UserPromptSubmit` rule hook is deliberately not adopted — see
 aniruddha-adhikary/skills is a Joern/CPG static-analysis pack, so almost all of it
 is a different domain and was refused: three skills of graph-query mechanics, eight
 scripts, and a `traps.md` cataloguing one tool's quirks. Its `PreToolUse` guard hook
-was refused too — this plugin ships one hook and stays off the tool-call path. So was
+was refused too — this plugin ships two hooks and stays off the tool-call path. So was
 its publication boundary, which git-ignores `research/` and `docs/`; the same figures
 are published here instead, with the script that re-derives them. What transferred was
 its central discipline, stated eight times across the pack: a result that is empty
@@ -90,6 +90,7 @@ never the whole pack:
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | `16f29800` — **v4.9.0 minus one commit**, not 4.8.4 (see below) | The build ladder applied retroactively, the finding tags, and marking deliberate ceilings |
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | `ec83e5ba` | Compressed output contracts and the terse register. **The upstream premise is dead — see below** |
 | `wait-what` skill | installed locally, unpinned | ASD-STE100 Simplified Technical English: one idea per sentence, active voice, a named actor |
+| `lydiahallie/eli5` — a personal output style, [published as a screenshot](https://x.com/lydiahallie/status/2080378470111256907) (23 July 2026, 2,240 likes, 287,008 views) | no repository, so no commit; the post URL is the pin | The three-part close — what you did, whether it worked, what the user does next — and the two-option ceiling on a decision. **Its register was refused — see below** |
 | Claude Code's bundled `code-review` plugin | ships with the CLI | The confidence threshold that suppresses a finding outright |
 | Claude Code's bundled simplification skill | ships with the CLI | Conventions come from the repository, never a preferred dialect |
 
@@ -121,10 +122,18 @@ The caveman result worth carrying is not about caveman. **A register instruction
 measurably failed to fire on Opus 5, and decayed with session depth.** omc-slim's
 own Communication section is the same kind of instruction, and is unmeasured.
 
-The last three carry no commit to pin. Two ship with Claude Code and move with
-it; `wait-what` was read from a local install. They are recorded here because
-`COVERAGE.tsv` pins rules to them, and an origin with no provenance entry is how
-an adoption becomes folklore.
+**The `eli5` register was refused, and its mechanics kept.** The published style
+asks to be talked to "like I'm 5", which contradicts this plugin's own line —
+*not baby talk and not fragments*. Four of its seven sentences already shipped
+here, so what was left worth taking was two rules that are not about a mood: end
+a piece of work by saying what you did, whether it worked and what the user does
+next; and cap a decision at three options rather than four. This is the same call
+made against caveman one row up — take the grammar, refuse the voice.
+
+The last four carry no commit to pin. Two ship with Claude Code and move with
+it; `wait-what` was read from a local install, and `eli5` exists only as a
+screenshot in a post. They are recorded here because `COVERAGE.tsv` pins rules to
+them, and an origin with no provenance entry is how an adoption becomes folklore.
 
 None is named anywhere in the plugin's prompts — the behaviour is described
 directly, so nothing depends on those packs being installed.
@@ -173,9 +182,9 @@ before deleting.
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 286 rows, and growing with each release:
+lives — 290 rows, and growing with each release:
 
-The roster it asserts is **six agents, six skills, one hook** — stated here in
+The roster it asserts is **six agents, six skills, two hooks** — stated here in
 prose because the check requires this file to carry it, and a sentence survives a
 compression pass better than a pasted line does.
 
@@ -201,7 +210,7 @@ name and loses its reasoning. Run both.
 # paths, worded rosters, hook cases and mutants, frontmatter, invisible
 # characters, adopted origins. Run it to see them; they are not pasted here.
 #
-# 286/286 adopted behaviours present.
+# 290/290 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 

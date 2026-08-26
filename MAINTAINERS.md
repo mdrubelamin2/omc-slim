@@ -289,26 +289,55 @@ telling it *you are running low on room* is anxiety and does not. Over-correctin
 past that line broke `observer` routing once — its reason to exist disappeared
 along with the framing.
 
-### The hook is advisory and fails open
+### Both hooks are advisory and fail open
 
-`verify-deliverables` is the only hook that ships. It returns no
-`permissionDecision` and cannot block. Every error path exits 0 emitting
-nothing. A broken guard must never break a session.
+`verify-deliverables` (SubagentStop) and `check-output-style` (SessionStart) are
+the only hooks that ship. Neither returns a `permissionDecision`, so neither can
+block. Every error path exits 0 emitting nothing. A broken guard must never break
+a session.
 
 `systemMessage` goes to the **user**, not the model — so you cannot verify a hook
 fired by asking the model whether it saw a warning. Run it with `OMC_SLIM_DEBUG=1`
-and read stderr, which names which of the four "cannot tell" paths it took.
+and read stderr, which names which "cannot tell" path it took.
 
-`node hooks/verify-deliverables.test.mjs` runs the hook as a child process against
-isolated fixtures and asserts its observable contract, including the exact set of
-keys it may emit. Run it after any edit to the hook. It is not wired into CI.
+`node hooks/verify-deliverables.test.mjs` and `node hooks/check-output-style.test.mjs`
+run each hook as a child process against isolated fixtures and assert its
+observable contract, including the exact set of keys it may emit. Run the matching
+one after any edit to a hook. Neither is wired into CI; `check-coverage.sh` runs
+both.
 
-`node hooks/verify-deliverables.mutate.mjs` checks that suite the only way that
-means anything: it breaks the hook fifteen ways and requires the harness to catch
-all fifteen. Run it after adding or weakening a case — a suite that still passes
-when the hook is broken is worse than none, because it looks like evidence. Add a
-mutant whenever you add a branch to the hook. It restores the hook by sha256, so
-an interrupted run leaves nothing behind.
+The two `*.mutate.mjs` runners check those suites the only way that means
+anything: they break each hook on purpose and require the harness to catch every
+mutant. Run one after adding or weakening a case — a suite that still passes when
+the hook is broken is worse than none, because it looks like evidence. Add a
+mutant whenever you add a branch to a hook. Both share `hooks/mutate-runner.mjs`,
+which writes mutants to a temp copy and asserts by sha256 that the tracked hook
+was never touched.
+
+**Do not paste the mutant count into prose here.** This section said "fifteen
+ways" through eight releases that took it to twenty-three, because nothing checks
+a number written in words in a maintainer document. `check-coverage.sh` derives
+both totals and asserts the README carries them; the README is the place to quote
+them.
+
+### A silent third-party collision is the one failure the plugin cannot self-report
+
+`check-output-style` exists because omc-slim *is* its output style. Claude Code
+resolves the active style with `Object.values(...).filter(forceForPlugin)[0]` —
+first match wins, ordered by plugin load. A second plugin that forces a style can
+take the slot, and the loss is logged at WARN, which no user reads. Everything
+still loads; nothing routes.
+
+The hook cannot see which style won: the SessionStart payload carries
+`session_id`, `transcript_path`, `cwd`, `hook_event_name` and `source`, and
+nothing else. So it reads the *cause* off disk — `enabledPlugins` from the
+settings layers, install paths from `installed_plugins.json`, then each plugin's
+output-style frontmatter — and reports a condition rather than a verdict.
+
+That inference direction matters more than the detection. Missing a real
+collision confuses one user; a false alarm about a plugin that is disabled,
+uninstalled or merely documents the flag costs the warning all its credibility.
+Seven of the eighteen mutants exist to hold that line.
 
 ---
 
@@ -330,8 +359,16 @@ system prompt. That is correct here, since the orchestrator *is* the main thread
 
 **It does not write the `outputStyle` setting.** `force-for-plugin` overrides at
 runtime only, so `/config` keeps displaying whatever was stored — `default` for
-most users — while the plugin is active. Verified: setting unset, plugin enabled,
-effective style `omc-slim:omc-slim`. Expect this to be the most common "is it
+most users — while the plugin is active. Verified twice: with the setting unset,
+and with a project pinned to `Explanatory`. Both give an effective style of
+`omc-slim:omc-slim`.
+
+That second case is the one that matters, and it was unverified until v0.9.1. The
+resolver never reads the user's setting while any plugin forces a style — the
+`outputStyle` branch is only reached when the forced-style filter comes back
+empty. So a user changing their output style cannot disable this plugin, whatever
+it looks like. A user installing a second style-forcing plugin can, silently, and
+`check-output-style` is the answer to that. Expect this to be the most common "is it
 even working?" report; the README answers it with a one-line check.
 
 ---

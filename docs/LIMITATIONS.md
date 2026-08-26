@@ -70,7 +70,22 @@ budgets against a limit that does not exist, and no check would tell you. Treat
 the bound as declared intent rather than a guarantee.
 
 **It changes your output style.** `force-for-plugin` overrides your `outputStyle`
-while omc-slim is enabled. Disabling the plugin reverts it.
+while omc-slim is enabled. Disabling the plugin reverts it. Your own setting is
+never consulted while the plugin is on, so re-selecting a style will not get it
+back — verified against a project explicitly pinned to `Explanatory`.
+
+**Another plugin can take the style slot, and you will not be told.** Claude Code
+applies exactly one forced plugin style and picks it by plugin load order, which
+is not ours to control. The loser is reported at a log level nobody reads, so
+omc-slim can go entirely inert while every component still loads. The
+`SessionStart` hook warns when a competing plugin is installed and enabled, but it
+warns about the **condition** — it cannot see which style actually won, because
+the SessionStart payload does not carry one. Settle it with
+`claude -p "One line: which output style is active?"`.
+
+**It reads your plugin configuration at startup.** That hook parses
+`~/.claude/settings.json`, `installed_plugins.json` and other plugins' output-style
+frontmatter. It reads nothing else, sends nothing anywhere, and writes nothing.
 
 **It used to connect two remote MCP servers, and this page denied it.** Until
 v0.8.3 both this page and the README called the output style "the only global
@@ -208,7 +223,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,519 tok** | see above |
+| **omc-slim** | **~4,625 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -217,7 +232,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,519 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,625 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

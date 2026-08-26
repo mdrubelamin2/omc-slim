@@ -2,48 +2,30 @@
 /**
  * omc-slim — mutation check for the verify-deliverables harness.
  *
- * A passing test suite proves nothing about the bugs it would catch. This
- * breaks the hook on purpose, twenty-three ways, and asserts the harness notices
- * every time. A SURVIVED line is a hole in the tests, not a bug in the hook.
+ * Breaks the hook on purpose, twenty-three ways, and asserts the harness
+ * notices every time. A SURVIVED line is a hole in the tests, not a bug in the
+ * hook.
  *
  * It exists because the first draft of that harness passed 9/9 while missing
  * nine of eleven mutants — including `additionalContext`, the one regression
  * the hook was written to avoid, and `continue: false`, which halts a session
  * while still exiting 0. Both are invisible to an exit-code assertion.
  *
- * The hook is restored from memory after every mutant and the restore is
- * verified by sha256, so an interrupted run cannot leave a mutant on disk.
+ * The runner it calls is shared with check-output-style.mutate.mjs and holds the
+ * sandbox discipline: mutants go to a temp copy, and the tracked hook is only
+ * ever read.
  *
  * Run: node hooks/verify-deliverables.mutate.mjs
  */
 
-import { spawnSync } from "node:child_process";
-import {
-  readFileSync,
-  writeFileSync,
-  mkdtempSync,
-  rmSync,
-  readdirSync,
-  statSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { createHash } from "node:crypto";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runMutants } from "./mutate-runner.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const HOOK = join(HERE, "verify-deliverables.mjs");
-const TEST = join(HERE, "verify-deliverables.test.mjs");
-
-const sha = (text) => createHash("sha256").update(text).digest("hex");
-const PRISTINE = readFileSync(HOOK, "utf8");
-const PRISTINE_SHA = sha(PRISTINE);
 
 /**
  * [label, find, replace, what breaks in production]
- *
- * `find` must appear verbatim in the hook. A missing anchor is reported rather
- * than skipped — a mutant that stops applying is a mutant that stops testing.
  */
 const MUTANTS = [
   ["additionalContext emitted",
@@ -144,89 +126,10 @@ const MUTANTS = [
    "the original bug the hook was written to avoid"],
 ];
 
-// --- mutants never touch the tracked file -------------------------------------
-// Each mutant is written to a throwaway copy under the OS temp dir, and the test
-// harness is pointed at it with OMC_SLIM_HOOK_PATH. The tracked hook is only
-// ever read.
-//
-// It used to be mutated in place and restored from PRISTINE. Two concurrent runs
-// corrupted each other: run B snapshotted while run A held a mutant, then
-// faithfully "restored" that mutant, and the sha256 line still said "match"
-// because it matched the snapshot B took. That shipped a
-// `WRITE_AGENTS = new Set(["fixer"])` mutant to disk, silently disabling the
-// designer check while every other gate reported green.
-//
-// A lock plus a pristine guard was the first fix. Both were wrong: the pristine
-// guard could not see a mutant whose `find` string occurs twice (String.replace
-// substitutes only the first, so `includes(find)` stays true), and its printed
-// remedy — `git checkout --` — discards uncommitted work. Not writing to the
-// tracked file removes the whole class instead of policing it.
-// Prefixed so a leaked dir is identifiable and sweepable. SIGKILL cannot be
-// caught, so the exit handler below is best-effort; sweep stale siblings first
-// rather than accumulating them in /tmp across killed runs.
-const SANDBOX = mkdtempSync(join(tmpdir(), "omc-slim-mutate-"));
-try {
-  for (const stale of readdirSync(tmpdir())) {
-    if (!stale.startsWith("omc-slim-mutate-")) continue;
-    const dir = join(tmpdir(), stale);
-    if (dir !== SANDBOX && Date.now() - statSync(dir).mtimeMs > 3_600_000) {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  }
-} catch {}
-process.on("exit", () => {
-  try {
-    rmSync(SANDBOX, { recursive: true, force: true });
-  } catch {}
-});
-
-let killed = 0;
-const survivors = [];
-
-console.log(`mutants: ${MUTANTS.length}\n`);
-
-for (const [label, find, replace, consequence] of MUTANTS) {
-  if (!PRISTINE.includes(find)) {
-    console.log(`  ANCHOR-MISS  ${label}`);
-    survivors.push([label, consequence, "anchor no longer matches the hook"]);
-    continue;
-  }
-
-  const variant = join(SANDBOX, "verify-deliverables.mjs");
-  writeFileSync(variant, PRISTINE.replace(find, replace));
-  const run = spawnSync(process.execPath, [TEST], {
-    encoding: "utf8",
-    timeout: 120_000,
-    env: { ...process.env, OMC_SLIM_HOOK_PATH: variant },
-  });
-
-  const output = (run.stdout || "") + (run.stderr || "");
-  const failures = (output.match(/^FAIL/gm) || []).length;
-
-  if (run.status === 0) {
-    survivors.push([label, consequence, "harness passed anyway"]);
-    console.log(`  SURVIVED  ${label.padEnd(42)} <-- hole in the tests`);
-  } else {
-    killed++;
-    console.log(`  KILLED    ${label.padEnd(42)} ${failures} case(s) failed`);
-  }
-}
-
-// The tracked hook was only ever read, so there is nothing to restore. Assert
-// that rather than trusting it: a future edit that reintroduces in-place
-// mutation should fail here rather than silently corrupt the tree.
-const restored = sha(readFileSync(HOOK, "utf8")) === PRISTINE_SHA;
-
-console.log(`\nscore: ${killed}/${MUTANTS.length} killed`);
-
-if (survivors.length) {
-  console.log("\nsurvivors — each is a regression the harness would not catch:");
-  for (const [label, consequence, how] of survivors) {
-    console.log(`  - ${label}: ${consequence} (${how})`);
-  }
-}
-
-console.log(`tracked hook untouched: ${restored ? "yes (sha256 match)" : "NO — THE TREE IS DIRTY, check git diff"}`);
-
-if (!restored) process.exit(2);
-process.exit(survivors.length === 0 ? 0 : 1);
+process.exit(
+  runMutants({
+    hook: join(HERE, "verify-deliverables.mjs"),
+    test: join(HERE, "verify-deliverables.test.mjs"),
+    mutants: MUTANTS,
+  }),
+);

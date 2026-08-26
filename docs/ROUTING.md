@@ -134,8 +134,13 @@ adding more would make this worse for everything you have installed.
 
 `force-for-plugin` supersedes your output style **at runtime without writing the
 `outputStyle` setting**. `/config` reads the stored setting, so it keeps showing
-`default` while omc-slim is active. Verified: setting unset, plugin enabled,
-effective style `omc-slim:omc-slim`.
+`default` while omc-slim is active. Verified both ways: setting unset, and a
+project explicitly pinned to `Explanatory`. Effective style `omc-slim:omc-slim`
+in each.
+
+So changing your output style does not turn the orchestrator off. Installing a
+second plugin that also sets `force-for-plugin` can — Claude Code applies one of
+them and says nothing. The `SessionStart` hook warns you when that is possible.
 
 Don't trust the picker — ask:
 
