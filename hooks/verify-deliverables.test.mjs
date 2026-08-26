@@ -199,7 +199,12 @@ function runHookWithDebug(buildStdin) {
   return spawnHook(buildStdin, "1");
 }
 
-function spawnHook(buildStdin, debugFlag) {
+/** The same, with the scan budget forced to 0 so the deadline fires at once. */
+function runHookWithNoScanBudget(buildStdin) {
+  return spawnHook(buildStdin, "", { OMC_SLIM_SCAN_BUDGET_MS: "0" });
+}
+
+function spawnHook(buildStdin, debugFlag, extraEnv = {}) {
   const root = mkdtempSync(join(tmpdir(), "omc-slim-verify-"));
   try {
     const res = spawnSync(process.execPath, [HOOK], {
@@ -208,7 +213,7 @@ function spawnHook(buildStdin, debugFlag) {
       // The production budget: `timeout: 5` seconds in hooks.json. A slower
       // hook passes nothing here that would not be discarded in a session.
       timeout: 5_000,
-      env: { ...process.env, OMC_SLIM_DEBUG: debugFlag },
+      env: { ...process.env, OMC_SLIM_DEBUG: debugFlag, ...extraEnv },
     });
     if (res.error) throw res.error;
     return {
@@ -479,6 +484,26 @@ const cases = [
         if (!lstatSync(fifo).isFIFO())
           throw new Error("fixture is not a FIFO");
         return payload("fixer", fifo, root);
+      }),
+    check: expectSilence,
+  },
+  {
+    // The scan deadline must fail SAFE: over budget the answer is "cannot
+    // tell", never "wrote nothing", because the second is an accusation.
+    //
+    // The fixture holds NO write on purpose, and that choice is the whole test.
+    // With a write in it, both a working deadline and a deleted one end silent
+    // and the case proves nothing — the first draft of this test did exactly
+    // that and the mutation run caught it. With no write, the two outcomes
+    // diverge: the deadline abstains, its absence accuses. Budget 0 fires the
+    // check on the first line, so this is deterministic, not timing-dependent.
+    name: "scan over its budget abstains rather than accusing",
+    run: () =>
+      runHookWithNoScanBudget((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantText("I read the file and decided nothing needed changing."),
+        ]);
+        return payload("fixer", transcript, root);
       }),
     check: expectSilence,
   },

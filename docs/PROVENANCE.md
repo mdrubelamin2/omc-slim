@@ -87,11 +87,39 @@ never the whole pack:
 | Pack | Pin | What was taken |
 |---|---|---|
 | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | `7829ffd9` (2026-08-14), then `be42637c` (2026-08-14) | First read: Chesterton's Fence, `git blame` for intent, and `simplify`'s understand-first process. Second, and much the larger: 27 of the 35 pinned `addy` rules, most of them the five-axis review lanes. Its hook discipline — exactly one — against a 24-skill surface that is the counter-example |
-| [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | 4.8.4, `16f29800` | The build ladder applied retroactively, the finding tags, and marking deliberate ceilings |
-| [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | `ec83e5ba` | Compressed output contracts and the terse register |
+| [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | `16f29800` — **v4.9.0 minus one commit**, not 4.8.4 (see below) | The build ladder applied retroactively, the finding tags, and marking deliberate ceilings |
+| [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | `ec83e5ba` | Compressed output contracts and the terse register. **The upstream premise is dead — see below** |
 | `wait-what` skill | installed locally, unpinned | ASD-STE100 Simplified Technical English: one idea per sentence, active voice, a named actor |
 | Claude Code's bundled `code-review` plugin | ships with the CLI | The confidence threshold that suppresses a finding outright |
 | Claude Code's bundled simplification skill | ships with the CLI | Conventions come from the repository, never a preferred dialect |
+
+**Two corrections to this table, from the 2026-08-26 sweep**
+([research](./RESEARCH-2026-08-26.md#3-previously-adopted-now-known-wrong-or-superseded)).
+
+**The ponytail pin was mislabelled.** `16f29800` is **53 commits ahead of tag
+v4.8.4** and **one commit behind v4.9.0**. Nothing adopted from it is wrong; the
+record of what was read was. Corrected above rather than silently re-pinned,
+because a provenance file that misstates a version is the failure it exists to
+prevent.
+
+**caveman's cost premise has been retracted by its own author.** Its published
+"65% token reduction" is now `docs/HONEST-NUMBERS.md` → *"Not published"*; the
+repo's own eval reproduces roughly 50% against a **terse control**; an
+independent 300-runs-per-arm measurement on `claude-opus-4-8` found output down
+44.1% and **total cost up 0.06%**; and a 409-session, 3,239-message study on
+Opus 5 measured its first and largest rule — article-stripping — **not firing at
+all**, decaying further with session depth.
+
+What omc-slim took from caveman is the **grammar**, pinned in `COVERAGE.tsv` as
+`lite-keeps-grammar`: *terseness is fewer sentences, never broken ones*. No cost
+claim anywhere in this repository rests on it, and none should be added. Do not
+move this pin: past it lie a BSL-1.1 licence split, five skills requiring a
+vendor API key, telemetry on by default, and a manifest current Claude Code
+rejects.
+
+The caveman result worth carrying is not about caveman. **A register instruction
+measurably failed to fire on Opus 5, and decayed with session depth.** omc-slim's
+own Communication section is the same kind of instruction, and is unmeasured.
 
 The last three carry no commit to pin. Two ship with Claude Code and move with
 it; `wait-what` was read from a local install. They are recorded here because

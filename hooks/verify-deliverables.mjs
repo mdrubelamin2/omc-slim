@@ -34,6 +34,34 @@ const WRITE_AGENTS = new Set(["fixer", "designer"]);
  */
 const MAX_TRANSCRIPT_BYTES = 64 * 1024 * 1024;
 
+/**
+ * Wall-clock budget for the transcript scan, well inside the 5 s declared in
+ * hooks.json.
+ *
+ * That declared timeout is advisory, not a guarantee: Claude Code does not
+ * enforce it parent-side (anthropics/claude-code#85250), and it does not apply
+ * at all while a hook is blocked reading its stdin payload — one report survived
+ * roughly 300 s holding the tool call (#87289). So the bound has to live in here.
+ *
+ * What this covers: the per-line parse of a transcript that is under the byte
+ * cap but pathological to scan. Over budget, the scan returns null — "cannot
+ * tell" — never false, because false is an accusation.
+ *
+ * What it cannot cover, stated plainly: a blocking read on fd 0. Node's timers
+ * cannot preempt synchronous I/O, so no in-process watchdog fires while
+ * readFileSync(0) waits on a pipe the parent never closed (#78756). The byte cap
+ * and the isFile() check bound the transcript read; nothing here bounds stdin.
+ *
+ * OMC_SLIM_SCAN_BUDGET_MS overrides it. That exists so the test can set 0 and
+ * prove the deadline is wired and fails safe, the same seam OMC_SLIM_DEBUG uses.
+ */
+const SCAN_BUDGET_MS = (() => {
+  const raw = process.env.OMC_SLIM_SCAN_BUDGET_MS;
+  if (raw === undefined) return 2000;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : 2000;
+})();
+
 /** Tools whose successful use counts as having produced a deliverable. */
 const WRITE_TOOLS = new Set(["Edit", "Write", "NotebookEdit", "MultiEdit"]);
 
@@ -108,7 +136,17 @@ function sawWriteTool(transcriptPath) {
   /** ids whose tool_result came back clean */
   const succeeded = new Set();
 
+  const deadline = Date.now() + SCAN_BUDGET_MS;
+  let scanned = 0;
+
   for (const line of raw.split("\n")) {
+    // Checked every 256 lines rather than every line: Date.now() per line on a
+    // 50 MB transcript is itself measurable, and 256 lines cannot overrun a
+    // 2 s budget by anything that matters.
+    if ((scanned++ & 0xff) === 0 && Date.now() >= deadline) {
+      debug("cannot tell: scan budget exhausted", scanned, transcriptPath);
+      return null;
+    }
     if (!line.trim().startsWith("{")) continue;
     let obj;
     try {

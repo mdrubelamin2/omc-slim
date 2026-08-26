@@ -104,6 +104,8 @@ deep-interview-threshold	deep-interview	Threshold: proceed to build only at 4 or
 deep-interview-round-cap	deep-interview	Loop at most	four rounds|If the total is still above 4 after four rounds|say plainly which dimensions remain unresolved and what the risk of proceeding is|An unresolvable ambiguity is a finding, not a failure
 deep-interview-approval-gate	deep-interview	Do not start implementing	Present the spec path and a three-line summary|wait for explicit approval
 deep-interview-gate-is-the-value	deep-interview	This gate is the entire value of the skill	A spec written and then immediately acted on without confirmation is just a slower way to build the wrong thing
+deep-interview-gate-is-measured	deep-interview	That is now measured	+14.50 points|control-armed|did not beat that pack
+deep-interview-gate-beats-prior-approval	deep-interview	The gate survives the argument that the user already approved	They approved *the interview*|never the stop|this one wins
 review-quote-gate	review	Quote the code, or you do not have a finding	quote the construct that *creates* the symbol|the bar is "I read the source that defines this", not "I grepped and missed it"|Cannot quote it, it is speculation|do not invent a higher confidence
 review-cite-gate	review	Cite the source, or you do not have a claim	checked against a current source, **never recalled**|the most expensive false positive there is|carry the source into the finding|an unsourced external claim is indistinguishable from a recalled one
 review-confidence-routing	review	3 to 5 goes to Open questions	the question you could not settle|Below 3 you have a hunch|hunches are noise

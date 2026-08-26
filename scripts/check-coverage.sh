@@ -140,8 +140,14 @@ if terse.returncode != 0 or not measured.isdigit():
     raise SystemExit(1)
 
 total = f'{int(measured):,}'
+# The chars/4 method runs +13.5% high against a real tokeniser
+# (docs/AUDIT-2026-08-25.md). Both figures are published, so both are pinned —
+# a README that quotes one basis without the other is the ambiguity that made
+# `claude plugin details` look like it contradicted us.
+corrected = f'{round(int(measured) / 1.135):,}'
 sites = [
-    ('README.md',           f'~{total} tokens of static context'),
+    ('README.md',           f'~{corrected} tokens'),
+    ('README.md',           f'**{total} on a chars/4 basis**'),
     ('docs/LIMITATIONS.md', f'**~{total} tok**'),
     # Left-anchored on "against": a bare "{total} today" is a suffix of the very
     # figure it guards, so a total that lost its leading digits would still match.
@@ -163,7 +169,8 @@ for path, literal in sites:
 if bad:
     print('\nUpdate those sites to match ./scripts/measure-context.sh, then re-run.')
     raise SystemExit(1)
-print(f'{len(sites)}/{len(sites)} published figures quote the measured {total} tokens.')
+print(f'{len(sites)}/{len(sites)} published figures quote a measured basis '
+      f'({total} chars/4, {corrected} corrected).')
 PY
 
 # --- internal references --------------------------------------------------

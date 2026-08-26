@@ -7,12 +7,36 @@ method and numbers behind its cost and correctness claims. It is for anyone
 deciding whether to trust those numbers.
 
 **No per-agent temperature.** Claude Code agent frontmatter has no
-`temperature`. The upstream `designer` ran at 0.7 deliberately; that is
-compensated for in prose, which is not the same thing.
+`temperature`, so `designer` cannot be given the wider sampling a visual role
+wants; that is compensated for in prose, which is not the same thing.
 
-**No AST-aware search.** Upstream used `ast_grep_search` across 25 languages.
-Claude Code has no equivalent, so structural queries fall back to `Grep`. The
-`explorer` is weaker than its ancestor on "find every function shaped like this".
+The old version of this entry said the upstream `designer` "ran at 0.7
+deliberately". **That is no longer true.** Upstream removed every agent
+temperature literal in
+[`c7690923`](https://github.com/alvinunreal/oh-my-opencode-slim/commit/c7690923)
+— `council` 0.1, `councillor` 0.2, `designer` 0.7 and the rest — and its docs now
+read *"Optional temperature; when omitted, OpenCode chooses its default."* There
+is no deliberate 0.7 left to compensate for. The gap is real; the justification
+that was written for it was inherited from a decision its author reversed.
+
+**No AST-aware search in the harness.** Upstream used `ast_grep_search` across 25
+languages. Claude Code ships no equivalent tool, so structural queries fall back
+to `Grep`, and `explorer` is weaker than its ancestor on "find every function
+shaped like this".
+
+**The gap is narrower than that wording implied.** `ast-grep` covers ~26
+languages, installs standalone, and is one `Bash` call away wherever a developer
+already has it — measured on one machine during the 2026-08-26 sweep,
+`ast-grep outline` compressed 64,496 lines of TypeScript to 385. omc-slim cannot
+*depend* on it, because nothing guarantees it is present. But the honest
+limitation is that `explorer` does not currently reach for it even when it is,
+not that structural search is unavailable.
+
+Two measured caveats if it is used: `ast-grep outline` degrades badly on
+prototype-assignment JavaScript (a 631-line CommonJS file outlined to three
+lines), and metavariable patterns over-match, so a thin outline must not be read
+as "nothing here". See
+[the research](./RESEARCH-2026-08-26.md#710-code-search-retrieval-and-deletion--measured-on-this-machine).
 
 **It changes your output style.** `force-for-plugin` overrides your `outputStyle`
 while omc-slim is enabled. Disabling the plugin reverts it.
@@ -32,6 +56,20 @@ documentation servers your project or user config provides, so the capability
 survives wherever you already have it, and the plugin no longer decides on your
 behalf which hosts your queries reach. See
 [the audit](./AUDIT-2026-08-25.md) for how it was found.
+
+**Nothing here survives a compaction unless the harness re-sends it.** Measured:
+constraint violations run **0% while a policy is in full context and 30% on
+average after compaction, up to 59%** on some models; conditional on the rule
+being dropped from the summary, **38%**
+([arXiv:2606.22528](https://arxiv.org/abs/2606.22528)). The output style is part
+of the system prompt and is re-sent every turn, which is structurally the
+"constraint pinning" that paper found restores 0% — a real advantage over a
+`CLAUDE.md`-based layer, and worth knowing. But a mid-session correction, a
+delegation brief, and an invoked skill body are all in the class that gets
+evicted. A separate measured effect compounds it: compliance falls roughly
+**5.6% per additional function generated** within one session
+([arXiv:2605.10039](https://arxiv.org/abs/2605.10039)). omc-slim has no
+re-assertion mechanism and does not claim one.
 
 **No standing-rule delivery.** A correction you make in one session does not
 survive into the next, and nothing re-states it when a later message needs it.

@@ -121,6 +121,23 @@ then wait for explicit approval.
 This gate is the entire value of the skill. A spec written and then immediately
 acted on without confirmation is just a slower way to build the wrong thing.
 
+**That is now measured, and it is the largest effect anyone has published for a
+prompt layer.** In a control-armed, twice-blind-judged comparison — five methods,
+one frozen underspecified task, same model and rubric — a four-skill pack scored
+**+1.50 over bare agent**, which is noise. Adding **this gate** took it from
+83.17 to **97.67: +14.50 points for +0.60M tokens and about two minutes**. The
+full fourteen-skill framework did not beat that pack plus its loops, while
+spending 7.6× the control arm's tokens.
+[Source](https://github.com/luobosibing2/superpowers-workflow-evaluation);
+caveats in
+[the research](../../docs/RESEARCH-2026-08-26.md#119-a-control-armed-evaluation-exists-and-it-names-the-winning-mechanism).
+
+**The gate survives the argument that the user already approved.** They approved
+*the interview*. They have not seen the spec, because it did not exist when they
+typed. Section 1's "an explicit invocation is a decision already made" licenses
+you to skip the *scoring debate*, never the stop. If those two ever seem to
+conflict, this one wins.
+
 Once approved, plan the implementation lanes from the acceptance criteria. Give
 every lane the spec path as its brief.
 

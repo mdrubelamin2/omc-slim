@@ -3,17 +3,36 @@
 **A small pantheon of specialist agents for Claude Code.**
 
 Six agents, six skills, one hook. The main thread stops being the implementer and
-becomes a planner that delegates, verifies and reconciles. It costs **~4,474
-tokens of static context**, injects **zero bytes on the tool-call path**, and
-inherits whatever MCP servers and skills your project already has.
+becomes a planner that delegates, verifies and reconciles. It injects **zero
+bytes on the tool-call path**, ships **no MCP servers**, writes **nothing into
+your repository**, and inherits whatever MCP servers and skills your project
+already has.
+
+Static context is **~3,942 tokens**. `./scripts/measure-context.sh` reports
+**4,474 on a chars/4 basis** and prints that correction itself, because the
+chars/4 method measured **+13.5% high** against a real tokeniser
+([audit](./docs/AUDIT-2026-08-25.md)). `claude plugin details omc-slim` reports a
+third, smaller number; it does not count the output style, which is the largest
+item. Quote a basis or don't quote a number.
 
 On one single-file CLI task, n=3 per arm, it averaged **18% less than a plain
 session** ($1.01 vs $1.24) with non-overlapping spreads, and shipped the smallest
 tool of the three setups tested. All nine runs graded equally correct — so the
-grader could not separate them on quality, and no subagent ran in any arm. Read
-[BENCHMARK.md](./docs/BENCHMARK.md) before quoting that number — and note it
-measured the prompts as they were **before** the current restructure, so it
-describes an earlier build than the one you install.
+grader could not separate them on quality, and no subagent ran in any arm.
+
+**Treat that as a demonstration, not a measurement.** One task at n=3 cannot
+detect an effect below roughly 30 percentage points, and task-level variance
+dominates, so more repeats would not fix it
+([evidence](./docs/RESEARCH-2026-08-26.md#8-measurement--how-to-settle-the-central-bet)).
+The omc-slim arm also ran with two MCP servers no other arm had. It measured the
+prompts as they were **before** the current restructure, so it describes an
+earlier build than the one you install. Read
+[BENCHMARK.md](./docs/BENCHMARK.md) before quoting it.
+
+And the class of claim matters. Four independent studies find a rules layer moves
+**cost, runtime and code size** and does **not** move correctness. This one's
+numbers fit that pattern exactly, which is the honest thing to say about them —
+so nothing here claims omc-slim makes Claude more correct.
 
 ```
 /plugin marketplace add mdrubelamin2/omc-slim
@@ -106,10 +125,10 @@ write-capable agent actually wrote something, and tells **you** when it did not.
 It never blocks, always exits 0, and stays silent when it cannot tell.
 
 Those are claims, so they have a check: `node hooks/verify-deliverables.test.mjs`
-runs the hook as a child process against isolated fixtures — 14 cases asserting
+runs the hook as a child process against isolated fixtures — 15 cases asserting
 the exact set of keys it may emit, which is what makes "never blocks" falsifiable.
 And the check has a check: `verify-deliverables.mutate.mjs` breaks the hook
-seventeen ways and confirms the suite catches all seventeen. `OMC_SLIM_DEBUG=1` prints
+nineteen ways and confirms the suite catches all nineteen. `OMC_SLIM_DEBUG=1` prints
 which path it took, on stderr.
 
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
