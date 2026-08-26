@@ -57,6 +57,25 @@ survives wherever you already have it, and the plugin no longer decides on your
 behalf which hosts your queries reach. See
 [the audit](./AUDIT-2026-08-25.md) for how it was found.
 
+**The static figure is disciplined and the bodies are not.** v0.9.0 added roughly
+**4,133 tokens of on-invoke cost in one release, 3,641 corrected** — every addition individually
+justified by measurement, and their sum unmeasured, which is the exact failure
+mode this project has criticised in others. `./scripts/measure-context.sh` now
+reports on-invoke cost per component so the next increase is visible while it
+happens rather than three releases later.
+
+Two consequences worth knowing. **`review` is the heaviest single component —
+5,438 tokens on the chars/4 basis, ~4,791 corrected** — against a
+post-compaction re-injection limit that keeps only the **first 5,000 tokens of a
+skill**. Which side of that line it falls on depends on which basis you use,
+which is the honest answer: it is close enough that a modest addition puts its
+tail past the limit, and the tail is what goes. The load-bearing rules are
+front-loaded, which mitigates that and does not fix it. And the honest comparison: measured against `obra/superpowers` at v6.3.0,
+omc-slim's always-on surface came out **marginally larger** (~5,743 bytes against
+~5,556). The defensible claim was never "smaller". It is **no runtime that
+multiplies** — no fan-out by default, nothing on the tool-call path — and every
+skill that grows puts that claim closer to the line.
+
 **Nothing here survives a compaction unless the harness re-sends it.** Measured:
 constraint violations run **0% while a policy is in full context and 30% on
 average after compaction, up to 59%** on some models; conditional on the rule
@@ -137,7 +156,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,474 tok** | see above |
+| **omc-slim** | **~4,496 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -146,7 +165,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,474 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,496 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

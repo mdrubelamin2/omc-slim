@@ -13,9 +13,14 @@ safe to ship* — not a change nobody could criticise.
 not perfect.** Never block because it is not how you would have written it.
 Sycophancy is the other failure: never soften a real finding to keep the peace.
 
-**Skip it** for a one-line edit you already verified, or when nothing changed
-since the last pass. Re-reviewing an unchanged tree finds nothing and costs
-everything.
+**Skip it** only when nothing changed since the last pass. Re-reviewing an
+unchanged tree finds nothing and costs everything.
+
+**Size is never a reason.** Four lanes below run on every diff, so there is no
+such thing as a change too small to review — and "one line I already verified"
+fails twice over: it is a size test, and it is the author clearing their own
+work, which the pass-that-produced-it rule forbids. A one-line change to an auth
+check is the most dangerous thing in the release.
 
 ## 1. Scope
 
@@ -122,8 +127,10 @@ reported.
 
 **Ask a lane only for what its agent can return.** `explorer` locates: every
 consumer of an enum, every caller of a changed function, whether code is
-genuinely dead. It is forbidden to propose a fix or a next step, and it caps its
-output at 150 lines. Brief it for locations, and write the remedy yourself.
+genuinely dead. It is forbidden to propose a fix or a next step. Its 150-line
+cap binds a survey and **yields to a complete enumeration** — so when you need
+every consumer, say you want all of them, and you get all of them with the count
+on the first line. Brief it for locations, and write the remedy yourself.
 `oracle` judges architecture and security on a high-risk change, and it does
 propose. Neither can dispatch another agent, so an external claim comes back to
 you unresolved and you are the one who sends it on.
@@ -199,6 +206,17 @@ bespoke, **look for prior art** — a named algorithm, a standard, an RFC, a wid
 used implementation. "Add a retry loop with jitter" is worse than naming the
 backoff the ecosystem already settled on.
 
+**Write the fix, and let it test the finding.** Before reporting, name the change
+that would resolve it — then ask what input behaves differently before and after.
+If you cannot name one, or the "fix" changes nothing observable, **the finding
+was a false positive — drop it from the list and carry the count.** "3 candidates
+dropped: the proposed fix changed nothing observable" is one line, and it is the
+difference between a filter and a disappearance. A silent discard is the same
+self-issued verdict this skill refuses everywhere else. This costs one sentence of thought, it
+uses work the review has to do anyway, and it is measured: filtering candidates
+by whether their own proposed fix does anything is one of the few things that
+reliably removes false positives rather than reshuffling them.
+
 **Clearance needs evidence too.** "Handled elsewhere" cites the handling code;
 "tests cover this" names the test. *Likely handled* and *probably tested* are not
 review outputs — verify, or record it unverified. "Looks fine" is not a finding
@@ -206,9 +224,16 @@ review outputs — verify, or record it unverified. "Looks fine" is not a findin
 
 **Severity**, by consequence: **Critical** — a security hole, data loss or broken
 behaviour, do not ship · **Required** — fix before merge · **Optional** — a real
-improvement, the author's call. For security it is a product, consequence ×
-**exploitability** × blast radius: a dramatic hole nothing can reach ranks below a
-dull one on the public path.
+improvement, the author's call. For security it is a product, consequence × **exploitability** × blast
+radius: a dramatic hole nothing can reach ranks below a dull one on the public
+path.
+
+**Pre-existing is a flag, not a level.** It stacks on a severity rather than
+replacing one, so a real hole this diff did not introduce is a
+`CRITICAL · PRE-EXISTING` — full severity, and not a blocker. "Real issue, but on
+lines this author did not touch" is one of the largest false-positive classes in
+every shipped reviewer, and labelling it beats arguing about it. Report it, rank
+it below everything the diff introduced, and let the author decide.
 
 **Confidence** 1–10, independent of severity: 8+ report; 6–7 report and say it
 needs confirming; **3 to 5 goes to Open questions, not to the findings list** —
@@ -217,7 +242,11 @@ you have a hunch, not a finding, and hunches are noise. A Critical **survives at
 any confidence** as an open question, never a blocker, because the cost of
 missing it is asymmetric. Suppressing a low-confidence finding entirely is how a
 real one gets deleted before anyone sees it. **The verdict is set by the worst finding you
-are confident about**, not the worst you can imagine.
+are confident about**, not the worst you can imagine — **counting only what this
+diff introduced.** A Pre-existing Critical is reported at full severity and does
+not set the verdict; it was true before this change, and blocking on it makes the
+author answer for someone else's work. Say it in a line instead: "ship it; there
+is a Critical here that predates you."
 
 **Check yourself once, before writing anything down.**
 
@@ -243,6 +272,10 @@ the type boundary explicit so the downstream branching disappears. Prefer the
 remedy that **removes moving pieces** over one that spreads the same complexity
 around. Correct is only the floor: where a meaningfully better approach existed,
 that is a finding too — *Optional*, unless the chosen one carries real risk.
+
+**Report at most five nits, then a count.** "…and 6 further minor points, say the
+word" is a complete disposition. A reviewer that lists every small thing trains
+the reader to skim all of it, and the structural finding goes with the rest.
 
 **One structural problem beats ten nits.** If you have both, the structural
 problem *is* the review. Correctness and security are **read before style**, the
@@ -274,8 +307,16 @@ full context who disagrees ends the thread — comment on code, not on people.
 Every finding gets an action; there is no informational graveyard.
 
 **Fix directly** what is mechanical and a senior engineer would apply without
-discussion. Dead code, an orphaned import, a stale comment, a magic number, a
-missing eager-load, a version mismatch. **Ask** where reasonable engineers could
+discussion. An import or variable *this diff* orphaned, a stale comment, a magic
+number, a version mismatch.
+
+Two things are deliberately not on that list. **Pre-existing dead code** is
+reported, never deleted — the orchestrator and `fixer` both say leave it and
+mention it, and `simplify` treats "dead" as an unproven claim about your search
+rather than a property of the code. And **a performance fix is never mechanical**:
+`performance.md` requires a before-and-after measurement and reverts anything
+inside the noise, which a review pass has no baseline to produce. A missing
+eager-load is a finding, not an edit. **Ask** where reasonable engineers could
 disagree, or where it changes user-visible behaviour, removes functionality,
 touches security or concurrency, or runs past a handful of lines. **Critical
 findings lean towards asking**; small mechanical ones lean towards fixing.
@@ -323,7 +364,8 @@ Never quietly loop, and never keep **polishing because polishing is possible**.
 ## Output
 
 ```
-Review: <ship | fix first | needs a decision> — N findings (X critical, Y required, Z optional)
+Review: <ship | fix first | needs a decision> — N findings (X critical, Y required, Z optional; P of them pre-existing)
+Dropped: N candidates whose proposed fix changed nothing observable
 Lanes: <ran> · skipped: <lane (reason)>
 
 FIXED
@@ -332,12 +374,16 @@ FIXED
 NEEDS A DECISION
 - [CRITICAL] (8/10) file:line — problem
   Fix: the specific change
+- [CRITICAL · PRE-EXISTING] (8/10) file:line — problem, not introduced here
 
 OPEN QUESTIONS
 - file:line — what you could not confirm, and the check that would settle it
 ```
 
-Clean is `Review: ship — no findings.` in one line, then stop.
+Clean is `Review: ship — no findings.` in one line — plus the `Dropped:` line if
+any candidates were filtered — then stop. A review that dropped everything it
+considered is not a review that found nothing, and the difference is the reader's
+to judge.
 
 One line for the problem, one for the fix. Name the user-visible consequence, not
 the smell, and quantify where you can. "Returns undefined when the session cookie
@@ -354,4 +400,4 @@ off with "done" has returned nothing, because nothing else reaches the caller.
 | "I'll clean it up later" | File it now, owned and dated. An unowned intention is not a plan. |
 | "It's out of scope" | Only if genuinely unrelated — never cover for an edge case that was skipped. |
 | "Tests pass, so it works" | They pass on the paths that have tests. Check which those are. |
-| "The author must have had a reason" | Maybe. `git blame` is one command. |
+| "The author must have had a reason" | Maybe. `git log -S '<symbol>' --reverse` finds the commit that introduced it — `git blame` finds whoever last reflowed it. |

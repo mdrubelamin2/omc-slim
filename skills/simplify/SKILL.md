@@ -113,17 +113,67 @@ stated** before it starts. Spending it is the caller's decision.
 
 ### 1. Understand first
 
+**Is it a declared public entrypoint? If yes, it does not come out.** Not on a
+repo-local unused verdict, not on a clean tool run, not on green tests. Removing
+it is an API change, which is a product decision and not yours — report it and
+stop.
+
+Ask it first, before any other question, because it is one command and it catches
+the failure mode that costs most. Read `exports` in `package.json`, `__all__`, the docs tree, whatever this
+project uses to say what it promises outsiders.
+
+Every dead-code tool means *unused inside this repository*, and for a library
+that is the inverse of the truth. Reproduced on two widely used packages during
+the 2026-08-26 sweep: `vulture` flagged `requests`' documented `HTTPDigestAuth`
+as an unused class, and **its highest confidence tier was 100% false positives**
+— all four 90%-confidence findings were re-export shims in a file whose own
+comment says to keep them for backwards compatibility. `knip` made the mirror
+error on another package, flagging types the manifest declares as entrypoints.
+
+**And the test suite will not save you.** That repository's own tests never
+reference the symbols in question, so deleting them keeps CI **green** and
+breaks every downstream consumer silently.
+
+**Bias to false negatives, deliberately.** Meta deleted over 100M lines with a
+static graph plus runtime hit counts, and kept a plain textual fallback
+specifically to catch `eval` and string-keyed references. Their rule: *"This
+approach can cause false negatives, but avoids false positives. When automating
+the removal of dead code, those are a more serious problem."* The cheap version
+of that: **even with a clean tool verdict, grep the bare symbol name** — that is
+what finds string dispatch, reflection, config keys and templates.
+
 **Chesterton's Fence** — a fence comes down only once you know why it went up.
 Before changing anything, answer four questions. What is this responsible for,
 and what calls it? What are its edge and error paths, and do tests define its
 behaviour? Might it exist for performance, a platform constraint or a past
-incident? Check `git blame` — for one command the commit message is often the
+incident? Check the history — for one command the commit message is often the
 whole answer. Cannot answer? Read more. Accumulated complexity often has no
 reason and is just residue from pressure, but you learn that by checking.
 
+**Blame the *introducing* commit, not the last toucher.** `git blame` answers
+"who touched this most recently", which for an old fence is almost never the
+person who built it. `git log -S '<symbol>' --reverse` answers the question you
+actually asked, and it is fast — it returned a 2012 origin on a 6,500-commit
+repository in 0.03 seconds.
+
+**Two traps make that archaeology confidently wrong, and both are silent.**
+
+- **A shallow clone.** On `--depth 1`, `git rev-list --count HEAD` is 1 and the
+  pickaxe returns exactly one commit, which reads like a definitive origin.
+  Check the depth before trusting the result.
+- **A rename or a move.** Scoped to the current path, the first result is
+  whichever commit relocated the file — *"Move to src directory"* — and that
+  reads as "no real reason, safe to delete". Drop the pathspec, or follow the
+  old path, before concluding anything.
+
+**Refuse the citation** if the repository is shallow or the commit you found is
+a move, a reformat or a bulk rename. An origin you cannot establish is an
+unknown fence, and an unknown fence stays up.
+
 **A comment is a fence too.** Delete one that restates the code freely. One you do
-not *understand* gets `git blame` first, because the cryptic line about ordering
-is usually the scar from an outage.
+not *understand* gets `git log -S` on its own text first, because the cryptic
+line about ordering is usually the scar from an outage — and you want the commit
+that wrote it, not the one that last reflowed it.
 
 ### 2. Find the opportunities
 
@@ -135,7 +185,7 @@ function the standard library already ships.
 Whoever wrote this was meant to climb it beforehand; you are the backstop. Stop at
 the first rung that holds.
 
-1. **Need to exist at all?** Speculative need, an unused export, a config key
+1. **Need to exist at all?** Speculative need, an export unused *and not declared public*, a config key
    nobody sets, a flag with one value, scaffolding nothing extends. Delete it,
    and re-add when something needs it.
 2. **Already in this codebase?** Re-implementing what lives a few files over is
@@ -234,6 +284,18 @@ rather than by its edits.
 Harder to follow or harder to review? Revert. Not every attempt succeeds, and
 saying so is a result.
 
+**That first checkbox is necessary and it is not sufficient.** Measured: **19–35%
+of LLM-generated refactorings are functionally non-equivalent, and roughly 21% of
+those are not caught by the existing test suite.** A green run means the change
+survived the paths that have tests, which is a smaller claim than the checkbox
+looks like — and for anything you deleted, the tests that would have caught you
+are the ones nobody wrote.
+
+So for a deletion, add one question the checklist cannot ask for you: **what
+would have failed if this had mattered?** If the answer is "nothing in this
+suite", you have not verified the deletion, you have only observed that nothing
+objected. Say that, or go find a check that could have objected.
+
 ## Red flags
 
 - A test had to change
@@ -255,4 +317,4 @@ saying so is a result.
 | "I'll simplify this unrelated code while I'm here" | Noisy diffs, and regressions in code you never meant to touch. |
 | "This abstraction might be useful later" | Complexity with no payer. Remove it; re-add when something needs it. |
 | "I'll refactor while adding the feature" | Two changes. Split them. |
-| "The original author must have had a reason" | Maybe — check `git blame`. Often it is just residue. Check, then decide. |
+| "The original author must have had a reason" | Maybe — find the introducing commit with `git log -S`. Often it is just residue. Check, then decide. |

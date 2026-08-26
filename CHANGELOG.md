@@ -3,6 +3,77 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.0
+
+Everything here traces to
+[`docs/RESEARCH-2026-08-26.md`](./docs/RESEARCH-2026-08-26.md) — fourteen
+research lanes, ~40 papers, ~90 repositories, Anthropic's docs and the 2.1.246
+binary. Read section 4 first; it is built from other people's outages.
+
+**Four published claims were wrong and are corrected.** The static-context figure
+was overstated by **13.5%** on its own basis — 3,961, not 4,496 — and
+`measure-context.sh` now prints the correction and explains why `claude plugin
+details` reports a third number (it does not count the output style). The
+`ponytail` pin was labelled 4.8.4 when `16f29800` is 53 commits past that tag.
+The `LIMITATIONS.md` temperature entry claimed upstream's `designer` "ran at 0.7
+deliberately"; upstream deleted every temperature literal. And the README no
+longer implies the layer improves correctness — four independent studies find a
+rules layer moves cost and process and not correctness, and this repo's own
+numbers fit that pattern.
+
+**Nine contradictions were found and resolved.** Conflict, not rule count, is the
+measured driver of instruction-following collapse, and this plugin had never been
+audited for it. Among them: `review` told itself to fix a missing eager-load
+directly while `performance.md` forbids any optimisation without a measurement;
+the output style routed mechanical visual follow-up to `fixer`, which refused all
+design work, so that lane had no recipient; `oracle` bounced back the very lane
+briefs `review` dispatches to it; `deepwork` asked `explorer` to judge duplication
+and overlap, which `explorer` is forbidden to do; and `deepwork`'s commit
+checkpoints were gated on an approval no step produced, so that branch could
+never fire.
+
+**An eval suite ships, and it has never been run.** `claude plugin eval` is early
+access and not enabled on the account it was authored on. Six cases, twelve
+graders, all scoring outcomes rather than triggers — under `--ablation
+with-without` a `tool_used: Skill` grader is excluded from the score in both arms,
+so a trigger-only suite reports a confident zero. Two cases are tagged
+`should-not-fire`, because Opus 5 is documented as expanding scope and
+over-delegating, and a suite that only tests firing cannot see that.
+`check-evals.sh` guards the suite's shape and is proved able to fail four ways.
+
+**Rules that gained their evidence.** `deep-interview`'s approval gate is measured
+at **+14.50 points for +0.60M tokens** against a control arm, where the skills
+alone were worth +1.50 — so it now carries that number and a rebuttal to the one
+reading that would skip it. `oracle` is now *assigned the opposing position*
+rather than described as critical: measured, that is 99.2% disagreement against
+48.3%, while being told to be rigorous is statistically indistinguishable from
+baseline. `tracer` must pre-declare what would falsify each hypothesis before
+gathering evidence, span distinct failure categories, and can now return
+`undetermined` — which is not `ruled out`.
+
+**The hook's `timeout: 5` is advisory and now says so.** Claude Code does not
+enforce it parent-side and it does not apply while a hook blocks on stdin, so the
+transcript scan carries its own deadline and abstains rather than accusing when
+it expires. What it cannot bound is stated in the source: no in-process watchdog
+preempts a synchronous read on fd 0. 15 cases, 19 mutants, all killed — and the
+first draft of the new test could not fail, which the mutation run caught.
+
+**Honest cost.** Static context is unchanged; every addition landed in bodies.
+But those bodies grew **~4,133 on-invoke tokens in one release (3,641 corrected)** — individually
+justified, collectively unmeasured, which is the failure this project criticises
+in others. `measure-context.sh` now reports on-invoke cost per component so the
+next increase is visible while it happens. `review` is the heaviest at ~5,100
+tokens, against a 5,000-token post-compaction re-injection cap.
+
+**Also:** `librarian`'s open-web pass became conditional (doc injection measures
++9.36pp on rare APIs and **−39.02pp on common ones**); `simplify` gained a
+public-entrypoint check, the two git-archaeology traps that make Chesterton's
+Fence confidently wrong, and the finding that ~21% of non-equivalent refactorings
+pass the existing suite; `explorer` gained a positive control before reporting any
+negative result; `codemap` now cites symbols rather than line numbers, because a
+line number is exact when written and silently wrong later; every agent gained a
+`maxTurns` bound.
+
 ## v0.8.5
 
 **Breaking: the `council` skill is removed.** It was the weakest-evidenced

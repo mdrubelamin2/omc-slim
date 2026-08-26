@@ -173,6 +173,15 @@ presence surprise them? Then it is your idea, so ask before building it.
 usually a request for a page that loads. Satisfy only the literal form and the
 goal stays unmet while the ticket closes.
 
+**Show the map before you execute it.** One message: the stages, their checks,
+their commit points. Then start.
+
+Without this the map is written and never seen, and every later clause about
+the commit points the user saw is gated on a moment that never happened.
+It is a presentation, not a gate — you are not asking permission for work already
+agreed, you are giving the one cheap chance to say "not that order" before the
+cost is sunk.
+
 ## 2. Delegate independent work
 
 Stages that do not depend on each other: dispatch them in one message so they run
@@ -216,12 +225,24 @@ review before it runs. Batch its material findings into one remediation pass and
 verify that. Once validation passes and no material blocker remains, advance —
 do not keep refining because refinement is possible.
 
-**Scan structure in the same message.** Dispatch an explorer alongside the oracle
-review, over the phase's changed paths and their immediate dependencies, hunting
-duplication, dependency direction, responsibility overlap and misplaced files. It
-reports evidence; you decide what warrants action. Cheapest agent, runs in
-parallel, so the gate costs no extra wall time. Do not open a second oracle review
-for what the scan found.
+**Scan structure in the same message — when the phase moved structure.** Dispatch
+an explorer alongside the oracle review, over the phase's changed paths and their
+immediate dependencies, **if that phase changed module boundaries, dependency
+direction, or where files live.** A phase that only changed behaviour inside
+existing files has no structure to scan, and the scan returns a map of what you
+already knew.
+
+Cheapest agent, runs in parallel, so when it does run the gate costs no extra
+wall time. Do not open a second oracle review for
+what the scan found.
+
+**Brief it for locations, never for judgements.** Duplication, responsibility
+overlap and a misplaced file are all conclusions about what was found, and
+`explorer` is forbidden to draw one — ask it to and you get either a refusal or
+a judgement from the agent least equipped to make it. Ask instead for the
+evidence a judgement needs: every file matching these two shapes, every import
+edge crossing this boundary, every caller of the symbols this phase moved. **You
+read the map and decide what warrants action.**
 
 **Cap the re-reviews.** **This budget is per gate, not per run** — a run with four
 gates holds four budgets. One review per gate and **at most two re-reviews — three while a Critical is still open**, with
@@ -231,10 +252,13 @@ resisted focused evidence — never to re-confirm a mechanical change. Budget
 exhausted with a material risk still open: record it and ask whether to accept it,
 cut scope, or authorise another pass. Do not quietly loop.
 
-**Checkpoint each passing phase.** Put the commit points in the stage map so the
-user approves them with the plan. Then commit once per phase, after it validates
-and its findings reconcile. A phase that goes wrong later costs one phase, not
-the run. No agreement to commit? Say the checkpoint is available and carry on.
+**Checkpoint at a delivery boundary, not after every phase.** A commit point
+belongs where the phase leaves the tree in a state someone could ship, revert to,
+or hand over — not wherever a stage happened to end. Phases that only make sense
+together get one checkpoint, at the end of the group. Those points were in the
+map the user saw before execution started (§1). Commit once per checkpoint, after
+the phase — or the group — validates and its findings reconcile. Work that goes
+wrong later costs back to the last boundary, not the run. Asked not to commit? Say the checkpoint is available and carry on.
 
 ## 4. Self-critique before delivery
 

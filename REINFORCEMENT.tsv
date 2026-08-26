@@ -64,7 +64,8 @@ plan-before-edit	output-styles	Plan before the first edit	the stage map comes fi
 evidence-not-plausibility	output-styles	Evidence, not plausibility	State goals so they can fail|the smallest runnable thing that breaks when it breaks
 register-simple-english	output-styles	Simplified Technical English (ASD-STE100)	not baby talk and not|fragments
 lead-with-answer	output-styles	Lead with the answer	No preamble, no restating the request|no summary unless asked
-explorer-output-cap	explorer	Hard cap: 150 lines total	return the most relevant 150|(N more matches)|a truncated set is worse than no set
+explorer-output-cap	explorer	Cap: 150 lines	on a survey|the most relevant 150
+explorer-cap-yields-to-completeness	explorer	The cap does not apply to an enumeration	A truncated set is worse than no set|Asked for all of something, return all of it
 explorer-proposes-nothing	explorer	Never suggest a fix	a refactor, or a next step|That is the caller's job
 explorer-shell-is-read-only	explorer	Bash is for non-mutating diagnostics only	Never `git checkout`, `stash` or `reset`|discard uncommitted work that is not yours
 explorer-negative-result	explorer	If you found nothing	say so in one line|name where you looked
@@ -75,13 +76,17 @@ oracle-claims-carry-locations	oracle	A claim about code without a location is a 
 oracle-verdict-first	oracle	Rank findings by severity	Lead with the verdict|do not pad with minor style notes when the question was architectural
 tracer-first-plausible-story	tracer	Your failure mode is committing to the first plausible story	You are called when the cause is not known|Resist it
 tracer-three-hypotheses	tracer	Generate at least three competing hypotheses	before gathering evidence|If you can only think of one, you have not understood the system yet
-tracer-falsify	tracer	gather evidence both for and against	Actively look for the thing that would falsify it|A hypothesis you only confirmed is untested
+tracer-falsify	tracer	before you go looking	Stating the test after seeing the evidence|A hypothesis you only confirmed is untested
+tracer-hypotheses-differ-in-kind	tracer	They must differ in kind, not in detail	one story told twice|one hypothesis wearing three hats
 tracer-diagnoses-never-patches	tracer	You diagnose; you do not patch	Running a test to observe failure is allowed and encouraged|Changing the test is not
 tracer-ambiguity-is-an-answer	tracer	Never end with a confident single cause when the evidence supports two	Reporting genuine ambiguity is a correct answer
 librarian-toolset-both-scopes	librarian	Your toolset is not fixed	the project's `.claude/`|the user's `~/.claude/`|most machines carry far more at the user level|never assume the repository is the whole inventory|A server's name may say nothing useful
 librarian-specialist-first	librarian	Start with a specialist server where one exists	version-aware|beats a search engine
 librarian-web-is-normal	librarian	go straight to the open web	That is the normal path, not|this plugin ships no MCP servers|Say which route you took
-librarian-mandate-web-pass	librarian	at least one open-web pass	it does not tell you what changed|Carry the URL and the date into the finding|not a claim
+librarian-web-pass-carries-source	librarian	an open-web pass when it is the kind of claim the web can correct	Carry the URL and the date into the finding|not a claim|barely better
+librarian-web-pass-is-conditional	librarian	That is a condition, not a ritual	+9.36pp on rare APIs|makes the answer worse
+librarian-say-you-skipped	librarian	say you skipped it	a stable signature on a mainstream library|a complete answer, and an honest one
+librarian-silent-disk	librarian	Disk can be silent rather than empty	unextracted zips|nothing is exactly what a missing package returns
 librarian-installed-source-first	librarian	Read the installed source before you read anything about it	ground truth|cannot be a false positive|breaks against what is installed
 librarian-pin-the-version	librarian	Use the shell to pin down which version	the lockfile|never from a search result about what projects generally use
 librarian-web-answers-what-disk-cannot	librarian	The web answers what disk cannot	deprecated last month|disk wins and you say so|the code that will actually run
@@ -100,7 +105,8 @@ codemap-exclusions-mandatory	codemap	Exclude (MANDATORY)	Do NOT include tests, d
 codemap-agents-md-idempotent	codemap	skip this step	already contains a `## Repository Map` section|the reference is already set up
 codemap-registration-reason	codemap	auto-loads `AGENTS.md` into agent context on every session	To ensure agents automatically discover and use the codemap|update (or create) `AGENTS.md` at the repo root
 deep-interview-wrong-tool	deep-interview	Stop and say so if the request is already specific	Interviewing someone who has already told you exactly what they want is not diligence, it is friction|A one-line bug fix does not need a spec
-deep-interview-threshold	deep-interview	Threshold: proceed to build only at 4 or below	Sum the scores|Report the starting score to the user so the gate is visible, not implied
+deep-interview-threshold	deep-interview	Threshold: keep interviewing above 4	Sum the scores|Report the starting score to the user so the gate is visible, not implied
+deep-interview-score-is-not-the-gate	deep-interview	It does not decide whether to build	the approval in step 5 does|a supported outcome, not a failure|teach itself to be ignored
 deep-interview-round-cap	deep-interview	Loop at most	four rounds|If the total is still above 4 after four rounds|say plainly which dimensions remain unresolved and what the risk of proceeding is|An unresolvable ambiguity is a finding, not a failure
 deep-interview-approval-gate	deep-interview	Do not start implementing	Present the spec path and a three-line summary|wait for explicit approval
 deep-interview-gate-is-the-value	deep-interview	This gate is the entire value of the skill	A spec written and then immediately acted on without confirmation is just a slower way to build the wrong thing

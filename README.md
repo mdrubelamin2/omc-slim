@@ -8,8 +8,8 @@ bytes on the tool-call path**, ships **no MCP servers**, writes **nothing into
 your repository**, and inherits whatever MCP servers and skills your project
 already has.
 
-Static context is **~3,942 tokens**. `./scripts/measure-context.sh` reports
-**4,474 on a chars/4 basis** and prints that correction itself, because the
+Static context is **~3,961 tokens**. `./scripts/measure-context.sh` reports
+**4,496 on a chars/4 basis** and prints that correction itself, because the
 chars/4 method measured **+13.5% high** against a real tokeniser
 ([audit](./docs/AUDIT-2026-08-25.md)). `claude plugin details omc-slim` reports a
 third, smaller number; it does not count the output style, which is the largest

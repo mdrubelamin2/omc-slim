@@ -45,8 +45,14 @@ Rate each dimension 0–3, where 0 is "fully specified" and 3 is "no information
 | **Success** | How will we verify it, concretely? |
 | **Failure** | What should happen when it goes wrong? |
 
-Sum the scores. **Threshold: proceed to build only at 4 or below.** Report the
-starting score to the user so the gate is visible, not implied.
+Sum the scores. **Threshold: keep interviewing above 4.** Report the starting
+score to the user so the gate is visible, not implied.
+
+**The score decides when to stop asking. It does not decide whether to build —
+the approval in step 5 does.** Four rounds can end above 4, and that is a
+supported outcome, not a failure: you write the spec anyway with the unresolved
+dimensions named. Written the other way round, as a hard gate the procedure
+routinely overrides, the score would teach itself to be ignored.
 
 ### 2. Ask, targeting the worst dimension first
 
@@ -92,6 +98,11 @@ Write it to `docs/specs/<slug>.md` (or a path the user prefers):
 
 ## Goal
 One paragraph. What is true when this is done.
+
+## Files and interfaces
+Which files and modules this touches, and the interfaces it must not break.
+Named, not described — a spec whose reader has to go looking has not handed the
+work over.
 
 ## Out of scope
 Explicit exclusions. This section prevents the most rework.

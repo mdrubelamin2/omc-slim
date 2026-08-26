@@ -92,6 +92,30 @@ printf '  %-34s %8d  %10d\n' "static context"               "$total_c" "$(tok $t
 printf '\n'
 printf 'Paid on every request. Agent and skill bodies and hooks\n'
 printf 'are excluded — none of them load until something invokes them.\n\n'
+
+# On-invoke cost. Excluded from the total above because none of it is static —
+# and tracked here anyway, because "not static" is not "free". This is where the
+# cost actually lives in comparable plugins: one documented case spent 68M tokens
+# on ~3,000 lines of code, and none of that was startup context. A plugin with a
+# disciplined static figure and an unmeasured body has moved the problem, not
+# solved it. v0.9.0 added ~3,600 tokens here in one release; that is visible now.
+printf '  on-invoke — paid each time that component fires\n'
+printf '  %-34s %8s  %10s\n' "component" "chars" "~tokens"
+printf '  %-34s %8s  %10s\n' "---------" "-----" "-------"
+invoke_c=0
+for f in "$ROOT"/agents/*.md "$ROOT"/skills/*/SKILL.md; do
+  [ -e "$f" ] || continue
+  c=$(body_chars "$f")
+  invoke_c=$(( invoke_c + c ))
+  n=$(basename "$(dirname "$f")")
+  case "$n" in agents) n=$(basename "$f" .md) ;; esac
+  printf '  %-34s %8d  %10d\n' "$n" "$c" "$(tok "$c")"
+done
+printf '  %-34s %8s  %10s\n' "" "--------" "----------"
+printf '  %-34s %8d  %10d\n' "all twelve, if every one fires" "$invoke_c" "$(tok $invoke_c)"
+printf '\n'
+printf 'That total is the ceiling, not a typical session: it assumes every\n'
+printf 'component fires once. One skill and one agent is the common case.\n\n'
 printf 'Accuracy: chars/4 is the original hand method (RESEARCH.md:200), kept so\n'
 printf 'the version series stays comparable. It runs roughly 5-15%% high on dense\n'
 printf 'English prose against a real BPE tokeniser, and docs/AUDIT-2026-08-25.md\n'

@@ -59,7 +59,7 @@ audit	scope-allows-large-work	simplify	that **is** the scope
 audit	codemap-announce-cost	codemap	Announce before you start
 omo-slim	parallel-structure-scan	deepwork	Scan structure in the same message
 omo-slim	oracle-rereview-budget	deepwork	at most two re-reviews
-omo-slim	phase-checkpoint-commit	deepwork	Checkpoint each passing phase
+omo-slim	phase-checkpoint-commit	deepwork	Checkpoint at a delivery boundary
 audit	deepwork-crosscutting-trigger	output-styles	across several subsystems at once
 audit	deepwork-crosscutting-trigger	deepwork	every affected layer lands together
 audit	deepwork-gate-is-conjunction	deepwork	Both conditions, not either
@@ -81,7 +81,7 @@ audit	honour-do-not-simplify-marker	simplify	do-not-touch marker
 ponytail	ladder-applied-retroactively	simplify	the ladder, applied after the fact
 ponytail	stdlib-and-native-first	simplify	Does the standard library do it?
 ponytail	finding-tags	simplify	`stdlib:`
-ponytail	yagni-no-unrequested-abstraction	simplify	Speculative need, an unused export
+ponytail	yagni-no-unrequested-abstraction	simplify	Speculative need, an export unused
 ponytail	mark-deliberate-ceilings	simplify	Mark any ceiling you deliberately leave
 audit	no-coverage-means-no-evidence	simplify	a green suite proves nothing
 audit	pin-behaviour-before-simplifying	simplify	run it against the **original**

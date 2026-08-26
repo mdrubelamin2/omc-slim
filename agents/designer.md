@@ -1,6 +1,7 @@
 ---
 name: designer
 description: 'Builds UI and verifies it renders — layout, hierarchy, spacing, colour, motion, responsive behaviour: "build this page", "make this look good", "this UI looks generic". Commits to a view over a safe default. Not .svelte (svelte-file-editor), not critique-only audits (impeccable).'
+maxTurns: 40
 disallowedTools: [Agent, Task]
 ---
 

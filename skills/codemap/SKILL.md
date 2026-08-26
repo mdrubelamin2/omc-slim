@@ -152,6 +152,23 @@ directory.
 That check proves the citations resolve and the shape is right. It does not
 prove the prose is accurate, so read the returned codemap before accepting it.
 
+## Cite symbols, never line numbers
+
+A codemap outlives the session that wrote it, and **a line number is exact at
+authoring time and silently wrong later**. One audited plan carried eleven stale
+citations, and the two worst pointed roughly thirty lines past the symbol they
+named, into an unrelated class — an agent editing by them modifies the wrong code
+*while reporting success*.
+
+So in every file this skill writes: name the function, class, constant or export.
+`resolveSession` in `auth/session.ts`, never `auth/session.ts:118`. Where a range
+genuinely matters, name what bounds it — "the retry block inside `send`" — not
+where it happened to sit today.
+
+`review` is the exception that proves it. Its `file:line` gate is correct because
+a review reads a live tree in the same session, and the citation dies with it.
+Nothing written to disk gets that.
+
 ## Codemap Content
 
 Fixers write the `codemap.md` files during this workflow, one per directory. Use precise technical terminology to document the implementation:
