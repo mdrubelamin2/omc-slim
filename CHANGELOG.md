@@ -11,7 +11,7 @@ research lanes, ~40 papers, ~90 repositories, Anthropic's docs and the 2.1.246
 binary. Read section 4 first; it is built from other people's outages.
 
 **Four published claims were wrong and are corrected.** The static-context figure
-was overstated by **13.5%** on its own basis — 3,881, not 4,405 — and
+was overstated by **13.5%** on its own basis — 3,953, not 4,487 — and
 `measure-context.sh` now prints the correction and explains why `claude plugin
 details` reports a third number (it does not count the output style). The
 `ponytail` pin was labelled 4.8.4 when `16f29800` is 53 commits past that tag.
@@ -33,10 +33,12 @@ checkpoints were gated on an approval no step produced, so that branch could
 never fire.
 
 **An eval suite ships, and it has never been run.** `claude plugin eval` is early
-access and not enabled on the account it was authored on. Six cases, twelve
-graders, all scoring outcomes rather than triggers — under `--ablation
+access and not enabled on the account it was authored on. Six cases, thirteen
+graders, all but one scoring outcomes rather than triggers — under `--ablation
 with-without` a `tool_used: Skill` grader is excluded from the score in both arms,
-so a trigger-only suite reports a confident zero. Two cases are tagged
+so a trigger-only suite reports a confident zero. The exception is
+`no-ceremony-invoked`, a regex over the trace, which `check-evals.sh` does not
+recognise as a trigger grader and should. Two cases are tagged
 `should-not-fire`, because Opus 5 is documented as expanding scope and
 over-delegating, and a suite that only tests firing cannot see that.
 `check-evals.sh` guards the suite's shape and is proved able to fail four ways.
@@ -55,21 +57,28 @@ gathering evidence, span distinct failure categories, and can now return
 enforce it parent-side and it does not apply while a hook blocks on stdin, so the
 transcript scan carries its own deadline and abstains rather than accusing when
 it expires. What it cannot bound is stated in the source: no in-process watchdog
-preempts a synchronous read on fd 0. 15 cases, 19 mutants, all killed — and the
-first draft of the new test could not fail, which the mutation run caught.
+preempts a synchronous read on fd 0. 19 cases, 23 mutants, all killed — and two
+drafts of the new tests could not fail, which the mutation run caught both times.
+Both upstream reports are open, unconfirmed and Windows-only, and one of them
+runs a control showing the timeout mechanism itself works when no stdin read is
+involved; the deadline is worth having anyway, and the source says so now.
 
-**Honest cost, and the sentence this entry got wrong once.** Static context fell
-4,474 → 4,405 — but not through discipline. It fell because `codemap` became
-manual-only and left the listing entirely; add its description back and the
-remaining roster is **up** 22 tokens. An earlier draft of this entry said "static
-context is unchanged; every addition landed in bodies", which was false in both
-halves.
-But those bodies grew **+5,429 chars/4, ~4,783 corrected, in one release** — individually
+**Honest cost, and the sentence this entry got wrong twice.** Static context rose
+4,474 → 4,487. An earlier draft said "static context is unchanged; every addition
+landed in bodies", which was false in both halves. A later one said it *fell* to
+4,405 — true only while `codemap` carried `disable-model-invocation: true`, which
+removed its description from the listing. That flag was reverted before release,
+so the honest number is 13 tokens up.
+Bodies grew **+5,495 chars/4, ~4,841 corrected, in one release** — individually
 justified, collectively unmeasured, which is the failure this project criticises
 in others. `measure-context.sh` now reports on-invoke cost per component so the
 next increase is visible while it happens. `review` is the heaviest — its SKILL.md is
-5,669 tokens on chars/4, ~4,995 corrected, against a 5,000-token
+5,662 tokens on chars/4, ~4,988 corrected, against a 5,000-token
 post-compaction re-injection cap it sits either side of depending on the basis.
+It cleared that cap by 11 corrected tokens only after a review pass measured it
+at 5,087 and found this file publishing 4,995 — the file had grown 419 chars
+after the measurement, and nothing re-derived it. The binding limit is not that
+cap anyway: re-attached skills share a 25,000-token budget, most recent first.
 
 That sentence previously read "~5,100 tokens". **That number was invented** — it
 matched neither basis. The third verification pass caught it in

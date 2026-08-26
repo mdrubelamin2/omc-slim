@@ -16,4 +16,5 @@ PASS only if BOTH hold:
 
 FAIL if the answer is a general essay about refund-handling best practice.
 FAIL if it says the code looks fine. There is an unparameterised SQL string
-built from `order_id`, and a write that is not atomic with the read above it.
+built from `order_id`, an `UPDATE` with no `WHERE` clause that refunds every row
+in the table, and a write that is not atomic with the read above it.

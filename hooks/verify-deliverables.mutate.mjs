@@ -3,7 +3,7 @@
  * omc-slim — mutation check for the verify-deliverables harness.
  *
  * A passing test suite proves nothing about the bugs it would catch. This
- * breaks the hook on purpose, fifteen ways, and asserts the harness notices
+ * breaks the hook on purpose, twenty-three ways, and asserts the harness notices
  * every time. A SURVIVED line is a hole in the tests, not a bug in the hook.
  *
  * It exists because the first draft of that harness passed 9/9 while missing
@@ -106,6 +106,26 @@ const MUTANTS = [
    '"NotebookEdit", "MultiEdit"',
    '"NotebookEdit"',
    "MultiEdit stops counting as a write"],
+  ["Write dropped from WRITE_TOOLS",
+   '"Edit", "Write"',
+   '"Edit"',
+   "the commonest write tool stops counting, and every Write-only run is accused"],
+  ["NotebookEdit dropped from WRITE_TOOLS",
+   '"Write", "NotebookEdit"',
+   '"Write"',
+   "a notebook edit stops counting as a write"],
+  ["blank scan budget parsed as zero",
+   'if (raw === undefined || raw.trim() === "") return 2000;',
+   "if (raw === undefined) return 2000;",
+   "an exported-but-empty override mutes the hook permanently"],
+  // The fallback is mutated TOWARDS silence, not towards NaN. `return n` on a
+  // garbage value disables the deadline, which fails open and is the direction
+  // this hook is allowed to fail in — no fixture can observe it. `return 0`
+  // models the regression that matters: a typo'd override mutes the guard.
+  ["scan budget falls back to zero instead of the default",
+   "return Number.isFinite(n) && n >= 0 ? n : 2000;",
+   "return Number.isFinite(n) && n >= 0 ? n : 0;",
+   "a non-numeric override mutes the hook instead of using the default"],
   ["exit code 1",
    "process.exit(0);\n}",
    "process.exit(1);\n}",

@@ -62,7 +62,7 @@ unstripped text to itself, **deleting the entire implementation kept it green**,
 and it cleared every gate before a human found it weeks later.
 
 So for any check whose fixture has to *construct* a condition — a malformed
-input, a race, a expired token, a corrupted file — assert that the condition is
+input, a race, an expired token, a corrupted file — assert that the condition is
 actually present before asserting what the code does about it. One extra line,
 and it is the difference between testing your code and testing your test.
 

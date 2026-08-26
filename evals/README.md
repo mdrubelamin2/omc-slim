@@ -1,6 +1,6 @@
 # Eval suite
 
-Part of [omc-slim](../README.md). Six cases, twelve graders.
+Part of [omc-slim](../README.md). Six cases, thirteen graders.
 
 **This suite has never been executed.** `claude plugin eval` is early access and
 is not enabled on the account it was authored on — it exits 1 with
@@ -24,14 +24,17 @@ claude plugin eval . --ablation with-without --no-publish --max-cost-usd 5
 Not "does the skill fire". Under `--ablation with-without` the runner treats
 `tool_used: Skill` as a **plugin-fired indicator and excludes it from the score
 in both arms** — so a suite built from trigger checks reports a confident zero
-delta. Every grader here scores an **outcome**: the shape of the answer, whether
-a finding carries a location, whether the run stopped before writing code.
+delta. Every grader here but one scores an **outcome**: the shape of the answer,
+whether a finding carries a location, whether the run stopped before writing
+code. The exception is `explain-this-function/graders/no-ceremony-invoked.md`,
+a regex over the trace — a trigger check by another name, which `check-evals.sh`
+does not currently recognise as one.
 
 | Case | Asks | The claim under test |
 |---|---|---|
 | `where-is-it` | A locating question | The answer is a map, not an essay, and proposes no fix |
 | `already-tried-fixing` | A bug that survived one fix | Three competing hypotheses of *different kinds*, with falsifying evidence — not a second confident guess |
-| `ready-to-ship` | Review a function with an injection hole | Findings carry a location and a severity, and the hole is caught |
+| `ready-to-ship` | Review a function with an injection hole and an unscoped `UPDATE` | Findings carry a location and a severity, and both holes are caught |
 | `build-me-something` | An underspecified build request | **Stops for approval before code** |
 | `explain-this-function` | Four lines of Python | A plain answer. No interview, no spec, no review, no delegation |
 | `one-line-typo` | Fix one word | The fix, and nothing else |
@@ -41,6 +44,28 @@ most likely to find something. Claude Opus 5 is documented as **expanding task
 scope** and **over-delegating to subagents**; a layer that adds ceremony to a
 four-line question is paying cost for harm. A suite that only tests firing
 cannot see that, so `check-evals.sh` fails if every negative case is removed.
+
+### It measures response shape, not delegation
+
+No case puts `Task` in `allowed_tools`, so no subagent can run in either arm and
+every grader reads the main thread. Four cases used to carry a `routing` tag and
+two named an agent (`explorer`, `tracer`), which claimed a measurement the suite
+cannot make; those tags are gone rather than the restriction lifted. Granting
+`Task` would add a subagent's cost and variance to cases whose graders still
+score only `last_message` — it would change what the runs cost without changing
+what they measure. Measuring delegation needs the calibration design below, not
+a tag.
+
+One case may write. `build-me-something` allows `Write` so that its
+`no-implementation-written` grader has something to gate. With
+no write tool at all, neither arm could create a file and the grader passed
+vacuously on both.
+
+`one-line-typo` states its sentence inline rather than pointing at "our README".
+Cases run in a sandboxed working directory, so a prompt naming a file neither arm
+can open contributes a zero delta by construction rather than by measurement.
+That reasoning lives here and not in the prompt: a prompt that explains the
+experiment tells the model under test that it is in one, and roughly what for.
 
 `build-me-something` is the highest-stakes case. A control-armed,
 twice-blind-judged comparison measured a requirement-approval gate at **+14.50

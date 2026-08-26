@@ -221,7 +221,10 @@ WORDS = {1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six',
          7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten', 11: 'eleven',
          12: 'twelve', 13: 'thirteen', 14: 'fourteen', 15: 'fifteen',
          16: 'sixteen', 17: 'seventeen', 18: 'eighteen', 19: 'nineteen',
-         20: 'twenty'}
+         20: 'twenty', 21: 'twenty-one', 22: 'twenty-two',
+         23: 'twenty-three', 24: 'twenty-four', 25: 'twenty-five',
+         26: 'twenty-six', 27: 'twenty-seven', 28: 'twenty-eight',
+         29: 'twenty-nine', 30: 'thirty'}
 agents = len(glob.glob(os.path.join(root, 'agents/*.md')))
 skills = len(glob.glob(os.path.join(root, 'skills/*/SKILL.md')))
 hooks_cfg = json.load(open(os.path.join(root, 'hooks/hooks.json')))
@@ -280,11 +283,16 @@ for label, script, pattern in [
         # caller's shell would make this gate test some other file and pass.
         # That is the same failure the sandbox rewrite closed, moved from disk
         # to environment, so strip it rather than trust the caller.
-        env = {k: v for k, v in os.environ.items() if k != 'OMC_SLIM_HOOK_PATH'}
-        # 17 mutants x the runner's own 120s per-mutant ceiling is well past
-        # any sane wall clock; 40 min is a hang guard, not a budget.
+        # OMC_SLIM_SCAN_BUDGET_MS is stripped for the same reason: an ambient
+        # value changes what the suite measures, and a blank one used to mute
+        # the hook outright.
+        leaky = {'OMC_SLIM_HOOK_PATH', 'OMC_SLIM_SCAN_BUDGET_MS'}
+        env = {k: v for k, v in os.environ.items() if k not in leaky}
+        # The guard has to clear the runner's own worst case, not a typical run:
+        # 23 mutants x its 120s per-mutant ceiling is 46 min. 60 min is a hang
+        # guard, not a budget — a real run is under two minutes.
         proc = subprocess.run(['node', os.path.join(root, script)],
-                              capture_output=True, text=True, timeout=2400,
+                              capture_output=True, text=True, timeout=3600,
                               env=env)
         out = proc.stdout
         # The runner prints its score BEFORE it exits non-zero on a failed
@@ -392,14 +400,35 @@ SUSPECT = {
     0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
     0x2060, 0x2061, 0x2062, 0x2063, 0x2064, 0x206A, 0x206B,
     0x206C, 0x206D, 0x206E, 0x206F, 0xFEFF, 0x00AD,
+    # The bidi ISOLATES and the Arabic letter mark. An enumeration that stops at
+    # 0x2064 and resumes at 0x206A skips exactly 0x2066-0x2069, which is the
+    # Trojan Source set (CVE-2021-42574) — the attack this block cites.
+    0x061C, 0x2066, 0x2067, 0x2068, 0x2069,
+    # Blank glyphs that are not format characters, so no category test finds
+    # them: Hangul fillers, Khmer vowel inherents, Mongolian separators.
+    0x115F, 0x1160, 0x17B4, 0x17B5, 0x180B, 0x180C, 0x180D, 0x180E,
+    0x3164, 0xFFA0,
 }
 def suspect(cp):
-    return cp in SUSPECT or 0xE0000 <= cp <= 0xE007F
+    # Category Cf catches every future format character without a list to
+    # maintain; the enumeration above stays for the ones Cf does not cover.
+    if cp in SUSPECT or 0xE0000 <= cp <= 0xE007F:
+        return True
+    # Variation selectors (U+FE00-FE0F) are deliberately NOT here: U+FE0F is
+    # what makes an emoji render as an emoji, and this repository's own prose
+    # uses it. Flagging the range reports every warning sign in RESEARCH.md.
+    return unicodedata.category(chr(cp)) == 'Cf'
 
 files = []
+# The manifests carry prompt text too, and marketplace.json is the copy a
+# stranger reads before installing. evals/README.md sits one level above the
+# `evals/*/*.md` glob and was unscanned; so were the shipped scripts.
 for pat in ('output-styles/*.md', 'agents/*.md', 'skills/*/*.md',
-            'evals/*/*.md', 'evals/*/graders/*.md', '*.md', 'docs/*.md'):
+            'skills/*/scripts/*', 'evals/*.md', 'evals/*/*.md',
+            'evals/*/graders/*.md', '*.md', 'docs/*.md', 'docs/*/*.md',
+            '.claude-plugin/*.json', 'hooks/*'):
     files += glob.glob(os.path.join(root, pat))
+files = [f for f in files if os.path.isfile(f)]
 
 bad = 0
 for path in sorted(set(files)):

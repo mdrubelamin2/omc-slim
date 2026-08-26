@@ -16,16 +16,13 @@ Sycophancy is the other failure: never soften a real finding to keep the peace.
 **Skip it** only when nothing changed since the last pass. Re-reviewing an
 unchanged tree finds nothing and costs everything.
 
-**Size is never a reason.** Four lanes below run on every diff, so there is no
-such thing as a change too small to review — and "one line I already verified"
-fails twice over: it is a size test, and it is the author clearing their own
-work, which the pass-that-produced-it rule forbids. A one-line change to an auth
-check is the most dangerous thing in the release.
-
-**That is not a licence for ceremony.** Size decides *who* runs a lane — under
+**Size is never a reason to skip a lane.** Four lanes below run on every diff,
+and "one line I already verified" fails twice over: it is a size test, and it is
+the author clearing their own work. A one-line change to an auth check is the
+most dangerous thing in the release. Size still decides *who* runs a lane — under
 roughly 50 changed lines you run the triggered ones yourself rather than paying
-for a dispatch. The rule is that a triggered lane runs, not that a small change
-earns a large process.
+for a dispatch — and it decides whether the orchestrator invokes this skill at
+all. Once invoked, a triggered lane runs.
 
 ## 1. Scope
 
@@ -132,17 +129,17 @@ Either way, a lane the table triggers gets run and reported.
 
 Write that file once, before dispatching: commit list, `--stat`, and
 `git diff -U10`. The output never enters your context, every lane reads the same
-bytes so their findings are comparable, and a lane needs **one Read instead of
-the 40–67 tool calls** measured when reviewers were left to reconstruct the range
-themselves. It also removes the phantom-deletion class outright — one derivation,
-one base, checked once.
+bytes, and a lane needs **one Read instead of the 40–67 tool calls** measured
+when reviewers reconstruct the range themselves. One derivation, one base,
+checked once.
 
 **Ask a lane only for what its agent can return.** `explorer` locates: every
 consumer of an enum, every caller of a changed function, whether code is
 genuinely dead. It is forbidden to propose a fix or a next step. Its 150-line
 cap binds a survey and **yields to a complete enumeration** — so when you need
 every consumer, say you want all of them, and you get all of them with the count
-on the first line. Brief it for locations, and write the remedy yourself.
+on the first line, or a partial set labelled with what it did not reach. Read
+that label before judging completeness against the set. Brief it for locations, and write the remedy yourself.
 `oracle` judges architecture and security on a high-risk change, and it does
 propose. Neither can dispatch another agent, so an external claim comes back to
 you unresolved and you are the one who sends it on.
@@ -230,12 +227,12 @@ If you cannot name one, or the "fix" changes nothing observable, **the finding
 was a false positive — drop it from the list and carry the count.** "3 candidates
 dropped: the proposed fix changed nothing observable" is one line, and it is the
 difference between a filter and a disappearance. A silent discard is the same
-self-issued verdict this skill refuses everywhere else. This costs one sentence of thought and it uses work the review has to do anyway.
-The mechanism is a published one — a fix-guided verification filter, which runs
-the proposed fix and drops the finding when nothing observable changes
-([arXiv:2603.00539](https://arxiv.org/abs/2603.00539)). This skill's own rule is
-that an unsourced external claim is indistinguishable from a recalled one, so
-here is the source.
+self-issued verdict this skill refuses everywhere else. The mechanism is
+published — a fix-guided verification filter, which runs the proposed fix and
+drops the finding when nothing observable changes
+([arXiv:2603.00539](https://arxiv.org/abs/2603.00539)). **It never drops a
+Critical.** One you cannot yet cost out goes to Open questions, per the
+confidence rule below.
 
 **Clearance needs evidence too.** "Handled elsewhere" cites the handling code;
 "tests cover this" names the test. *Likely handled* and *probably tested* are not
@@ -250,10 +247,9 @@ path.
 
 **Pre-existing is a flag, not a level.** It stacks on a severity rather than
 replacing one, so a real hole this diff did not introduce is a
-`CRITICAL · PRE-EXISTING` — full severity, and not a blocker. "Real issue, but on
-lines this author did not touch" is one of the largest false-positive classes in
-every shipped reviewer, and labelling it beats arguing about it. Report it, rank
-it below everything the diff introduced, and let the author decide.
+`CRITICAL · PRE-EXISTING` — full severity, and not a blocker. Labelling it beats
+arguing about it: report it, rank it below everything the diff introduced, and
+let the author decide.
 
 **Confidence** 1–10, independent of severity: 8+ report; 6–7 report and say it
 needs confirming; **3 to 5 goes to Open questions, not to the findings list** —
@@ -266,9 +262,7 @@ carve-out; it is not a general licence to keep hunches, which the sub-3 cut abov
 still refuses. **The verdict is set by the worst finding you
 are confident about**, not the worst you can imagine — **counting only what this
 diff introduced.** A Pre-existing Critical is reported at full severity and does
-not set the verdict; it was true before this change, and blocking on it makes the
-author answer for someone else's work. Say it in a line instead: "ship it; there
-is a Critical here that predates you."
+not set the verdict: "ship it; there is a Critical here that predates you."
 
 **Check yourself once, before writing anything down.**
 

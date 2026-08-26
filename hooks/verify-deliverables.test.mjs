@@ -2,7 +2,7 @@
 /**
  * omc-slim — verify-deliverables harness
  *
- * Runs verify-deliverables.mjs as a child process against fourteen cases and
+ * Runs verify-deliverables.mjs as a child process against nineteen cases and
  * checks only its observable contract (exit code / stdout JSON / stderr):
  *
  *   1. write agent, nothing written      -> warns
@@ -19,6 +19,10 @@
  *  12. OMC_SLIM_DEBUG=1                  -> traces on stderr, stdout stays JSON
  *  13. transcript over the 64 MB cap     -> never read, silent
  *  14. FIFO transcript (non-regular file) -> not read, silent, does not hang
+ *  15. scan over its deadline           -> abstains, silent; never accuses
+ *  16. Write / 17. NotebookEdit          -> silent; every WRITE_TOOL has a case
+ *  18. blank OMC_SLIM_SCAN_BUDGET_MS    -> reads as unset, still warns
+ *  19. non-numeric budget                -> falls back to the default, warns
  *
  * Fixtures use the real transcript shape ($.message.content[]) so the depth
  * bound in collectBlocks is exercised as it is in production.
@@ -204,6 +208,16 @@ function runHookWithNoScanBudget(buildStdin) {
   return spawnHook(buildStdin, "", { OMC_SLIM_SCAN_BUDGET_MS: "0" });
 }
 
+/** The same, with the seam exported but EMPTY — the shape a shell hands you. */
+function runHookWithBlankScanBudget(buildStdin) {
+  return spawnHook(buildStdin, "", { OMC_SLIM_SCAN_BUDGET_MS: "" });
+}
+
+/** The same, with a value that is not a number at all. */
+function runHookWithJunkScanBudget(buildStdin) {
+  return spawnHook(buildStdin, "", { OMC_SLIM_SCAN_BUDGET_MS: "soon" });
+}
+
 function spawnHook(buildStdin, debugFlag, extraEnv = {}) {
   const root = mkdtempSync(join(tmpdir(), "omc-slim-verify-"));
   try {
@@ -365,6 +379,34 @@ const cases = [
     check: expectWarningNaming("designer"),
   },
   {
+    // `Write` is the tool a fixer reaches for most, and it was the only member
+    // of WRITE_TOOLS no fixture exercised — so dropping it from the set killed
+    // no test and no mutant, while turning every Write-only run into a false
+    // accusation.
+    name: "Write counts as a write",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantWrite(WRITE_ID, "Write"),
+          toolResultOk(WRITE_ID),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectSilence,
+  },
+  {
+    name: "NotebookEdit counts as a write",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantWrite(WRITE_ID, "NotebookEdit"),
+          toolResultOk(WRITE_ID),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectSilence,
+  },
+  {
     name: "MultiEdit counts as a write",
     run: () =>
       runHook((root) => {
@@ -506,6 +548,36 @@ const cases = [
         return payload("fixer", transcript, root);
       }),
     check: expectSilence,
+  },
+  {
+    // A blank override is the shape a shell actually produces — `export VAR=`,
+    // or a CI runner passing an unset value through. `Number("")` is 0, so a
+    // naive parse reads it as "budget zero", expires the deadline on line one
+    // and mutes the hook for good. Blank must read as unset: same fixture as
+    // the case above, opposite expectation.
+    name: "a blank scan budget reads as unset, not as zero",
+    run: () =>
+      runHookWithBlankScanBudget((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantText("I read the file and decided nothing needed changing."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectWarningNaming("fixer"),
+  },
+  {
+    // Same shape, one step further out: a value that is not a number must fall
+    // back to the default, never to zero. Falling back to zero would be silent,
+    // and silence is how this guard stops guarding.
+    name: "a non-numeric scan budget falls back to the default",
+    run: () =>
+      runHookWithJunkScanBudget((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantText("I read the file and decided nothing needed changing."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectWarningNaming("fixer"),
   },
 ];
 

@@ -2,7 +2,7 @@
 schema_version: "1.0"
 name: ready-to-ship
 description: Review findings must carry a location and a severity, or they are not findings.
-tags: [review, evidence-gate, routing]
+tags: [review, evidence-gate]
 runs: 3
 max_turns: 12
 timeout_seconds: 420

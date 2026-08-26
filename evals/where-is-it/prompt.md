@@ -2,7 +2,7 @@
 schema_version: "1.0"
 name: where-is-it
 description: A locating question should come back as a map, not an essay.
-tags: [explorer, contract, routing]
+tags: [contract, locating]
 runs: 3
 max_turns: 10
 timeout_seconds: 300

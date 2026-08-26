@@ -2,7 +2,7 @@
 schema_version: "1.0"
 name: already-tried-fixing
 description: A failed first fix should produce competing hypotheses, not a second guess.
-tags: [tracer, contract, routing]
+tags: [contract, hypotheses]
 runs: 3
 max_turns: 10
 timeout_seconds: 300

@@ -38,10 +38,14 @@ const MAX_TRANSCRIPT_BYTES = 64 * 1024 * 1024;
  * Wall-clock budget for the transcript scan, well inside the 5 s declared in
  * hooks.json.
  *
- * That declared timeout is advisory, not a guarantee: Claude Code does not
- * enforce it parent-side (anthropics/claude-code#85250), and it does not apply
- * at all while a hook is blocked reading its stdin payload — one report survived
- * roughly 300 s holding the tool call (#87289). So the bound has to live in here.
+ * That declared timeout is advisory rather than a guarantee, on the evidence
+ * available: a hook wedged before `main` was reported surviving it parent-side
+ * (anthropics/claude-code#85250), and one blocked reading its stdin payload held
+ * a tool call for roughly 300 s against a declared 3 s (#87289). Both reports are
+ * open, unconfirmed by the vendor and Windows-only, and #87289 runs a control
+ * showing the timeout DOES fire for a hook that only computes. So the general
+ * mechanism works; what is unbounded is the blocked case, and #87289's own triage
+ * says the fix belongs to the hook author. It lives in here.
  *
  * What this covers: the per-line parse of a transcript that is under the byte
  * cap but pathological to scan. Over budget, the scan returns null — "cannot
@@ -57,7 +61,11 @@ const MAX_TRANSCRIPT_BYTES = 64 * 1024 * 1024;
  */
 const SCAN_BUDGET_MS = (() => {
   const raw = process.env.OMC_SLIM_SCAN_BUDGET_MS;
-  if (raw === undefined) return 2000;
+  // Blank counts as unset, and that is the whole reason this is not a one-liner:
+  // `Number("")` is 0, not NaN, so an exported-but-empty variable would set the
+  // budget to zero, expire the deadline on line one of every transcript and mute
+  // the hook permanently — a guard that stops guarding without saying so.
+  if (raw === undefined || raw.trim() === "") return 2000;
   const n = Number(raw);
   return Number.isFinite(n) && n >= 0 ? n : 2000;
 })();

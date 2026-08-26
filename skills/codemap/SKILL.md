@@ -2,10 +2,6 @@
 name: codemap
 description: Writes hierarchical codemap.md files across an UNFAMILIAR repo plus a root atlas and an AGENTS.md section. Expensive, one agent per directory, and it mutates the repo — state the cost and get an explicit yes first.
 when_to_use: '"map this codebase", "document this repo". On request only; if the repo is small enough to read, read it.'
-# Expensive, and it mutates the repository. It must never auto-fire: this
-# removes it from the model's context entirely rather than merely hiding it
-# from the slash menu, so it also costs nothing in the listing until invoked.
-disable-model-invocation: true
 ---
 
 # Codemap Skill

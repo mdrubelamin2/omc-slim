@@ -18,12 +18,16 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 python3 - "$ROOT" <<'PY' || exit 1
-import glob, os, sys
+import glob, os, re, sys
 try:
     import yaml
 except ImportError:
-    print('  SKIPPED       PyYAML not installed; eval suite unparsed')
-    raise SystemExit(0)
+    # Exit 1, not 0. Parsing IS this gate — there is no second thing it checks,
+    # so skipping leaves a green line and no check behind it. That is the shape
+    # of failure this repository exists to argue against.
+    print('  NO PARSER     PyYAML not installed, so the eval suite is unchecked')
+    print('                  pip install pyyaml, then re-run')
+    raise SystemExit(1)
 
 root = sys.argv[1]
 evaldir = os.path.join(root, 'evals')
@@ -36,7 +40,14 @@ def front(path):
     if not text.startswith('---'):
         return None, 'no frontmatter'
     try:
-        return yaml.safe_load(text.split('---', 2)[1]), None
+        # Line-anchored, not a bare substring: a `---` inside a frontmatter
+        # VALUE truncates the header on a plain split, and every key past it
+        # silently takes its default. `runs: 1` vanished that way and the
+        # checker reported the suite well-formed.
+        parts = re.split(r'^---[ \t]*$', text, maxsplit=2, flags=re.M)
+        if len(parts) < 3:
+            return None, 'frontmatter is not closed'
+        return yaml.safe_load(parts[1]), None
     except Exception as exc:
         return None, str(exc).splitlines()[0][:80]
 
@@ -76,7 +87,6 @@ for case in cases:
     if 'should-not-fire' in tags:
         should_not_fire += 1
 
-    body = open(case).read().split('---', 2)[-1]
     graders = sorted(glob.glob(os.path.join(os.path.dirname(case), 'graders', '*.md')))
     if not graders:
         print(f'  NO GRADER     evals/{name} has no graders/*.md')
@@ -91,7 +101,10 @@ for case in cases:
             print(f'  UNPARSEABLE   {rel} — {gerr}')
             bad += 1
             continue
-        if 'type' not in gm:
+        # `.get`, not `in`: a bare `type:` parses to None, which is a declared
+        # key and no declared type. The published claim that blanking a type
+        # turns this red was false while this read `'type' not in gm`.
+        if not gm.get('type'):
             print(f'  NO TYPE       {rel} declares no grader type')
             bad += 1
             continue
@@ -104,13 +117,16 @@ for case in cases:
 
     # Cases run in a sandboxed cwd. An absolute path or ~ cannot resolve there,
     # and the runner rejects case-authored paths that escape their root.
+    # Path-shaped, not a bare substring. A plain `'/home/' in text` fires on any
+    # URL containing that segment, and `expanduser('~')` is whatever HOME says —
+    # under `HOME=/`, which stripped containers really do set, the needle becomes
+    # '/' and the unmodified suite fails.
+    ABSOLUTE = re.compile(r'(?<![\w/])(~/|/Users/|/home/)[\w.-]')
     for path in [case] + graders:
-        text = open(path).read()
-        for needle in (os.path.expanduser('~'), '/Users/', '/home/'):
-            if needle in text:
-                print(f'  ABSOLUTE PATH {os.path.relpath(path, root)} contains {needle!r}')
-                bad += 1
-                break
+        hit = ABSOLUTE.search(open(path).read())
+        if hit:
+            print(f'  ABSOLUTE PATH {os.path.relpath(path, root)} contains {hit.group(1)!r}')
+            bad += 1
 
 if should_not_fire == 0:
     print('  NO NEGATIVE   no case is tagged should-not-fire')

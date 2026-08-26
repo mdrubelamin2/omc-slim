@@ -4,12 +4,14 @@
 
 Six agents, six skills, one hook. The main thread stops being the implementer and
 becomes a planner that delegates, verifies and reconciles. It injects **zero
-bytes on the tool-call path**, ships **no MCP servers**, writes **nothing into
-your repository**, and inherits whatever MCP servers and skills your project
-already has.
+bytes on the tool-call path**, ships **no MCP servers**, and inherits whatever
+MCP servers and skills your project already has. Three components write files
+into your repository, and only when they run: `codemap` maps it, `deep-interview`
+writes a spec, `deepwork` keeps a log. `codemap` says what it will write and
+waits for a yes; the other two write one file each, under `docs/`.
 
-Static context is **~3,881 tokens**. `./scripts/measure-context.sh` reports
-**4,405 on a chars/4 basis** and prints that correction itself, because the
+Static context is **~3,953 tokens**. `./scripts/measure-context.sh` reports
+**4,487 on a chars/4 basis** and prints that correction itself, because the
 chars/4 method measured **+13.5% high** against a real tokeniser
 ([audit](./docs/AUDIT-2026-08-25.md)). `claude plugin details omc-slim` reports a
 third, smaller number; it does not count the output style, which is the largest
@@ -150,10 +152,10 @@ write-capable agent actually wrote something, and tells **you** when it did not.
 It never blocks, always exits 0, and stays silent when it cannot tell.
 
 Those are claims, so they have a check: `node hooks/verify-deliverables.test.mjs`
-runs the hook as a child process against isolated fixtures — 15 cases asserting
+runs the hook as a child process against isolated fixtures — 19 cases asserting
 the exact set of keys it may emit, which is what makes "never blocks" falsifiable.
 And the check has a check: `verify-deliverables.mutate.mjs` breaks the hook
-nineteen ways and confirms the suite catches all nineteen. `OMC_SLIM_DEBUG=1` prints
+twenty-three ways and confirms the suite catches all twenty-three. `OMC_SLIM_DEBUG=1` prints
 which path it took, on stderr.
 
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
@@ -171,22 +173,24 @@ So `REINFORCEMENT.tsv` pins the reinforcement too — an anchor plus the phrases
 that must appear **in the same paragraph** as that anchor. `scripts/check-reinforcement.sh`
 reports `GUTTED` when a rule keeps its name and loses its reasoning. Gutting one
 rule as a test gives `0 DROPPED` from the coverage gate and a named failure from
-this one. Run both:
+this one. Run all three:
 
 ```
-./scripts/check-coverage.sh && ./scripts/check-reinforcement.sh
+./scripts/check-coverage.sh && ./scripts/check-reinforcement.sh \
+  && ./scripts/check-evals.sh
 ```
 
-A third check covers the eval suite: `./scripts/check-evals.sh` asserts what the
+The third one covers the eval suite: `./scripts/check-evals.sh` asserts what the
 runner's own authoring interview refuses to negotiate — three runs minimum, a
 declared type on every grader, at least one `should-not-fire` case, and no
-absolute paths. It is proved able to fail four ways. **The suite itself has never
+absolute paths. It is proved able to fail four ways, and it needs PyYAML — it
+exits 1 rather than reporting a green line it cannot stand behind. **The suite itself has never
 been executed**: `claude plugin eval` is early access and is not enabled on the
 account it was written on. See [evals/README.md](./evals/README.md), which leads
 with that.
 
 All three are structural: they prove the text is there and still carries its rule.
-Neither can tell you the agent still *behaves*. `scripts/bench/smoke-contracts.sh`
+None of them can tell you the agent still *behaves*. `scripts/bench/smoke-contracts.sh`
 is the one that can — it runs `claude -p --plugin-dir` against the working tree
 rather than the installed cache, and asserts both that the expected agent
 actually spawned and that its output honours its contract. It covers all twelve
@@ -237,9 +241,7 @@ boundary still holds.
 
 Most components have been observed firing on natural prompts naming no component
 and no plugin. `deepwork` and `simplify` have never fired on their own, and
-`review` has never been tested either way. **`codemap` cannot** — v0.9.0 made it
-manual-only, because a skill that costs six dollars and writes into your
-repository should not be reachable by inference.
+`review` has never been tested either way.
 
 **These are notes, not an experiment.** No harness, dates or transcripts are
 committed, unlike `scripts/bench/`. And on builds that gate the `Agent` tool —

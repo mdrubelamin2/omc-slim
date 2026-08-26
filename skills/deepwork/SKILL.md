@@ -73,10 +73,11 @@ Three questions. Each closes with a **named source**, or an explicit "checked,
 found nothing" — silence is not an answer, and neither is your own memory.
 
 1. **Is this still how it is done?** Route it to `librarian`, which reads the
-   installed source before it reads anything about it and carries a dated
-   open-web pass into the finding. Your training has a cutoff; the approach you
-   are about to plan around may have moved, been deprecated, or been replaced by
-   something the platform now does for you.
+   installed source before it reads anything about it, and carries a dated
+   open-web pass into the finding where the claim is the kind the web can
+   correct — or says it skipped one, and why. Your training has a cutoff; the
+   approach you are about to plan around may have moved, been deprecated, or
+   been replaced by something the platform now does for you.
 2. **What does the code on disk actually say?** The installed package's own types
    and an existing call site cannot be stale about this project. A doc page can.
    Where disk and documentation disagree, disk wins — you are planning against
@@ -259,9 +260,10 @@ action, a side effect outside this worktree, or a plan so broken every path is a
 guess.
 
 Surfacing is a different act and that list does not bound it — the warning
-threshold below stops to *report* three accumulated concerns, and an exhausted
-review budget stops to *ask* about a risk still open. Both hand the user a
-decision. A ruling is what you make when no decision is owed.
+threshold below stops to *report* three accumulated concerns, an exhausted review
+budget stops to *ask* about a risk still open, and §1's shrinking assumption
+stops to ask before the map runs. All three hand the user a decision. A ruling is
+what you make when no decision is owed.
 
 Everything else gets a **ruling** — decide, and log it:
 

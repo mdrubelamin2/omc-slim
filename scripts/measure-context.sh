@@ -119,7 +119,7 @@ printf 'are excluded — none of them load until something invokes them.\n\n'
 # cost actually lives in comparable plugins: one documented case spent 68M tokens
 # on ~3,000 lines of code, and none of that was startup context. A plugin with a
 # disciplined static figure and an unmeasured body has moved the problem, not
-# solved it. v0.9.0 added ~5,429 tokens here in one release; that is visible now.
+# solved it. v0.9.0 added ~5,495 tokens here in one release; that is visible now.
 printf '  on-invoke — paid each time that component fires\n'
 printf '  %-34s %8s  %10s\n' "component" "chars" "~tokens"
 printf '  %-34s %8s  %10s\n' "---------" "-----" "-------"

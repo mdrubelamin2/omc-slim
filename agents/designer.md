@@ -13,8 +13,10 @@ should look deliberate, not defaulted.
 ## Constraints
 
 - Respect an existing design system when one is present. Extend it, do not
-  fight it. An existing design system outranks every principle below. Work
-  inside its tokens, scale and components: boldness there means composition,
+  fight it. An existing design system outranks every *aesthetic* principle below.
+  It never outranks the accessibility floor — a system whose body contrast is
+  3:1 is a system with a bug, and you say so. Work inside its tokens, scale and
+  components: boldness there means composition,
   motion, density and restraint, not a new typeface or a new palette. Where the
   system genuinely cannot express the brief, say so and propose the extension
   rather than shipping a second visual language beside it.

@@ -66,19 +66,29 @@ behalf which hosts your queries reach. See
 [the audit](./AUDIT-2026-08-25.md) for how it was found.
 
 **The static figure is disciplined and the bodies are not.** v0.9.0 added roughly
-**5,429 tokens of on-invoke cost in one release, 4,783 corrected** — every addition individually
+**5,495 tokens of on-invoke cost in one release, 4,841 corrected** — every addition individually
 justified by measurement, and their sum unmeasured, which is the exact failure
 mode this project has criticised in others. `./scripts/measure-context.sh` now
 reports on-invoke cost per component so the next increase is visible while it
 happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md alone is 5,669 tokens on the chars/4 basis, ~4,995 corrected —
+SKILL.md alone is 5,662 tokens on the chars/4 basis, ~4,988 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**. It sits on the line: under on the corrected basis, over on
 chars/4. Its load-bearing rules are front-loaded and its lane mechanics live in
 `checklists.md`, which is where they were moved when this measurement was taken.
-The ceiling if every component fires once is **32,467 chars/4, ~28,605 corrected**.
+That margin is 11 tokens, and it was bought back: an earlier v0.9.0 draft
+measured 5,087 corrected and published 4,995, because the file grew by 419 chars
+after the number was taken and nothing re-derived it.
+
+The per-skill cap is not the binding one. Re-attached skills share a **combined
+25,000-token budget**, filled from the most recently invoked, so on a long
+session older skills are dropped entirely rather than truncated
+([docs](https://code.claude.com/docs/en/skills)). Twelve components against
+25,000 is the constraint that actually bites.
+
+The ceiling if every component fires once is **32,533 chars/4, ~28,664 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging
@@ -175,7 +185,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,405 tok** | see above |
+| **omc-slim** | **~4,487 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -184,7 +194,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,405 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,487 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

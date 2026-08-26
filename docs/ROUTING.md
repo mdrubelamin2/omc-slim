@@ -20,20 +20,21 @@ are now 12.
 | `tracer` | "this bug keeps coming back, I've fixed it twice" |
 | `designer` | "this login form looks awful" |
 | `deep-interview` | "I want to build something, not sure what yet" |
-| `codemap` | **cannot fire on its own since v0.9.0** — `disable-model-invocation: true`. Type `/omc-slim:codemap` |
+| `codemap` | fires on an unmistakable task shape — a large, unfamiliar repo — not on wording |
 | `verification-planning` | "how do I prove this refactor didn't break anything?" |
 | a documentation MCP | reached through `librarian`, when your project or user config provides one |
 
-`codemap` used to fire unprompted, and that is now history rather than
-behaviour. On an earlier build it correctly declined a 15-file toy and fired
-unprompted on a 362-file, 41k-LOC repository, writing 26 `codemap.md` files
-across 8 parallel `fixer` lanes for $6.09.
+`codemap` correctly declined a 15-file toy and fired unprompted on a 362-file,
+41k-LOC repository, writing 26 `codemap.md` files across 8 parallel `fixer`
+lanes for $6.09. Since v0.6.0 it must announce that cost, and what it writes
+into your repo, before starting.
 
-**v0.9.0 set `disable-model-invocation: true` on it.** A skill that costs six
-dollars and writes files into someone's repository should not be reachable by
-inference, and the flag removes it from the model's context entirely rather than
-merely hiding it from the slash menu — so it also stops costing anything in the
-listing. Invoke it by name. It still announces the cost before starting.
+**v0.9.0 briefly set `disable-model-invocation: true` on it and then reverted
+that.** The flag removes a skill from the model's context entirely, so codemap
+could only be reached by typing `/omc-slim:codemap` — which also removed the one
+routing decision this table records it winning. The announce-and-confirm gate is
+what stands between the user and the $6.09, and that gate is in the skill body,
+not in the frontmatter.
 
 **Three do not, and one is untested:**
 
