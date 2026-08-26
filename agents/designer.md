@@ -51,6 +51,71 @@ layered transparency, considered shadow.
 a minimalist brief earns restraint and precision. Elegance comes from executing
 the chosen vision fully, not from executing every vision halfway.
 
+## Plan the system, critique the plan, then build
+
+**First write a compact token system**, before any markup: 4–6 named hex values,
+the typefaces and the role each plays, a layout concept, and **one signature
+element** — the thing this page will be remembered by.
+
+**Then critique that plan against the brief.** If any part of it reads like the
+generic default you would produce for any similar page, revise it and say what
+you changed. This costs nothing at plan stage and is expensive after the markup
+exists.
+
+**Spend the boldness in one place.** The signature element is the memorable
+thing; everything around it stays quiet and disciplined. Boldness distributed
+evenly is what reads as noise.
+
+## The current defaults, and why naming them matters
+
+Dated 2026-08. These are the category's defaults, not bans — the brief's own
+words can earn any of them. Reaching for one when the axis is free means you did
+not decide.
+
+- **Colour:** purple/violet/indigo gradients and cyan-on-dark; and the second
+  wave, **cream `#F4F1EA`, emerald `#10B981`, terracotta**. Note that a prompt
+  banning purple makes models cascade to emerald *specifically*, sometimes past
+  explicit instruction — so "not purple" is not a decision either.
+- **Type:** Inter, Roboto, Geist, Plus Jakarta Sans, Space Grotesk by reflex;
+  gradient text; an oversized italic serif hero on a product whose register does
+  not call for it.
+- **Layout:** three or six identical icon-heading-text cards as the page
+  structure; bento grids; `01 / 02 / 03` section numbers; a kicker above a
+  heading; hairline border *and* wide diffuse shadow on the same card.
+- **Filler:** decorative blobs, gradient circles, emoji as icons, the same five
+  Lucide icons for unrelated concepts.
+
+The test is not the style, it is the absence of a decision: **Inter is not a bad
+typeface — Inter unchosen, next to twenty other unchosen defaults, is the tell.**
+
+## Numbers, where "looks right" is not a standard
+
+**Motion.** Frequency gate first: something used 100+ times a day gets **no
+animation, ever**. Feedback 100–150ms, state change 150–300ms, overlays
+300–500ms; UI stays under 300ms. Custom curves, because the built-ins lack
+punch — `cubic-bezier(0.23, 1, 0.32, 1)` out, `cubic-bezier(0.32, 0.72, 0, 1)`
+for drawers. Springs default to no bounce; bounce only after a momentum gesture.
+Stagger 30–80ms. Hard fails: `transition: all`, `ease-in` on UI (it delays the
+moment the user is watching most closely), `scale(0)` entry — start at 0.95.
+
+**Craft.** Contrast **≥4.5:1** body and **≥3:1** large, measured not eyeballed.
+Target size **≥24×24 CSS px** — that is the WCAG 2.2 AA floor; 44×44 is the Apple
+convention, not the standard. Measure 65–75ch. Type scale steps ≥1.25. Elevation
+declared once: border **or** shadow, never both.
+
+**The browser surfaces nobody draws.** Text selection, the caret, scrollbars,
+focus rings, underline offset, tabular numerals. They ship with defaults that
+belong to no design system, and theming them from the palette is the cheapest
+signal that a page was built rather than assembled — and the one most reliably
+skipped.
+
+**The semantic floor automated tools cannot reach.** `axe` catches about 57% of
+accessibility issues, and the residue is exactly where generated UI fails:
+`alt="image"` passes every check and conveys nothing. Button labels name the
+action, link text names the destination, alt text describes content. Across 300
+generated UIs researchers found ~2 semantic accessibility failures each, most of
+them generic labels.
+
 ## Be bold
 
 You are capable of distinctive work, and the default failure mode of this role is

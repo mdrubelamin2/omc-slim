@@ -22,6 +22,11 @@ fails twice over: it is a size test, and it is the author clearing their own
 work, which the pass-that-produced-it rule forbids. A one-line change to an auth
 check is the most dangerous thing in the release.
 
+**That is not a licence for ceremony.** Size decides *who* runs a lane — under
+roughly 50 changed lines you run the triggered ones yourself rather than paying
+for a dispatch. The rule is that a triggered lane runs, not that a small change
+earns a large process.
+
 ## 1. Scope
 
 Get this wrong and every finding after it is noise.
@@ -121,9 +126,16 @@ review" is how it ships.
 Size decides only **who runs the lane, not whether it runs.** Under roughly 50
 changed lines, run the triggered lanes yourself rather than paying for a
 dispatch. Above it, dispatch them **in parallel, in one message**, one subagent
-each — give each the diff command, not the diff, plus its lane text and the
-evidence gates in section 5. Either way, a lane the table triggers gets run and
-reported.
+each — give each **a path to a prepared diff file**, not the diff and not a
+command to derive one, plus its lane text and the evidence gates in section 5.
+Either way, a lane the table triggers gets run and reported.
+
+Write that file once, before dispatching: commit list, `--stat`, and
+`git diff -U10`. The output never enters your context, every lane reads the same
+bytes so their findings are comparable, and a lane needs **one Read instead of
+the 40–67 tool calls** measured when reviewers were left to reconstruct the range
+themselves. It also removes the phantom-deletion class outright — one derivation,
+one base, checked once.
 
 **Ask a lane only for what its agent can return.** `explorer` locates: every
 consumer of an enum, every caller of a changed function, whether code is
@@ -152,6 +164,12 @@ performance grounds. Reporting a hot-path finding needs only the lane. For an
 optimisation applied or accepted, **open `performance.md`** first. A change that
 does not beat the noise is reverted rather than kept, and that is not a call to
 make from recall.
+
+**Two lanes reading the same bytes and agreeing is not corroboration.** The table
+above partitions by *topic*, and every topic reads the same diff. Where you
+dispatch more than one lane, give at least two of them **different evidence** —
+`checklists.md` names the four sources and why the git-history one is the cheap
+win.
 
 **Then one adversarial pass, always**, whatever the size. Line count is not a
 proxy for risk, and a five-line auth change can be the worst thing in the release.
@@ -212,10 +230,12 @@ If you cannot name one, or the "fix" changes nothing observable, **the finding
 was a false positive — drop it from the list and carry the count.** "3 candidates
 dropped: the proposed fix changed nothing observable" is one line, and it is the
 difference between a filter and a disappearance. A silent discard is the same
-self-issued verdict this skill refuses everywhere else. This costs one sentence of thought, it
-uses work the review has to do anyway, and it is measured: filtering candidates
-by whether their own proposed fix does anything is one of the few things that
-reliably removes false positives rather than reshuffling them.
+self-issued verdict this skill refuses everywhere else. This costs one sentence of thought and it uses work the review has to do anyway.
+The mechanism is a published one — a fix-guided verification filter, which runs
+the proposed fix and drops the finding when nothing observable changes
+([arXiv:2603.00539](https://arxiv.org/abs/2603.00539)). This skill's own rule is
+that an unsourced external claim is indistinguishable from a recalled one, so
+here is the source.
 
 **Clearance needs evidence too.** "Handled elsewhere" cites the handling code;
 "tests cover this" names the test. *Likely handled* and *probably tested* are not
@@ -240,8 +260,10 @@ needs confirming; **3 to 5 goes to Open questions, not to the findings list** �
 phrased as the question you could not settle and what would settle it. Below 3
 you have a hunch, not a finding, and hunches are noise. A Critical **survives at
 any confidence** as an open question, never a blocker, because the cost of
-missing it is asymmetric. Suppressing a low-confidence finding entirely is how a
-real one gets deleted before anyone sees it. **The verdict is set by the worst finding you
+missing it is asymmetric — suppressing a low-confidence **Critical** entirely is
+how a real one gets deleted before anyone sees it. That exemption is the
+carve-out; it is not a general licence to keep hunches, which the sub-3 cut above
+still refuses. **The verdict is set by the worst finding you
 are confident about**, not the worst you can imagine — **counting only what this
 diff introduced.** A Pre-existing Critical is reported at full severity and does
 not set the verdict; it was true before this change, and blocking on it makes the

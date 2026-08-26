@@ -196,7 +196,10 @@ app, or `React.memo` to a Svelte app, makes a whole review untrustworthy.
 Judgement calls go to the designer; these are the mechanical ones.
 
 - Focus removed (`outline: none`) with no replacement
-- Touch target under 44px, or body text under 16px
+- Touch target under 24×24 CSS px — the WCAG 2.2 AA floor (2.5.8). 44×44 is the
+  Apple convention, not the standard, and flagging against it makes this plugin
+  file findings on its own compliant work
+- Body text under 16px
 - Heading levels skipped
 - `!important` added
 - An interactive element with no hover or focus state
@@ -220,3 +223,22 @@ project blessed is not a finding.
 - A new artefact type with no release path
 
 Skip for test-only CI changes and services with an existing auto-deploy.
+
+## Decorrelating lanes by evidence source
+
+The lane table in `SKILL.md` partitions by *topic*, and every topic reads the
+same diff — so agreement
+between them measures consistency, not truth. Where you dispatch more than one
+lane, give at least two of them **different evidence**, not different questions:
+
+| Source | What only it can see |
+|---|---|
+| The diff alone, no other context | What the change says on its face, unbiased by intent |
+| `CLAUDE.md`/`AGENTS.md`, lint and type config | Whether this repository already forbade it |
+| **`git log -S` and blame on the touched lines** | **Whether this change re-opens a bug someone already fixed** |
+| Prior review comments on the same files | What humans here have objected to before |
+
+**The history lane is the cheap one worth adding.** A line introduced by a commit
+whose message says *fix* is a scar, and a diff that removes it is a regression
+being re-committed — invisible to every lane that reads only the current tree,
+and high-precision when it hits.

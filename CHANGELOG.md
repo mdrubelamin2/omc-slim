@@ -11,7 +11,7 @@ research lanes, ~40 papers, ~90 repositories, Anthropic's docs and the 2.1.246
 binary. Read section 4 first; it is built from other people's outages.
 
 **Four published claims were wrong and are corrected.** The static-context figure
-was overstated by **13.5%** on its own basis — 3,961, not 4,496 — and
+was overstated by **13.5%** on its own basis — 3,881, not 4,405 — and
 `measure-context.sh` now prints the correction and explains why `claude plugin
 details` reports a third number (it does not count the output style). The
 `ponytail` pin was labelled 4.8.4 when `16f29800` is 53 commits past that tag.
@@ -58,12 +58,25 @@ it expires. What it cannot bound is stated in the source: no in-process watchdog
 preempts a synchronous read on fd 0. 15 cases, 19 mutants, all killed — and the
 first draft of the new test could not fail, which the mutation run caught.
 
-**Honest cost.** Static context is unchanged; every addition landed in bodies.
-But those bodies grew **~4,133 on-invoke tokens in one release (3,641 corrected)** — individually
+**Honest cost, and the sentence this entry got wrong once.** Static context fell
+4,474 → 4,405 — but not through discipline. It fell because `codemap` became
+manual-only and left the listing entirely; add its description back and the
+remaining roster is **up** 22 tokens. An earlier draft of this entry said "static
+context is unchanged; every addition landed in bodies", which was false in both
+halves.
+But those bodies grew **+5,429 chars/4, ~4,783 corrected, in one release** — individually
 justified, collectively unmeasured, which is the failure this project criticises
 in others. `measure-context.sh` now reports on-invoke cost per component so the
-next increase is visible while it happens. `review` is the heaviest at ~5,100
-tokens, against a 5,000-token post-compaction re-injection cap.
+next increase is visible while it happens. `review` is the heaviest — its SKILL.md is
+5,669 tokens on chars/4, ~4,995 corrected, against a 5,000-token
+post-compaction re-injection cap it sits either side of depending on the basis.
+
+That sentence previously read "~5,100 tokens". **That number was invented** — it
+matched neither basis. The third verification pass caught it in
+`docs/LIMITATIONS.md`, it was corrected there, and this file kept the fabricated
+copy for one more round until a later pass found it here too. Recorded rather
+than quietly overwritten, because a release that fixes a made-up number in one
+file and ships it in another has not fixed it.
 
 **Also:** `librarian`'s open-web pass became conditional (doc injection measures
 +9.36pp on rare APIs and **−39.02pp on common ones**); `simplify` gained a

@@ -8,8 +8,8 @@ bytes on the tool-call path**, ships **no MCP servers**, writes **nothing into
 your repository**, and inherits whatever MCP servers and skills your project
 already has.
 
-Static context is **~3,961 tokens**. `./scripts/measure-context.sh` reports
-**4,496 on a chars/4 basis** and prints that correction itself, because the
+Static context is **~3,881 tokens**. `./scripts/measure-context.sh` reports
+**4,405 on a chars/4 basis** and prints that correction itself, because the
 chars/4 method measured **+13.5% high** against a real tokeniser
 ([audit](./docs/AUDIT-2026-08-25.md)). `claude plugin details omc-slim` reports a
 third, smaller number; it does not count the output style, which is the largest
@@ -70,6 +70,31 @@ To try it without installing:
 
 ```
 claude --plugin-dir /path/to/omc-slim
+```
+
+## Two settings worth knowing
+
+Neither is a plugin change — both are yours, and both cost more than anything in
+this repository does.
+
+**`ENABLE_TOOL_SEARCH`.** MCP tool definitions load into every request. One
+user's audit of 926 sessions took `/context` from **45k to 15.5k tokens** by
+turning tool search on, which defers those definitions until something needs
+them. If you run more than a couple of MCP servers, this is the largest single
+saving available to you:
+
+```json
+{ "env": { "ENABLE_TOOL_SEARCH": "true" } }
+```
+
+**`subagentPromptCacheTtl`** (Claude Code 2.1.242+). The main conversation gets a
+one-hour prompt cache on a subscription; **subagents, forks and compaction get
+five minutes.** A plugin that delegates runs most of its tokens in that
+five-minute bucket, so a specialist dispatched after a pause pays full price for
+a prefix it could have read from cache:
+
+```json
+{ "subagentPromptCacheTtl": "1h" }
 ```
 
 ## Agents
@@ -138,7 +163,7 @@ path.
 
 `COVERAGE.tsv` pins every adopted rule to the file that must still carry it, and
 `scripts/check-coverage.sh` fails if one disappears. That is presence, and
-presence is not enough: `51dfbcc` records a compression pass where all 87 rows
+presence is not enough: `51dfbcc` records a compression pass where all 88 rows
 passed and behaviour broke anyway, because the *reinforcing* sentence that made a
 rule fire had been cut while the rule's own phrase survived.
 
@@ -212,7 +237,9 @@ boundary still holds.
 
 Most components have been observed firing on natural prompts naming no component
 and no plugin. `deepwork` and `simplify` have never fired on their own, and
-`review` has never been tested either way.
+`review` has never been tested either way. **`codemap` cannot** — v0.9.0 made it
+manual-only, because a skill that costs six dollars and writes into your
+repository should not be reachable by inference.
 
 **These are notes, not an experiment.** No harness, dates or transcripts are
 committed, unlike `scripts/bench/`. And on builds that gate the `Agent` tool —

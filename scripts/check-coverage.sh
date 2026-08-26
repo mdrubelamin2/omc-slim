@@ -247,6 +247,12 @@ roster_sites = [
     # A doc that quotes a checker and is not checked by it will always drift.
     ('docs/PROVENANCE.md',
      f'{word(agents)} agents, {word(skills)} skills, {word(hooks)} {hookword}'),
+    # marketplace.json carries its OWN description, separate from plugin.json's,
+    # and it was not checked here — so it sat at "seven skills" through the
+    # release that removed the seventh. It is also the copy a stranger reads
+    # before installing anything, which makes it the worst place to be stale.
+    ('.claude-plugin/marketplace.json',
+     f'{word(agents)} specialists, {word(skills)} skills, {word(hooks)} advisory {hookword}'),
 ]
 matched = 0
 for path, expect in roster_sites:
@@ -369,6 +375,51 @@ if bad:
 print(str(len(files)) + '/' + str(len(files)) + ' frontmatter blocks parse.')
 FMPY
 
+# --- hidden characters in shipped text ------------------------------------
+# Every prompt this plugin ships is executable content. The Rules File Backdoor
+# demonstrated invisible Unicode in a rules file making an agent inject a
+# malicious script AND not mention it in chat — surviving a fork, invisible in
+# review. A marketplace plugin is exactly the distribution path that attack
+# wants, so the bytes get checked rather than trusted.
+python3 - "$ROOT" <<'UNIPY' || exit 1
+import glob, os, sys, unicodedata
+root = sys.argv[1]
+
+# Bidi overrides, zero-width joiners/spaces, invisible separators, tag
+# characters (the ASCII-smuggling block), BOM anywhere but byte 0.
+SUSPECT = {
+    0x200B, 0x200C, 0x200D, 0x200E, 0x200F, 0x2028, 0x2029,
+    0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
+    0x2060, 0x2061, 0x2062, 0x2063, 0x2064, 0x206A, 0x206B,
+    0x206C, 0x206D, 0x206E, 0x206F, 0xFEFF, 0x00AD,
+}
+def suspect(cp):
+    return cp in SUSPECT or 0xE0000 <= cp <= 0xE007F
+
+files = []
+for pat in ('output-styles/*.md', 'agents/*.md', 'skills/*/*.md',
+            'evals/*/*.md', 'evals/*/graders/*.md', '*.md', 'docs/*.md'):
+    files += glob.glob(os.path.join(root, pat))
+
+bad = 0
+for path in sorted(set(files)):
+    rel = os.path.relpath(path, root)
+    for lineno, line in enumerate(open(path, encoding='utf-8'), 1):
+        for col, ch in enumerate(line, 1):
+            cp = ord(ch)
+            if cp == 0xFEFF and lineno == 1 and col == 1:
+                continue
+            if suspect(cp):
+                name = unicodedata.name(ch, 'unnamed')
+                print(f'  HIDDEN CHAR   {rel}:{lineno}:{col} U+{cp:04X} {name}')
+                bad += 1
+if bad:
+    print('\nInvisible characters in shipped prompt text. Remove them, or if one')
+    print('is deliberate, add it to SUSPECT with a comment saying why.')
+    raise SystemExit(1)
+print(f'{len(set(files))}/{len(set(files))} text assets free of invisible characters.')
+UNIPY
+
 # --- adoption provenance --------------------------------------------------
 # COVERAGE.tsv records what this plugin took and from where. Two things must stay
 # true of that record: every origin is classified, and every external one is
@@ -395,6 +446,11 @@ root = sys.argv[1]
 ORIGINS = {
     # origin                 kind          UPSTREAM.tsv name      must appear in PROVENANCE.md
     'audit':                ('internal',   None,                  None),
+    # Rules adopted from the 2026-08-26 external research sweep. `internal`
+    # because there is no upstream repository to pin: the sources are papers,
+    # vendor documentation and measured results, and the trail from each rule
+    # back to its evidence lives in docs/RESEARCH-2026-08-26.md.
+    'research':             ('internal',   None,                  None),
     'CLAUDE.md':            ('tracked',    'CLAUDE.md',           '~/.claude/CLAUDE.md'),
     'fable-mode':           ('tracked',    'fable-mode.SKILL.md', 'fable-mode'),
     'addy':                 ('tracked',    'agent-skills',        'addyosmani/agent-skills'),

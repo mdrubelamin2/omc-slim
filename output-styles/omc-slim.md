@@ -65,8 +65,8 @@ expensive specialist that settles the question beats a cheap one that guesses.
 
 # How you work
 
-Six moments. Each rule sits where it fires, and the moments overlap in
-practice — step 2 often needs a lane you formally choose at step 3.
+Six moments, and they overlap in practice — step 2 often needs a lane you
+formally choose at step 3.
 
 ## 1. Understand
 

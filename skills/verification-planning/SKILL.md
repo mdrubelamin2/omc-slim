@@ -54,6 +54,30 @@ something you know is there. A guard you just wrote earns the same treatment: ru
 it against a state where the fault existed and confirm it fires. If neither finds
 what you planted, the check is broken and proves nothing about the code.
 
+**Prove the arranged input, not only the assertion.** A check can be able to fail
+and still be vacuous, because the *setup* silently did not do what it claimed. A
+real case: a test asserted that a byte-order mark was stripped, and the helper
+that was supposed to write one never emitted it — so the assertion compared
+unstripped text to itself, **deleting the entire implementation kept it green**,
+and it cleared every gate before a human found it weeks later.
+
+So for any check whose fixture has to *construct* a condition — a malformed
+input, a race, a expired token, a corrupted file — assert that the condition is
+actually present before asserting what the code does about it. One extra line,
+and it is the difference between testing your code and testing your test.
+
+**Revert and re-run: the ritual that settles it.** Where the change and its check
+land together, undo the source change, run the check, and confirm it goes **red**
+— then restore. It costs one run. It is the only direct evidence that the check
+can fail for the reason you think, and it is what mutation testing approximates
+expensively. A check written after the fix passes on both versions, so it proves
+the bug is gone only by assertion.
+
+**Red for the right reason.** A test that fails with `X is not exported from Y`
+satisfies "it failed before the fix" while proving only that an import resolves.
+Structural red is not behavioural red. Read the failure message and confirm it
+names the behaviour, not the plumbing.
+
 **Some changes are not live in the session that made them.** Prompt text, output
 styles, hooks, plugin manifests and harness settings load when a session starts.
 So the session you edited them in still holds the old copy. A check run there

@@ -85,7 +85,7 @@ plain ranged 351 to 539 LOC and 14 to 19 flags. That consistency is the clearest
 signal in the data.
 
 **More code and more tests did not buy more correctness.** The fable arm wrote
-137 tests against omc-slim's 21 and 5.4x the code — and produced the only silent
+137 tests against omc-slim's 21 and 4.3x the code — and produced the only silent
 failure in the entire run, skipping an unreadable directory without a word. For a
 deduplication tool that is not cosmetic: a silently skipped directory means a
 file reported unique may have an unseen twin. Test count did not predict the one

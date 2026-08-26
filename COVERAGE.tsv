@@ -35,7 +35,7 @@ fable-mode	no-manufactured-weakness	deepwork	manufacture a weakness
 fable-mode	warning-threshold	deepwork	At three, stop and surface
 fable-mode	verify-before-flagging	deepwork	Absence of evidence is not the finding
 fable-mode	find-replace-word-boundaries	deepwork	Anchor on word boundaries
-fable-mode	domain-variations	deepwork	Domain variations
+fable-mode	domain-variations	deepwork/depth.md	Domain variations
 fable-mode	when-not-to-use	deepwork	When NOT to use this
 fable-mode	not-a-capability-transplant	deepwork	does not make the underlying reasoning better
 fable-mode	verify-before-flagging	verification-planning	Absence of evidence is not the finding
@@ -74,8 +74,8 @@ addy	tests-changed-means-behaviour-changed	simplify	you changed behaviour
 addy	comments-why-not-what	simplify	keep comments that explain why
 addy	rule-of-500	simplify	stop hand-editing
 addy	separate-refactor-commits	simplify	separate from feature and bug-fix commits
-addy	red-flags	simplify	Red flags
-addy	refuse-rationalizations	simplify	Rationalizations to refuse
+addy	red-flags	simplify/principles.md	Red flags
+addy	refuse-rationalizations	simplify/principles.md	Rationalizations to refuse
 omo-slim	bisect-on-failure	simplify	bisect them rather than guessing
 audit	honour-do-not-simplify-marker	simplify	do-not-touch marker
 ponytail	ladder-applied-retroactively	simplify	the ladder, applied after the fact
@@ -87,11 +87,11 @@ audit	no-coverage-means-no-evidence	simplify	a green suite proves nothing
 audit	pin-behaviour-before-simplifying	simplify	run it against the **original**
 audit	stdlib-swap-edge-cases	simplify	silently changes behaviour
 audit	deleting-a-feature-is-not-simplify	simplify	is a product decision and not yours
-audit	named-principles	simplify	## Principles by name
-audit	dry-of-knowledge	simplify	of knowledge, not of characters
-audit	dry-yagni-tiebreaker	simplify	the tiebreaker is the rule of three
-audit	linear-flow	simplify	code should read top to bottom
-audit	modularity	simplify	dependencies pointing one way
+audit	named-principles	simplify/principles.md	## Principles by name
+audit	dry-of-knowledge	simplify/principles.md	of knowledge, not of characters
+audit	dry-yagni-tiebreaker	simplify/principles.md	the tiebreaker is the rule of three
+audit	linear-flow	simplify/principles.md	code should read top to bottom
+audit	modularity	simplify/principles.md	dependencies pointing one way
 audit	brave-about-size	simplify	Be brave about size, never about safety
 audit	refactor-across-files	simplify	as many files as the problem actually spans
 audit	finish-the-deletion	simplify	Finish the deletion
@@ -275,3 +275,45 @@ audit	no-context-anxiety	output-styles	Do not manage the context window
 audit	todo-continuity	output-styles	appended, not substituted
 audit	parallel-writer-scoping	output-styles	only where file scopes do not overlap
 audit	design-handoff-intent	output-styles	are intentional
+research	review-pre-existing-is-a-flag	review	Pre-existing is a flag, not a level
+research	review-fix-as-verification	review	drop it from the list and carry the count
+research	review-nit-cap	review	Report at most five nits
+research	review-verdict-excludes-pre-existing	review	does not set the verdict
+research	review-prepared-diff-file	review	a path to a prepared diff file
+research	review-lane-decorrelation	review/checklists.md	Decorrelating lanes by evidence source
+research	review-history-lane	review/checklists.md	re-opens a bug someone already fixed
+research	simplify-public-entrypoint-gate	simplify	If yes, it does not come out
+research	simplify-bias-to-false-negatives	simplify	grep the bare symbol name
+research	simplify-introducing-commit	simplify	Blame the *introducing* commit
+research	simplify-shallow-clone-trap	simplify	A shallow clone
+research	simplify-rename-trap	simplify	Refuse the citation
+research	simplify-green-tests-insufficient	simplify	you have not verified the deletion
+research	deepwork-consumes-produces	deepwork	Give every lane a `Consumes:` / `Produces:` block
+research	deepwork-preflight-rows	deepwork	is not a scan you ran
+research	deepwork-rulings-not-stalls	deepwork	Rulings, not stalls
+research	deepwork-fan-out-floor	deepwork	do not fan out when the work is coupled
+research	deepwork-show-the-map	deepwork	Show the map before you execute it
+research	deepwork-conditional-structure-scan	deepwork	when the phase moved structure
+research	verification-prove-the-fixture	verification-planning	Prove the arranged input
+research	verification-revert-and-rerun	verification-planning	Revert and re-run
+research	verification-structural-red	verification-planning	Structural red is not behavioural red
+research	explorer-positive-control	explorer	Prove the instrument before you report a negative
+research	explorer-search-funnel	explorer	Open wide, then narrow
+research	explorer-cap-yields-to-completeness	explorer	The cap does not apply to an enumeration
+research	oracle-assigned-opposition	oracle	Argue the other side, as an assignment
+research	oracle-one-pass-not-debate	oracle	One pass, not a debate
+research	tracer-categories-differ-in-kind	tracer	They must differ in kind, not in detail
+research	tracer-predeclare-falsifiers	tracer	what would confirm and what would falsify each one
+research	tracer-undetermined-verdict	tracer	is not `ruled out`
+research	librarian-conditional-web-pass	librarian	That is a condition, not a ritual
+research	librarian-silent-disk	librarian	Disk can be silent rather than empty
+research	designer-dated-defaults	designer	The current defaults, and why naming them matters
+research	designer-two-pass-plan	designer	Plan the system, critique the plan, then build
+research	designer-motion-floor	designer	Frequency gate first
+research	designer-craft-floor	designer	Elevation declared once
+research	designer-browser-surfaces	designer	The browser surfaces nobody draws
+research	designer-semantic-a11y-floor	designer	The semantic floor automated tools cannot reach
+research	codemap-cite-symbols	codemap	Cite symbols, never line numbers
+research	deep-interview-files-and-interfaces	deep-interview	## Files and interfaces
+research	deep-interview-gate-is-measured	deep-interview	That is now measured
+research	deep-interview-score-is-not-the-gate	deep-interview	It does not decide whether to build

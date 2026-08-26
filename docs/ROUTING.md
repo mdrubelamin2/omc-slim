@@ -20,14 +20,20 @@ are now 12.
 | `tracer` | "this bug keeps coming back, I've fixed it twice" |
 | `designer` | "this login form looks awful" |
 | `deep-interview` | "I want to build something, not sure what yet" |
-| `codemap` | fires on an unmistakable task shape — a large, unfamiliar repo — not on wording |
+| `codemap` | **cannot fire on its own since v0.9.0** — `disable-model-invocation: true`. Type `/omc-slim:codemap` |
 | `verification-planning` | "how do I prove this refactor didn't break anything?" |
 | a documentation MCP | reached through `librarian`, when your project or user config provides one |
 
-`codemap` correctly declined a 15-file toy and fired unprompted on a 362-file,
-41k-LOC repository, writing 26 `codemap.md` files across 8 parallel `fixer`
-lanes for $6.09. Since v0.6.0 it must announce that cost, and what it writes
-into your repo, before starting.
+`codemap` used to fire unprompted, and that is now history rather than
+behaviour. On an earlier build it correctly declined a 15-file toy and fired
+unprompted on a 362-file, 41k-LOC repository, writing 26 `codemap.md` files
+across 8 parallel `fixer` lanes for $6.09.
+
+**v0.9.0 set `disable-model-invocation: true` on it.** A skill that costs six
+dollars and writes files into someone's repository should not be reachable by
+inference, and the flag removes it from the model's context entirely rather than
+merely hiding it from the slash menu — so it also stops costing anything in the
+listing. Invoke it by name. It still announces the cost before starting.
 
 **Three do not, and one is untested:**
 

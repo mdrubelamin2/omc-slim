@@ -98,45 +98,14 @@ closes, not in the report afterwards.
 
 ## Diverge before you converge
 
-**Generate competing approaches before you write the map.** The first plausible
-approach becomes the plan by default, and nothing downstream ever reconsiders it.
+**Expensive to reverse? Generate competing approaches before you write the map.**
+Cheap to reverse with a known approach earns one pass. `depth.md` holds what
+"competing" has to mean for that to be worth doing.
 
-**Competing means different in kind, not in detail.** Three variants of one design
-are one option. Change what carries the load: a different layer, a different
-owner, buying instead of building, doing less, or doing nothing.
-
-**When every option looks the same, attack the premise instead.** The first idea
-constrains the next three, so move the constraint rather than the design. Run
-these against the brief, in order, and keep whatever survives:
-
-- **Invert it.** What if the opposite were true — the data flowed the other way,
-  the caller owned this, the check ran at write time instead of read time?
-- **Delete the requirement.** Which constraint, removed, makes the problem
-  trivial? Then ask who actually imposed it. Often nobody currently alive.
-- **Move it in time.** Build-time instead of runtime, migration instead of
-  compatibility shim, one-off script instead of a permanent feature.
-- **Let something else own it.** The platform, the database, the type system, the
-  framework, an installed dependency. Code you do not write cannot rot.
-- **Solve the general case, or refuse to.** Either this is one instance of a
-  named problem with a known answer, or it is genuinely specific and the general
-  solution is the over-build.
-
-**The honest output of this is sometimes "the first idea was right".** Say that,
-and say what you tried against it. An alternative you generated and killed is
-evidence; an alternative you never had is a blind spot you cannot see.
-
-**Kill each rejected option in writing, with its reason.** "Rejected: needs a
-schema change we cannot reverse" is an artefact — it stops the next session
-walking the same dead end.
-
-**Generate freely; report at most three, one paragraph each.** The cap is on what
-you write down, never on what you consider — a generation cap is how the second
-idea never gets had. Say how many you discarded.
-
-**Skip divergence only where the repository already answers the question.** A
-precedent you can point at is a decision already made; re-deriving it is the
-ceremony this section warns about. No precedent means at least one alternative,
-however cheap the work is to undo.
+**Open `depth.md` before choosing.** It holds what "competing" means and does
+not, what to do when every option looks the same, the reporting cap, and when the
+repository already answers the question. This is a decision you make once per run and it is the one most often
+made by reflex.
 
 ## 1. Write the stage map before touching anything
 
@@ -194,6 +163,28 @@ thought across lanes to use more agents.
 spawn agents, so a stage needing its own fan-out must be split into parallel lanes
 by you, before dispatch. A lane you expect to subdivide itself is a lane that runs
 sequentially.
+
+**Give every lane a `Consumes:` / `Produces:` block.** Names and types, not
+prose. A lane sees only its own brief, so this is the only way it learns what the
+neighbouring lanes call things — and without it, parallel lanes drift and the
+drift surfaces at integration, when it is most expensive.
+
+```
+Consumes: SessionToken { id: string, expiresAt: Date } from lane 2
+Produces: refreshToken(token: SessionToken): Promise<SessionToken>
+```
+
+**The preflight conflict scan emits rows, not a verdict.** One row per lane pair
+sharing a file or an interface, with the shared thing named. *"The scan is clean"
+without those rows is not a scan you ran* — it is a claim about a scan. Same
+evidence-not-verdict rule the review lanes already follow, applied to planning.
+
+**And a floor: do not fan out when the work is coupled.** Fan-out buys
+independence and taxes coupling — each lane rebuilds context from cold, and you
+pay that N times for isolation two coupled lanes cannot use. Upstream ran every
+plan through per-task dispatch with no such floor, and one documented case spent
+**68M tokens on ~3,000 lines**, 22.5M of it on planning alone. Two lanes that
+must agree on an interface are one lane.
 
 ## 3. Verify each stage with a check that can fail
 
@@ -260,6 +251,32 @@ map the user saw before execution started (§1). Commit once per checkpoint, aft
 the phase — or the group — validates and its findings reconcile. Work that goes
 wrong later costs back to the last boundary, not the run. Asked not to commit? Say the checkpoint is available and carry on.
 
+### Rulings, not stalls
+
+**A running plan does not wait on a human.** Four things **block execution**, and
+only these: an irreversible or destructive operation, a security-sensitive
+action, a side effect outside this worktree, or a plan so broken every path is a
+guess.
+
+Surfacing is a different act and that list does not bound it — the warning
+threshold below stops to *report* three accumulated concerns, and an exhausted
+review budget stops to *ask* about a risk still open. Both hand the user a
+decision. A ruling is what you make when no decision is owed.
+
+Everything else gets a **ruling** — decide, and log it:
+
+```
+Ruling: used the existing retry helper rather than adding backoff to the client
+        — one implementation beats two — costs a refactor if the client later
+        needs different semantics
+```
+
+Collect every ruling into the final message. **That roll-up is the only place
+decisions taken on the user's behalf reach them; a ruling that dies with the
+workspace was a decision made in secret.** A wrong ruling costs rework they can
+see and undo. A session parked on a question costs their whole day and buys
+nothing — one upstream report records a run blocked for nearly nine hours.
+
 ## 4. Self-critique before delivery
 
 Read the result as a skeptical reviewer would and answer both, as defect reports
@@ -289,27 +306,6 @@ shipped the wrong answer.
 **Verify a problem before flagging it** — `verification-planning` holds the
 procedure. Absence of evidence is not the finding.
 
-## Calculated risk, and its ceiling
-
-**A risk is worth taking when the downside is bounded, detectable and
-reversible.** All three, not two — an unbounded or invisible downside is not a
-calculated risk, it is a guess wearing the word.
-
-**Taking it requires naming the instrument that will detect the damage, before
-you start.** Not "we will notice": the test, the query, the log line, the diff
-that goes red. Undetected damage is found by the user, weeks later.
-
-**No such instrument exists? Building it is part of the work, not a follow-up.**
-The follow-up lands after the damage has already shipped, which is the one moment
-the instrument was for. This binds on the irreversible rung above, never on work
-a commit undoes — there, the revert is the instrument.
-
-**Match the instrument to the damage you actually fear — presence is not
-function.** `51dfbcc` records the failure: a compression pass kept every pinned
-phrase, the checker stayed green, and three behaviours stopped firing. Its own
-words: "a green coverage run proves no rule was deleted. It does not prove the
-remaining rules still fire."
-
 ## Operational rules
 
 **Warning threshold.** Minor concerns accumulate over a long run. Keep count. **At
@@ -336,18 +332,13 @@ survives; a phase adds one thing to it. Record the important visual decisions in
 the progress file, because the next phase reads that file and not the transcript
 where the designer explained itself.
 
-## Domain variations
+## Risk, and domains that differ
 
-Only the artefact in step 3 changes.
-
-- **Software** — read the whole relevant section before writing; plan the diff,
-  then execute. Check: tests run, error paths exercised, not just the happy path.
-- **Research** — gather sources before synthesising; do not write as you search.
-  Distinguish confirmed fact from inference. Check: every load-bearing claim
-  traces to a source actually read.
-- **Data** — understand the shape first; state the hypothesis before computing,
-  not after seeing the numbers. Check: quality assertions run against real data.
-- **Multi-session** — define done criteria upfront, written and testable.
+**Taking a calculated risk requires naming the instrument that will detect the
+damage, before you take it** — and where no such instrument exists, building it
+is part of the work. **Research, data and multi-session work each change what a
+stage has to produce.** Those variations live in `depth.md` beside the risk
+rules; open it when either applies.
 
 ## What this does not do
 

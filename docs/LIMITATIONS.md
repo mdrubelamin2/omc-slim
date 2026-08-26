@@ -38,6 +38,14 @@ lines), and metavariable patterns over-match, so a thin outline must not be read
 as "nothing here". See
 [the research](./RESEARCH-2026-08-26.md#710-code-search-retrieval-and-deletion--measured-on-this-machine).
 
+**`maxTurns` is set on every agent and has never been observed firing.** Six
+agents carry a bound between 20 and 40 turns. The values are judgement, not
+measurement — nothing here establishes what a typical run costs — and **nothing
+in this repository verifies the harness honours the key at all.** If it is
+ignored, `explorer`'s instruction to "stop searching with turns in hand" budgets
+against a limit that does not exist, and no check would tell you. Treat the bound
+as a declared intent rather than a guarantee until a run is observed hitting it.
+
 **It changes your output style.** `force-for-plugin` overrides your `outputStyle`
 while omc-slim is enabled. Disabling the plugin reverts it.
 
@@ -58,19 +66,30 @@ behalf which hosts your queries reach. See
 [the audit](./AUDIT-2026-08-25.md) for how it was found.
 
 **The static figure is disciplined and the bodies are not.** v0.9.0 added roughly
-**4,133 tokens of on-invoke cost in one release, 3,641 corrected** — every addition individually
+**5,429 tokens of on-invoke cost in one release, 4,783 corrected** — every addition individually
 justified by measurement, and their sum unmeasured, which is the exact failure
 mode this project has criticised in others. `./scripts/measure-context.sh` now
 reports on-invoke cost per component so the next increase is visible while it
 happens rather than three releases later.
 
-Two consequences worth knowing. **`review` is the heaviest single component —
-5,438 tokens on the chars/4 basis, ~4,791 corrected** — against a
-post-compaction re-injection limit that keeps only the **first 5,000 tokens of a
-skill**. Which side of that line it falls on depends on which basis you use,
-which is the honest answer: it is close enough that a modest addition puts its
-tail past the limit, and the tail is what goes. The load-bearing rules are
-front-loaded, which mitigates that and does not fix it. And the honest comparison: measured against `obra/superpowers` at v6.3.0,
+Two consequences worth knowing. **`review` is the heaviest component**, and its
+SKILL.md alone is 5,669 tokens on the chars/4 basis, ~4,995 corrected —
+against a post-compaction re-injection limit that keeps only the **first 5,000
+tokens of a skill**. It sits on the line: under on the corrected basis, over on
+chars/4. Its load-bearing rules are front-loaded and its lane mechanics live in
+`checklists.md`, which is where they were moved when this measurement was taken.
+The ceiling if every component fires once is **32,467 chars/4, ~28,605 corrected**.
+
+Counting siblings is new, and it exposed an older understatement.
+`review/checklists.md` is read on **every** review — "read it now, before judging
+anything" — and `measure-context.sh` had never counted it, because `body_chars`
+silently returned 0 for any file without YAML frontmatter. That contradicted its
+own comment and had gone unnoticed. Fixed; the conditional siblings
+(`performance.md`, `depth.md`, `principles.md`) are now listed separately and
+excluded, because a file opened on one run in five is not a cost paid on every
+run.
+
+And the honest comparison: measured against `obra/superpowers` at v6.3.0,
 omc-slim's always-on surface came out **marginally larger** (~5,743 bytes against
 ~5,556). The defensible claim was never "smaller". It is **no runtime that
 multiplies** — no fan-out by default, nothing on the tool-call path — and every
@@ -129,7 +148,7 @@ while plain ranged 351 to 539 LOC and 14 to 19 flags. **Consistency is the
 clearest signal in the data.**
 
 More code did not buy more correctness. The heavyweight arm wrote 137 tests and
-5.4× the code, and produced the run's only silent failure — skipping an
+4.3× the code, and produced the run's only silent failure — skipping an
 unreadable directory without a word. It also proved wildly unstable: three runs
 of one prompt cost $4.71, $6.01 and $10.47.
 
@@ -156,7 +175,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,496 tok** | see above |
+| **omc-slim** | **~4,405 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -165,7 +184,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,496 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,405 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

@@ -124,14 +124,14 @@ review-lanes-trigger-on-content	review	Every lane triggers on the diff's content
 review-size-picks-who-not-whether	review	Size decides only	who runs the lane, not whether it runs|a lane the table triggers gets run and reported
 fixer-webfetch-not-research	fixer	`WebFetch` is allowed for a page the caller named	Reading one URL you were handed is execution|going looking is research|cannot be stale about this project
 deepwork-reversible-not-obvious	deepwork	Reversibility is not the same as obviousness	no precedent in this repository still earns one competing option|building the wrong shape confidently
-deepwork-generate-freely	deepwork	Generate freely; report at most three	The cap is on what you write down|a generation cap is how the second idea never gets had
+deepwork-generate-freely	deepwork/depth.md	Generate freely; report at most three	The cap is on what you write down|a generation cap is how the second idea never gets had
 orchestrator-is-the-fan-out	output-styles	You are the only place fan-out can happen	Specialists cannot spawn agents|has to be planned here, before dispatch|three lanes in one message
 deepwork-research-is-a-stage	deepwork	Research is a stage, not a reflex	plans the wrong work in the right order|never that the plan was current
 deepwork-named-source-or-nothing	deepwork	checked, found nothing	silence is not an answer|neither is your own memory
 deepwork-scale-never-skip	deepwork	Scale the pass, never skip it	still owes questions 2 and 3|Only question 1 scales with consequence
 deepwork-research-continues	deepwork	Research does not stop at the plan	a fact you assumed rather than checked|before the stage closes
-deepwork-attack-the-premise	deepwork	attack the premise instead	The first idea constrains the next three|move the constraint rather than the design
-deepwork-first-idea-may-be-right	deepwork	the first idea was right	An alternative you generated and killed is evidence|a blind spot you cannot see
+deepwork-attack-the-premise	deepwork/depth.md	attack the premise instead	The first idea constrains the next three|move the constraint rather than the design
+deepwork-first-idea-may-be-right	deepwork/depth.md	the first idea was right	An alternative you generated and killed is evidence|a blind spot you cannot see
 deepwork-grounding-does-not-scale	deepwork	Depth scales; grounding does not	None of it decides whether you check|cannot calibrate depth against facts you have not checked
 deep-interview-explicit-runs	deep-interview	An explicit invocation is a decision already made	do not re-open it|the most annoying possible response
 deep-interview-score-anyway	deep-interview	Score the ambiguity anyway	it is the gate the rest of this skill runs on|a two-line answer, not a refusal

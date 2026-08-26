@@ -132,6 +132,24 @@ directly, so nothing depends on those packs being installed.
 Benchmark figures come from [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
 July 2026 run, page last updated 2026-08-08.
 
+## The `research` origin
+
+`COVERAGE.tsv` rows tagged `research` come from the 2026-08-26 external sweep,
+recorded in [`RESEARCH-2026-08-26.md`](./RESEARCH-2026-08-26.md). They are
+classified `internal` by `check-coverage.sh` because **there is no upstream
+repository to pin** — the sources are papers, vendor documentation and measured
+results, not a pack that was read and adopted.
+
+That is a weaker provenance than a commit SHA and it is labelled as such. Each
+rule traces to a section of the research document, and each of those sections
+carries its own URLs and confidence tier. Where a claim there could not be
+verified, it says so; where a lane retracted something, that is recorded too.
+
+Three rules in that document were **wrong and are struck through rather than
+deleted** — two assumed a defect without checking the repository first, and one
+over-generalised a harness feature. Keeping the strikethroughs is the point: a
+research record that only shows its hits is not a record.
+
 ## Safe to delete the sources this replaces
 
 `~/.claude/CLAUDE.md` and the `fable-mode` skill are meant to be **deleted** once
@@ -155,7 +173,18 @@ before deleting.
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 244 rows, and growing with each release:
+lives — 286 rows, and growing with each release:
+
+The roster it asserts is **six agents, six skills, one hook** — stated here in
+prose because the check requires this file to carry it, and a sentence survives a
+compression pass better than a pasted line does.
+
+The itemised lines used to be pasted here in full. They went stale three times —
+`CHANGELOG.md` records correcting two of those rounds — because only two of the
+nine literals were ever enrolled in the check, and this checker's own source
+predicts exactly that: *"A doc that quotes a checker and is not checked by it
+will always drift."* The fix was to stop quoting what is not checked, rather than
+to patch it a fourth time.
 
 `COVERAGE.tsv` proves a rule's phrase survived. It cannot prove the phrase still
 carries its rule: `51dfbcc` and `9ee0438` each record a compression pass where
@@ -168,16 +197,11 @@ name and loses its reasoning. Run both.
 
 ```bash
 ./scripts/check-coverage.sh
-# 6/6 agents present in the orchestrator roster.
-# 6/6 skills present in the orchestrator roster.
-# 3/3 published figures quote the measured total.
-# 2/2 plugin-internal paths resolve.
-# 3/3 worded rosters match: six agents, six skills, one hook.
-# 14 test cases and 17 mutants, both stated in README.
-# 12/12 frontmatter blocks parse.
-# 15/15 adopted origins classified, 14 external and all documented.
+# ... eight assertions, one line each: rosters, published figures, internal
+# paths, worded rosters, hook cases and mutants, frontmatter, invisible
+# characters, adopted origins. Run it to see them; they are not pasted here.
 #
-# 244/244 adopted behaviours present.
+# 286/286 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 

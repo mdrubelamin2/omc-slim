@@ -2,6 +2,10 @@
 name: codemap
 description: Writes hierarchical codemap.md files across an UNFAMILIAR repo plus a root atlas and an AGENTS.md section. Expensive, one agent per directory, and it mutates the repo — state the cost and get an explicit yes first.
 when_to_use: '"map this codebase", "document this repo". On request only; if the repo is small enough to read, read it.'
+# Expensive, and it mutates the repository. It must never auto-fire: this
+# removes it from the model's context entirely rather than merely hiding it
+# from the slash menu, so it also costs nothing in the listing until invoked.
+disable-model-invocation: true
 ---
 
 # Codemap Skill
@@ -174,9 +178,9 @@ Nothing written to disk gets that.
 Fixers write the `codemap.md` files during this workflow, one per directory. Use precise technical terminology to document the implementation:
 
 - **Responsibility** - Define the specific role of this directory using standard software engineering terms (e.g., "Service Layer", "Data Access Object", "Middleware").
-- **Design Patterns** - Identify and name specific patterns used (e.g., "Observer", "Singleton", "Factory", "Strategy"). Detail the abstractions and interfaces.
-- **Data & Control Flow** - Explicitly trace how data enters and leaves the module. Mention specific function call sequences and state transitions.
-- **Integration Points** - List dependencies and consumer modules. Use technical names for hooks, events, or API endpoints.
+- **Design** - Identify and name specific patterns used (e.g., "Observer", "Singleton", "Factory", "Strategy"). Detail the abstractions and interfaces.
+- **Flow** - Explicitly trace how data enters and leaves the module. Mention specific function call sequences and state transitions.
+- **Integration** - List dependencies and consumer modules. Use technical names for hooks, events, or API endpoints.
 
 Example codemap:
 
