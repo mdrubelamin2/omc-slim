@@ -10,6 +10,20 @@
 # block between blank lines. Not the whole file — a rewrite that guts a rule
 # almost always leaves its words somewhere else in the document.
 #
+#
+# Rule 0b — a pin retires on the same evidence that removes the text it pins.
+#
+# Rule 0 says pin before you cut, and pin inflation is Rule 0's own failure mode:
+# pins already blanket ~70% of the output style, every compression phase adds
+# more, and a ratchet with no downward pawl makes these two files the largest
+# incompressible surface in the repository inside ten releases.
+#
+# So a row comes out only when (a) its provenance commit has been read and the
+# documented failure it answers no longer reproduces under the Rule 1 pressure
+# test, or (b) its upstream justification is documented as reversed — the pattern
+# LIMITATIONS.md already records for the designer-temperature entry (c7690923).
+# Same evidence to remove a pin as to cut pinned text. Never less.
+#
 # Matching is a case-folded FIXED SUBSTRING, not regex. Whitespace is normalised
 # exactly as check-coverage.sh normalises it, so line-wrapped prose still
 # matches. If the anchor appears more than once, the row passes when ANY one
@@ -140,3 +154,7 @@ deep-interview-score-anyway	deep-interview	Score the ambiguity anyway	it is the 
 deep-interview-guard-is-for-autofire	deep-interview	This guard is for the case where nothing was invoked	Stop and say so if the request is already specific
 deepwork-explicit-runs	deepwork	Invoked on purpose? Then run	the question is settled|the most annoying possible response|Scale the work down if it deserves less
 librarian-bash-non-mutating	librarian	Bash is for non-mutating diagnostics only	Never `git checkout`|never anything that writes|changes the tree the caller is working in
+fixer-grep-every-caller	fixer	grep every caller	One guard in the shared function is a smaller diff|leaves every sibling caller still broken
+fixer-toolset-both-scopes	fixer	it comes from both the project's	the user's `~/.claude/`|usually more from the latter|prefer it over hand-writing the equivalent
+fixer-deferred-tools	fixer	unsearched tool is invisible	Where tools are deferred|`ToolSearch` is how you find them
+designer-deferred-tools	designer	unsearched tool is invisible	Where tools are deferred|`ToolSearch` is how you find them

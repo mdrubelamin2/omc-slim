@@ -7,6 +7,20 @@
 #   - `audit`, for rules added to close a defect found in review, where the whole
 #     point is that the defect stays closed.
 #
+#
+# Rule 0b — a pin retires on the same evidence that removes the text it pins.
+#
+# Rule 0 says pin before you cut, and pin inflation is Rule 0's own failure mode:
+# pins already blanket ~70% of the output style, every compression phase adds
+# more, and a ratchet with no downward pawl makes these two files the largest
+# incompressible surface in the repository inside ten releases.
+#
+# So a row comes out only when (a) its provenance commit has been read and the
+# documented failure it answers no longer reproduces under the Rule 1 pressure
+# test, or (b) its upstream justification is documented as reversed — the pattern
+# LIMITATIONS.md already records for the designer-temperature entry (c7690923).
+# Same evidence to remove a pin as to cut pinned text. Never less.
+#
 # Checked by scripts/check-coverage.sh. Patterns are FIXED SUBSTRINGS, not regex.
 # Whitespace is normalised first, so line-wrapped prose still matches.
 #
@@ -328,3 +342,7 @@ research	compaction-eviction-risk	docs/LIMITATIONS.md	30% on average after compa
 research	env-tool-search	README.md	ENABLE_TOOL_SEARCH
 research	env-subagent-cache-ttl	README.md	subagentPromptCacheTtl
 research	keep-cut-audit-applied	docs/RESEARCH-2026-08-26.md	The keep/cut audit, applied
+audit	fixer-grep-every-caller	fixer	grep every caller of the function you are
+audit	fixer-toolset-both-scopes	fixer	it comes from both the project's
+audit	fixer-deferred-tools	fixer	an unsearched tool is invisible
+audit	designer-deferred-tools	designer	an unsearched tool is invisible
