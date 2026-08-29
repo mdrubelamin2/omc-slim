@@ -3,6 +3,52 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.3
+
+Compression phases 1 and 2, and a do-not-touch list that did not survive being
+challenged.
+
+**285 real tokens out of the on-invoke surface**, all of it Rule 2 category 1 —
+intra-file duplicates and harness restatements — with every cut behind Rule 0.
+The four pin additions landed first, in their own commit, and were proved able to
+fail: gutting *"One guard in the shared function is a smaller diff"* while
+leaving *"grep every caller"* in place keeps `COVERAGE.tsv` at zero dropped rows
+and makes `check-reinforcement.sh` name the loss. That is `51dfbcc` reproduced on
+demand.
+
+The largest single cut is the one the compression map predicted: `designer` gave
+the same tooling rule twice, 130 lines apart, and it is one paragraph now.
+`codemap`'s second worked example went — Rule 2 category 3 trims examples to one,
+never to zero, and the example that survives is the one the fixer brief pastes
+verbatim. `explorer`'s File-operations and Tool-choice sections answered one
+question between them and are one block. Three identical register blocks
+compressed in place rather than deleted, because subagents do not inherit the
+output style and the agent-side copy is the only copy that agent ever sees.
+
+**Static came down 70 tokens and is still 138 above where this run started.**
+Descriptions gave 53 of it: a description carries *when to route*, the body
+carries *what happens*, and the six skill descriptions now compete inside a
+listing budget Claude Code caps at 1% of the context window — shared with every
+other plugin's skills, which is how 24 of 103 skills on one observed machine
+ended up with no description at all.
+
+**The ratchet is not paid back, and this entry says so rather than manufacturing
+the difference.** v0.9.2 spent 208 static tokens on four defect fixes, three of
+them required by a published exit criterion. Safe compression of the style body
+yielded 17 tokens against a documented ceiling of roughly 3%. Cutting further
+means cutting the roster bullets, whose justification got *stronger* this month,
+not weaker. So the number stands, stated, and the ratchet binds v0.9.4 to zero
+growth instead of being quietly re-baselined.
+
+**The do-not-touch list, challenged rather than obeyed.** Five of its six entries
+hold and one does not. It claims the reference siblings are "pin-dense, already
+the compressed form": measured, `review/checklists.md` runs 238 tokens per pinned
+rule and `deepwork/depth.md` 243, against 43 for the output style and 59 for
+`review/SKILL.md` — the two least pin-dense files in the estate. The conclusion
+still stands, because the content is enumerative and a checklist pins its section
+rather than each item, but **the stated reason was wrong**, and a claim that is
+right by accident is one that will be wrong next time.
+
 ## v0.9.2
 
 The correctness release. Twenty-four recorded defects were sitting in the tree

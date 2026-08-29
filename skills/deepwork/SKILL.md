@@ -1,7 +1,7 @@
 ---
 name: deepwork
-description: 'Runs a migration, rewrite or cross-cutting refactor as staged execution: competing approaches, a written stage map, parallel lanes, one failable check per stage, a review gate between stages, and a skeptical self-critique.'
-when_to_use: '"this touches everything", "big refactor", "migrate X to Y", "rewrite this", "do not half-ship this", "do this properly". Work only correct once every layer lands together. Not routine multi-file edits, and not a plan someone else runs: this one executes the stages itself.'
+description: 'Runs a migration, rewrite or cross-cutting refactor as staged execution: a written stage map, parallel lanes, one failable check per stage, and a gate between stages.'
+when_to_use: '"this touches everything", "big refactor", "migrate X to Y", "rewrite this", "do this properly". For work that is only correct once every layer lands together. Not routine multi-file edits, and not a plan someone else runs: this one executes the stages.'
 ---
 
 # Deepwork

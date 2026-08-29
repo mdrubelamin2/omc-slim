@@ -1,6 +1,6 @@
 ---
 name: simplify
-description: 'DELETES code that should never have been written — speculative abstraction, config nobody sets, hand-rolled equivalents of the standard library or platform — and simplifies the rest with behaviour preserved exactly. Chesterton fence: nothing comes out until it is known why it went in.'
+description: 'DELETES code that should never have been written — speculative abstraction, config nobody sets, hand-rolled standard library — and simplifies the rest with behaviour preserved exactly. Nothing comes out until it is known why it went in.'
 when_to_use: '"make this simpler", "why is this so complicated", "clean this up", "this is over-engineered", "too much boilerplate", "we do not need this abstraction". Not for renaming or formatting tidy-ups, which change no structure.'
 ---
 
@@ -91,16 +91,16 @@ stated** before it starts. Spending it is the caller's decision.
 
 Before deciding code is dead, use the strongest search this machine has: a
 structural or AST-aware server answers "every caller" exactly where a regex
-approximates it. Before deciding a hand-rolled helper should go, check whether a
-linter or type checker for this stack already names it. These come from the
-project's `.claude/` and the user's `~/.claude/`, their names say nothing useful,
-and `ToolSearch` reaches them where tools are deferred.
+approximates it, and a linter or type checker for this stack may already name the
+hand-rolled helper. These come from the project's `.claude/` and the user's
+`~/.claude/`, their names say nothing useful, and `ToolSearch` reaches them where
+tools are deferred. Where nothing is installed, the project's own tools are the
+answer, and you say which you used.
 
-Two components carry work this skill should not do itself. Untested code needs a
-pin-down check first — that is the `omc-slim:verification-planning` skill.
-Enumerating every consumer of a symbol is the `omc-slim:explorer` agent, which
-returns locations and proposes nothing. Where nothing is installed for either, the project's own tools
-are the answer, and you say which you used.
+Two components carry work this skill should not do itself: untested code needs a
+pin-down check first, which is the `omc-slim:verification-planning` skill, and
+enumerating every consumer of a symbol is the `omc-slim:explorer` agent, which
+returns locations and proposes nothing.
 
 ## Process
 

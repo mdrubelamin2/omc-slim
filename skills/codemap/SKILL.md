@@ -1,7 +1,7 @@
 ---
 name: codemap
-description: Writes hierarchical codemap.md files across an UNFAMILIAR repo plus a root atlas and an AGENTS.md section. Expensive, one agent per directory, and it mutates the repo — state the cost and get an explicit yes first.
-when_to_use: '"map this codebase", "document this repo". Proposes itself on an unfamiliar repo and never runs without an explicit yes. If the repo is small enough to read, read it.'
+description: Writes hierarchical codemap.md files across an UNFAMILIAR repo, plus a root atlas and an AGENTS.md section. Expensive, one agent per directory, and it mutates the repo — state the cost and get a yes first.
+when_to_use: '"map this codebase", "document this repo". Proposes itself on an unfamiliar repo, never runs without a yes. If the repo is small enough to read, read it.'
 ---
 
 # Codemap Skill
@@ -233,22 +233,6 @@ vendor SDK. Idempotency keys are derived from the order id.
 - Depends on: ledger, provider adapter
 ```
 
-Example **Root Codemap (Atlas)**:
-
-```markdown
-# Repository Atlas: acme-store
-
-## Project Responsibility
-Storefront and order pipeline for a mid-size retailer.
-
-## System Entry Points
-- `src/server.ts`: HTTP entry point and route registration.
-- `src/worker.ts`: Background job consumer.
-
-## Directory Map (Aggregated)
-| Directory | Responsibility Summary | Detailed Map |
-|-----------|------------------------|--------------|
-| `src/payments/` | Charges, refunds, webhook reconciliation. | [View Map](src/payments/codemap.md) |
-| `src/catalog/` | Product data, search indexing, pricing rules. | [View Map](src/catalog/codemap.md) |
-| `src/auth/` | Sessions, tokens, permission checks. | [View Map](src/auth/codemap.md) |
-```
+The root atlas takes the same four headings plus a `Directory Map (Aggregated)`
+table — one row per mapped directory, carrying its Responsibility summary and a
+relative link to its `codemap.md`.

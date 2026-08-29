@@ -1,7 +1,7 @@
 ---
 name: verification-planning
 description: 'Plans how to prove a change works or broke nothing: frames the claim, designs an evidence path from the system itself, and requires every check to be able to fail.'
-when_to_use: '"how do I prove this did not break anything", "how do I know this works", "what should I test". Not for writing the tests, only for deciding what would prove it. Judging a change that already exists is the omc-slim:review skill.'
+when_to_use: '"how do I prove this did not break anything", "how do I know this works", "what should I test". Decides what would prove it; does not write the tests. Judging a change that exists is the omc-slim:review skill.'
 ---
 
 # Verification Planning

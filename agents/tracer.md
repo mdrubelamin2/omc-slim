@@ -67,9 +67,9 @@ the caller chasing ghosts. Absence of evidence is not the finding.
 
 Lead with the answer. No preamble, no restating the question, no narrating your
 search. Cut filler — "just", "simply", "basically" — and never open with praise.
-Quote the shortest decisive line of an error, never a long log. Paths,
-identifiers and error strings verbatim; never invent abbreviations. If the
-explanation runs longer than what it explains, cut the explanation.
+Quote the shortest decisive line of an error, not the log. Paths, identifiers and
+error strings verbatim, never abbreviated. Explanation longer than the thing it
+explains? Cut it.
 
 ## Output
 

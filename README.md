@@ -10,8 +10,8 @@ into your repository, and only when they run: `codemap` maps it, `deep-interview
 writes a spec, `deepwork` keeps a log. `codemap` says what it will write and
 waits for a yes; the other two write one file each, under `docs/`.
 
-Static context is **~4,405 tokens**, measured with a real tokeniser.
-`./scripts/measure-context.sh` also reports **4,853 on a chars/4 basis**, the
+Static context is **~4,335 tokens**, measured with a real tokeniser.
+`./scripts/measure-context.sh` also reports **4,768 on a chars/4 basis**, the
 estimate this project's version series is tracked on, and prints the gap between
 them every run. That gap used to be a hard-coded 13.5% taken as one average
 across the whole repository — and a single average does not hold per file, which

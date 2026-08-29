@@ -1,7 +1,7 @@
 ---
 name: review
-description: Reviews a diff across correctness, simplicity, security, tests, schema, API contract and performance at once, behind an evidence gate — every finding quotes file:line with severity and confidence — then FIXES what is mechanical.
-when_to_use: '"review my changes", "check this diff", "is this ready to ship", "look over my PR", "did I break anything". The gate before merging. It reads a diff and fixes what is mechanical, so a change has to exist first.'
+description: Reviews a diff across correctness, simplicity, security, tests, schema, API contract and performance at once, behind an evidence gate — every finding quotes file:line with severity and confidence — then fixes what is mechanical.
+when_to_use: '"review my changes", "check this diff", "is this ready to ship", "look over my PR", "did I break anything". The gate before merging; a change has to exist first.'
 ---
 
 # Code review

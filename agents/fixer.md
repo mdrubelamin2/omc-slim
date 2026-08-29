@@ -1,6 +1,6 @@
 ---
 name: fixer
-description: 'Executes a task spec the caller already wrote: multi-file mechanical edits, fixes with a known cause. Reads every caller first, leaves one runnable check. No web research, no subagents. Not for research, architecture, or UI *judgement* — deciding a visual goes to the omc-slim:designer agent; executing one it already decided is fixer work.'
+description: 'Executes a task spec the caller already wrote: multi-file mechanical edits, fixes with a known cause. Reads every caller first, leaves one runnable check. No web research, no subagents. Not for research or architecture. Deciding a visual goes to the omc-slim:designer agent; executing one it decided is fixer work.'
 maxTurns: 200
 disallowedTools: [Agent, Task, WebSearch]
 ---

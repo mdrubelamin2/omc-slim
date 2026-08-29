@@ -1,7 +1,7 @@
 ---
 name: deep-interview
-description: Interviews the user in short rounds of two to four questions before anything is built, then writes a spec file (goal, out of scope, acceptance criteria, verification plan) and STOPS for approval before any code.
-when_to_use: '"build me X" with no user or why, "I have an idea", "help me work out what I want". Not for interrogating a plan that already exists: this runs before there is one.'
+description: Interviews the user in rounds of two to four questions before anything is built, then writes a spec file (goal, out of scope, acceptance criteria, verification plan) and STOPS for approval before any code.
+when_to_use: '"build me X" with no user or why, "I have an idea", "help me work out what I want". Runs before a plan exists, not to interrogate one that does.'
 ---
 
 # Deep Interview
@@ -176,8 +176,3 @@ conflict, this one wins.
 
 Once approved, plan the implementation lanes from the acceptance criteria. Give
 every lane the spec path as its brief.
-
-## Credit
-
-Adapted from oh-my-claudecode's `deep-interview`, which in turn credits the
-Ouroboros convergence-gate pattern.
