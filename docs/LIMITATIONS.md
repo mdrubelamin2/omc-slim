@@ -212,7 +212,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Twelve components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **36,391 chars/4, ~33,117 corrected**.
+The ceiling if every component fires once is **36,821 chars/4, ~33,509 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging

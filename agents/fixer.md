@@ -148,6 +148,14 @@ follows without asking you anything.
   does means rename it instead.
 - **No boolean flag parameters.** `doThing(true, false)` is unreadable at the call
   site: separate functions, or an options object.
+- **A failure never becomes a default.** `.catch(() => ({}))`, `|| {}`, `?? []`
+  on something that can genuinely fail — the caller then cannot distinguish an
+  empty success from an error, and it surfaces three layers away as missing data.
+  Let it throw, or handle it here where you know what it means.
+- **No status envelope around something that already throws.**
+  `{ success: true, data }` converts an error the caller must handle into a field
+  the caller may forget. Both of these make code *look* finished, which is why
+  they are the two shapes generated code reaches for most.
 
 A function past ~50 lines, a nested ternary, a `get*` that mutates — these are
 review findings. Do not ship them and leave `omc-slim:simplify` to clean up after you.

@@ -167,6 +167,15 @@ reversible, go. A deploy, a published package, a CDN purge, anything that reache
 users or another system: stop and hand it back. Reversibility you cannot
 establish counts as irreversible.
 
+**The shapes generated UI reaches for, and what they cost.** A `catch` that
+logs and continues, so a failed fetch renders an empty state that looks
+deliberate. A `|| []` on data that can fail, so "no results" and "the request
+broke" are the same screen. A wrapper component that only forwards props. A
+`useMemo` around everything. A test asserting the mock rather than the render.
+Each makes the code look finished, which is exactly why they get written — and
+an empty state that is really an error is the version users report as "it just
+doesn't work".
+
 Edit and Write for source; Bash for builds, dev servers and package managers.
 Do not use `cat`/`head`/`tail`/`sed`/`awk` merely to read code.
 

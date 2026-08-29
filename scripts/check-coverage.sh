@@ -1074,6 +1074,85 @@ if bad:
 print(f'{checked}/{checked} component references carry their type.')
 TYPEPY
 
+# --- the code-slop taxonomy is covered ------------------------------------
+# "Does this plugin fix the AI slop in the code it writes?" is a fair question
+# and it was answered by assertion until this block existed. Measured on
+# 2026-08-29 the answer was "partially, and lopsidedly": `simplify` carried 5 of
+# 10 markers, `fixer` — the WRITER — carried 3, `designer` carried 0, and two
+# markers were absent from the entire estate.
+#
+# The lopsidedness was the finding. Coverage sat on the component that DELETES
+# code rather than the two that write it, so slop was being caught at the latest
+# and most expensive point instead of prevented at the cheapest.
+#
+# The taxonomy is slop-scan's eight rules plus two tells from the complaint
+# corpus. slop-scan is the only tool in this space with a published
+# discrimination number: known-AI repositories median 6.91 against mature
+# open-source median 1.00, with the OSS cohort pinned to commits on or before
+# 2025-01-01 so the baseline predates the thing being measured.
+#
+# What this checks and what it cannot: that a rule addressing each marker EXISTS
+# somewhere a model will read. It cannot check that the rule fires, which is the
+# same limit every presence gate here has and is why the contradiction sweep and
+# the eval suite exist.
+python3 - "$ROOT" <<'SLOPPY' || exit 1
+import glob, os, re, sys
+root = sys.argv[1]
+
+# marker -> (pattern, where it must appear at minimum)
+#   'writer' means at least one of fixer/designer must carry it, because a rule
+#   that only lives in the reviewer catches slop after it is written.
+TAXONOMY = [
+    ('catch that swallows or logs-and-continues',
+     r'empty catch|swallow\w*\s+(an?\s+)?error|logs and continue|log and continue', 'writer'),
+    ('a failure that becomes a default value',
+     r'becomes a default|\|\| \{\}|\?\? \[\]|catch\(\(\) =>', 'writer'),
+    ('a status envelope around something that throws',
+     r'status envelope|success: true', 'writer'),
+    ('a redundant or widening cast',
+     r'redundant cast|as any|widening a type', 'any'),
+    ('a wrapper that only forwards',
+     r'wrapper that adds nothing|only forwards|pass-through wrapper', 'any'),
+    ('a test that asserts the mock',
+     r'asserts the mock', 'any'),
+    ('duplicated logic or a copy-paste clone',
+     r'same conditional repeated|Same 5\+ lines|Re-implementing what lives', 'any'),
+    ('a comment that narrates the code',
+     r'narrat\w+|restating the code', 'writer'),
+    ('an abstraction built for a caller that never came',
+     r'second caller that never came|one implementation|speculative', 'any'),
+    ('reflexive memoisation or wrapping',
+     r'memo around everything|useMemo around everything|over-memoisation', 'any'),
+]
+
+estate = {}
+for pat in ('agents/*.md', 'skills/*/*.md', 'output-styles/*.md'):
+    for f in glob.glob(os.path.join(root, pat)):
+        estate[os.path.relpath(f, root)] = open(f, encoding='utf-8').read()
+writers = [k for k in estate if k in ('agents/fixer.md', 'agents/designer.md')]
+
+bad = 0
+for name, pattern, scope in TAXONOMY:
+    rx = re.compile(pattern, re.I)
+    hits = [k for k, v in estate.items() if rx.search(v)]
+    if not hits:
+        print(f'  SLOP UNCOVERED no component addresses: {name}')
+        bad += 1
+        continue
+    if scope == 'writer' and not any(h in writers for h in hits):
+        print(f'  REVIEWER ONLY {name}')
+        print(f'                  covered in {", ".join(sorted(hits)[:2])}, but neither writer')
+        print('                  a rule only the reviewer has catches slop after it is written')
+        bad += 1
+
+if bad:
+    print('\nThe taxonomy is slop-scan\'s eight rules plus two from the complaint')
+    print('corpus. Prevention belongs on the agent that writes the code.')
+    raise SystemExit(1)
+print(f'{len(TAXONOMY)}/{len(TAXONOMY)} code-slop markers addressed, '
+      f'prevention on the writers where it belongs.')
+SLOPPY
+
 # --- adoption provenance --------------------------------------------------
 # COVERAGE.tsv records what this plugin took and from where. Two things must stay
 # true of that record: every origin is classified, and every external one is

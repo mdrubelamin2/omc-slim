@@ -88,6 +88,14 @@ when it runs past a line or two.
 - Nesting three deep, or a nested ternary
 - A function past ~50 lines doing more than one thing
 - `data`/`temp`/`result` naming
+- **A promise whose rejection becomes a default.** `await x().catch(() => ({}))`,
+  `?? []`, `|| {}` on something that can fail — the call site then cannot tell a
+  successful empty result from a failure, and the bug surfaces three layers away
+  as missing data rather than as an error
+- **A generic status envelope.** `{ success: true, data }` or `{ ok, error }`
+  wrapped around something that already throws. It converts an error the caller
+  must handle into a field the caller may forget, and every consumer now needs a
+  branch that the language was doing for free
 - A comment restating the code, or contradicting it
 - **A silenced checker** — `@ts-ignore`, `@ts-nocheck`, `eslint-disable`, `noqa`,
   a lowered coverage floor, a relaxed compiler rule. The assertion still passes;
