@@ -234,7 +234,8 @@ printf 'component fires once. One skill and one agent is the common case.\n\n'
 printf '  conditional siblings — excluded above, opened only when they apply\n'
 for sib in "$ROOT"/skills/review/performance.md \
            "$ROOT"/skills/deepwork/depth.md \
-           "$ROOT"/skills/simplify/principles.md; do
+           "$ROOT"/skills/simplify/principles.md \
+           "$ROOT"/skills/verification-planning/procedure.md; do
   [ -f "$sib" ] || continue
   c=$(body_chars "$sib")
   printf '  %-34s %8d  %10d\n' "$(basename "$(dirname "$sib")")/$(basename "$sib")" "$c" "$(tok "$c")"

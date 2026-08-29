@@ -40,8 +40,8 @@ untracked and no `git diff` contains it**, which is a problem precisely because
 review runs before the commit, when new files exist. The script lists them
 separately; read each one directly, and treat an unread new file the way the
 completeness lane treats a missed member of a set. An empty tree, or no
-repository, and it says so and stops; say so too. No plugin root on this machine? The chain is above; run it
-by hand.
+repository, and it says so and stops; say so too. No plugin root, or no POSIX shell? The chain is above;
+run it by hand.
 
 That chain used to be a snippet in this file and implemented two of its five
 steps, so every `master`-default repository died on `fatal: ambiguous argument`.

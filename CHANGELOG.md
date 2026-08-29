@@ -3,6 +3,73 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.4
+
+Adoption, position, and the first CI this repository has ever had.
+
+**Every gate now runs on every push.** The 2026-08-25 audit found no `.github/`
+at all — "for a project whose thesis is 'every claim has a check', the checks are
+unenforced". `.github/workflows/gates.yml` runs both hook suites, both mutation
+runners, the codemap and base-resolution suites, and the four `check-*.sh`
+scripts. `tiktoken` is installed as a hard requirement, because without it the
+coverage gate refuses to print a corrected figure at all and that refusal is the
+thing that stops a published number resting on a constant.
+
+**Two of the five adoptions were already shipped, and the sixth needed one
+sentence.** The backlog required an axis-overlap check before adding a
+slop-comment lane to `review`; run, it found `checklists.md` already flags
+comments that restate the code and narration the change added, and `review`'s
+output already opens with a ship / fix-first / needs-a-decision verdict. Two
+adoptions closed at zero tokens by checking rather than adding. The handoff gem
+was the same story: `deepwork`'s progress file already holds objective,
+decisions, dead ends and next action — what was missing was the sentence saying
+you write it and start fresh **instead of compacting in place**, because
+compaction preserves what was built and loses what was decided against.
+
+What was genuinely absent: the scripts-over-servers discipline in `librarian` and
+`fixer` (write the ten-line command; a server you do not have is not a plan), the
+proof-artefact close for `designer` (a render you looked at is evidence, one you
+reasoned about is a claim), and **the silenced checker** — `@ts-ignore`,
+`eslint-disable`, `noqa`, a lowered coverage floor — which returned zero hits
+across this entire plugin. Weakening an assertion was covered in three places;
+silencing the checker that reads it was covered nowhere, and it is a different
+move.
+
+**650 tokens left `verification-planning`'s always-read body.** All thirteen of
+its pinned rules live in one section, `What counts as evidence`, and the seven
+numbered procedure steps carried none — which matches the skill's own Scope,
+where the staged procedure is explicitly for multi-phase work while a small
+change follows the project's checks directly. The standard stays in the body; the
+procedure is a conditional sibling.
+
+**`docs/NATIVE.md` publishes the native-equivalents position**, verified against
+binary 2.1.251: what each component overlaps, what its residual is, and for the
+two crowded slots a dated removal criterion with the falsifying outcome written
+down in advance. The row that changed this month is Dynamic Workflows, now GA,
+whose documentation addresses orchestrator plugins directly — and whose seam is
+quotable from the vendor's own page: workflows take **no mid-run user input**,
+and a human gate between dependent stages is exactly what `deepwork` is.
+
+The README leads with the pitch and the install now, with the numbers and their
+limits grouped after. The honesty is the moat; it was reading as an apology in
+front of it. Teams get one committed `enabledPlugins` line, and Windows gets a
+straight answer: everything that runs on a user's machine is Node except
+`review`'s base-resolution script, which needs the POSIX shell Git for Windows
+already supplies.
+
+**The name stays, and the reason is recorded rather than assumed.** It reads as a
+diet fork of a project this one rejects, and the cost of changing it never gets
+lower than today — no adoption signal, no listing. But that is the owner's call,
+so the ruling puts the migration path on record (marketplace `renames` maps
+plugin names, verified in the binary) and fixes the trigger: decide before the
+marketplace listing, because that is when the cost stops being bounded.
+
+Static held at 4,309 — down 26 from v0.9.3 and still 112 above where this run
+started. Gem 5 was written into the output style and then moved out of it: the
+style already says "you are notified when they finish", which blocks the
+unread-result case structurally, so the rule earns its place where re-dispatch
+actually happens instead.
+
 ## v0.9.3
 
 Compression phases 1 and 2, and a do-not-touch list that did not survive being

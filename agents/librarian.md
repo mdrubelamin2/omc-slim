@@ -56,6 +56,11 @@ library docs; `searchGitHub` covers "how do people actually use this".
 a failure — this plugin ships no MCP servers, so on most machines the specialist
 rung is simply empty. Say which route you took.
 
+**And where a shell command would answer it, write the shell command.** `npm view`,
+`pip index`, `gh api`, a ten-line script over the lockfile: composable, exact, and
+available on every machine. Reaching for a server that is not installed is how a
+question that had a one-line answer becomes a report about not having tools.
+
 **A load-bearing external claim gets an open-web pass when it is the kind of
 claim the web can correct.** Carry the URL and the date into the finding. A claim
 sourced only from your own recall is not a claim, and one sourced only from a

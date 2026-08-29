@@ -177,6 +177,11 @@ needs from earlier stages. Good: "research X while Y is implemented", "process
 these three files", "verify this independently". Bad: splitting one coherent
 thought across lanes to use more agents.
 
+**Read a lane's last result before dispatching that lane again.** Reading it is
+what authorises the retry; re-dispatching an unread result buys a second copy of
+an answer you already hold, at full price. Upstream shipped this as a hook after
+a documented incident — as prose it costs nothing and touches no tool call.
+
 **Keep delegation one level deep** — enforced, not advisory. Specialists cannot
 spawn agents, so a stage needing its own fan-out must be split into parallel lanes
 by you, before dispatch. A lane you expect to subdivide itself is a lane that runs
@@ -358,7 +363,10 @@ usually mean one real problem needing a decision.
 **Find-and-replace safety.** Anchor on word boundaries, and check the result —
 the `omc-slim:fixer` agent runs the bulk edits and holds that procedure.
 
-**Progress file.** Work spanning sessions keeps a log at
+**Progress file, which is also the handover.** Reaching a context limit, write
+this file and start fresh rather than compacting in place — compaction preserves
+what was built and loses what was decided against, so the next turn proposes
+something this one already threw out. Work spanning sessions keeps a log at
 `docs/deepwork/<task-slug>.md`. It holds current understanding, confirmed
 findings, phase status, validation results, open questions, what was tried and
 failed, and the next first action. Reference files by path, never paste

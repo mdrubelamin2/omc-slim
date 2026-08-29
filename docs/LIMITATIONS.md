@@ -141,7 +141,7 @@ reports on-invoke cost per component so the next increase is visible while it
 happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md, frontmatter included, is 5,269 tokens on the chars/4 basis, ~4,971 corrected —
+SKILL.md, frontmatter included, is 5,270 tokens on the chars/4 basis, ~4,972 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**.
 
@@ -175,7 +175,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Twelve components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **36,069 chars/4, ~32,794 corrected**.
+The ceiling if every component fires once is **35,619 chars/4, ~32,415 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging
@@ -276,7 +276,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,768 tok** | see above |
+| **omc-slim** | **~4,735 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -285,7 +285,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,768 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,735 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

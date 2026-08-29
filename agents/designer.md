@@ -180,7 +180,9 @@ that ships *nothing*, not an audit.
 ## Verification
 
 Run the validation the orchestrator assigned, and make it user-visible where
-possible — a build, a screenshot, a running dev server. **Never return a
+possible — a build, a screenshot, a running dev server. **Where a browser tool is
+installed, close with a screenshot of the built state.** A render you looked at
+is evidence; a render you reasoned about is a claim. **Never return a
 non-trivial change with zero validation**: if nothing was assigned, at minimum
 build it and confirm it renders. Report results and skips accurately.
 

@@ -98,6 +98,10 @@ your available tools before writing boilerplate from memory. Where tools are
 deferred, `ToolSearch` is how you find them, and an unsearched tool is invisible
 rather than absent.
 
+**Where a ten-line script would do it, write the ten-line script.** Bash and code
+compose; a server you do not have does not. That is the first rung, not the last
+resort.
+
 Generated output still answers to the house pattern. Where a server's dialect
 and the nearest existing implementation disagree, the codebase wins. Keep the
 generator's current API and rewrite its shape into the house style. The generator

@@ -1,0 +1,87 @@
+# Every claim in this repository has a check. Until now, nothing ran them.
+#
+# The 2026-08-25 audit put it plainly: there was no `.github/` at all, so
+# check-coverage.sh, check-reinforcement.sh, check-shell.sh, check-evals.sh and
+# both hook suites never ran on a commit — "for a project whose thesis is 'every
+# claim has a check', the checks are unenforced."
+#
+# Two deliberate choices, both stated because a later reader will wonder.
+#
+# `tiktoken` is a hard requirement, not a nicety. Without it check-coverage.sh
+# refuses to print a corrected token figure at all, and that refusal is the
+# point: v0.9.2 shipped a Critical because a figure derived from a hard-coded
+# constant disagreed with the measured one. A CI run that silently skipped the
+# measurement would restore exactly that hole.
+#
+# The GitHub-description check is skipped here and ONLY here. It compares the
+# published repository description against the working tree, and on a pull
+# request those legitimately differ — the description describes what is
+# released. Enforcing it on every PR would make the build born red, which this
+# repository's own gate design forbids. It is a release step, and MAINTAINERS.md
+# carries it as one.
+name: gates
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    env:
+      OMC_SLIM_SKIP_REMOTE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # check-coverage.sh and simplify's Chesterton-fence rule both reason
+          # from `git log -S --reverse`. On a shallow clone the pickaxe returns
+          # one commit and reads like a definitive origin — the exact trap
+          # skills/simplify/SKILL.md tells its readers to check for.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install what the gates require
+        run: |
+          python3 -m pip install --quiet tiktoken PyYAML
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+
+      - name: Hook suites and their mutants
+        run: |
+          node hooks/verify-deliverables.test.mjs
+          node hooks/check-output-style.test.mjs
+          node hooks/verify-deliverables.mutate.mjs
+          node hooks/check-output-style.mutate.mjs
+
+      - name: Component suites
+        run: |
+          node skills/codemap/scripts/codemap.test.mjs
+          bash skills/review/scripts/base.test.sh
+
+      - name: Coverage, reinforcement, shell, evals
+        run: |
+          ./scripts/check-coverage.sh
+          ./scripts/check-reinforcement.sh
+          ./scripts/check-shell.sh
+          ./scripts/check-evals.sh
+
+      - name: Upstream pin drift
+        # Reports, never fails: a moved upstream is a decision to make, not a
+        # broken build, and check-upstream.sh exits 0 by design.
+        run: ./scripts/check-upstream.sh || true
+
+      - name: Static surface, printed on every run
+        # The ratchet is a human decision, and it can only be made if the number
+        # is in front of whoever is making it.
+        run: ./scripts/measure-context.sh

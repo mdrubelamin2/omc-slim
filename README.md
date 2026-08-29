@@ -5,13 +5,25 @@
 Six agents, six skills, two hooks. The main thread stops being the implementer and
 becomes a planner that delegates, verifies and reconciles. It injects **zero
 bytes on the tool-call path**, ships **no MCP servers**, and inherits whatever
-MCP servers and skills your project already has. Three components write files
-into your repository, and only when they run: `codemap` maps it, `deep-interview`
-writes a spec, `deepwork` keeps a log. `codemap` says what it will write and
-waits for a yes; the other two write one file each, under `docs/`.
+MCP servers and skills your project already has.
 
-Static context is **~4,335 tokens**, measured with a real tokeniser.
-`./scripts/measure-context.sh` also reports **4,768 on a chars/4 basis**, the
+```
+/plugin marketplace add mdrubelamin2/omc-slim
+/plugin install omc-slim@omc-slim
+```
+
+No configuration, no API keys, no dependencies, no bundled MCP servers.
+
+---
+
+## The numbers, and what they do not say
+
+This is the only plugin in its category with a committed, re-runnable harness and
+a published negative result about itself. That is the whole pitch, so the numbers
+come with their limits attached rather than in a footnote.
+
+Static context is **~4,309 tokens**, measured with a real tokeniser.
+`./scripts/measure-context.sh` also reports **4,735 on a chars/4 basis**, the
 estimate this project's version series is tracked on, and prints the gap between
 them every run. That gap used to be a hard-coded 13.5% taken as one average
 across the whole repository — and a single average does not hold per file, which
@@ -23,7 +35,7 @@ number.
 On one single-file CLI task, n=3 per arm, it averaged **18% less than a plain
 session** ($1.01 vs $1.24) with non-overlapping spreads, and shipped the smallest
 tool of the three setups tested. All nine runs graded equally correct — so the
-grader could not separate them on quality, and no subagent ran in any arm.
+grader could not separate them on quality, and **no subagent ran in any arm**.
 
 **Treat that as a demonstration, not a measurement.** One task at n=3 cannot
 detect an effect below roughly 30 percentage points, and task-level variance
@@ -39,14 +51,14 @@ And the class of claim matters. Four independent studies find a rules layer move
 numbers fit that pattern exactly, which is the honest thing to say about them —
 so nothing here claims omc-slim makes Claude more correct.
 
-```
-/plugin marketplace add mdrubelamin2/omc-slim
-/plugin install omc-slim@omc-slim
-```
+**Where every component stands against what Claude Code already ships**, with a
+measured win or a dated removal criterion for each:
+**[docs/NATIVE.md](./docs/NATIVE.md)**.
 
-No configuration, no API keys, no dependencies, no bundled MCP servers.
-
----
+Three components write files into your repository, and only when they run:
+`codemap` maps it, `deep-interview` writes a spec, `deepwork` keeps a log.
+`codemap` says what it will write and waits for a yes; the other two write one
+file each, under `docs/`.
 
 ## Setup
 
@@ -84,6 +96,37 @@ To try it without installing:
 ```
 claude --plugin-dir /path/to/omc-slim
 ```
+
+## Teams, CI and Windows
+
+**A team gets it by committing one file.** `enabledPlugins` in
+`.claude/settings.json` at the repository root turns the plugin on for everyone
+who works in that repository, with no per-machine step:
+
+```json
+{ "enabledPlugins": { "omc-slim@omc-slim": true } }
+```
+
+Two consequences worth stating before you do it. The output style applies to
+every teammate's main thread — that is the point, and it is also a change to how
+their sessions read, so tell them. And a teammate who disables it locally in
+`.claude/settings.local.json` wins, which is the right precedence and means
+nobody is trapped.
+
+**CI runs every gate this repository claims.** `.github/workflows/gates.yml`
+executes both hook suites, both mutation runners, the codemap and base-resolution
+suites, and the four `check-*.sh` scripts on every push. It installs `tiktoken`
+as a hard requirement rather than a nicety: without it the coverage gate refuses
+to print a corrected token figure at all, and that refusal is what stops a
+published number resting on a constant.
+
+**Windows.** Everything the plugin runs on your machine is Node — both hooks and
+`codemap.mjs` — with one exception: the `review` skill invokes
+`skills/review/scripts/base.sh` to resolve the diff base. That needs a POSIX
+shell, which Git for Windows supplies and which you almost certainly already have
+if `git` works. Where it does not, the skill states the five-step resolution
+chain in prose beside the command and says to run it by hand. The `scripts/`
+directory is maintainer tooling and never runs on a user's machine.
 
 ## Two settings worth knowing
 

@@ -89,6 +89,11 @@ when it runs past a line or two.
 - A function past ~50 lines doing more than one thing
 - `data`/`temp`/`result` naming
 - A comment restating the code, or contradicting it
+- **A silenced checker** — `@ts-ignore`, `@ts-nocheck`, `eslint-disable`, `noqa`,
+  a lowered coverage floor, a relaxed compiler rule. The assertion still passes;
+  the checker stopped looking, which is a different move and an easier one to
+  miss. Tightening is silent, loosening is loud: only a change that lowers the
+  bar is a finding
 - Narration comments the change added
 - A `TODO` naming work this change finished
 - Dead code, unreachable branches, imports the change orphaned
