@@ -4,10 +4,16 @@ Dated 2026-08-29. Each of the seven exit criteria in
 [TODO-v1.0.md](./TODO-v1.0.md) is checked against the item that was supposed to
 produce its evidence, not against how much was done near it.
 
-**Verdict: not v1.0. Five criteria met, three need a run that spends money — the
-counts overlap because criterion 3 is half met. One of the five was met by
-discovering the criterion rested on a false premise, and one more was met in
-v0.9.7 by running the gate that had lapsed.**
+**Verdict: not v1.0. Three criteria still need a run that spends money, and the
+four that do not are now harder to pass than they were this morning.**
+
+The criteria themselves were audited for the first time, in
+[CRITERIA-AUDIT-2026-08-29.md](./CRITERIA-AUDIT-2026-08-29.md). Six of the seven
+could be satisfied without doing the thing they name, and three of the criteria
+scored MET were met through the loophole rather than the requirement. Every
+change that audit made tightens the bar, and the standing below is worse for it.
+That is the correct direction: a criterion you can pass by writing a sentence is
+one that will be passed by writing a sentence.
 
 The version stands at **v0.9.7**. Calling it v1.0 would require either running
 the measurements or quietly weakening the criteria, and the second is the failure
@@ -16,11 +22,11 @@ this project's whole apparatus exists to prevent.
 | # | Criterion | State | Evidence, or what is missing |
 |---|---|---|---|
 | 1 | Delegation pays, measured | **NOT MET** | The instrument now exists — [INSTRUMENTS-R4.md](./INSTRUMENTS-R4.md) §1: a four-adapter task where delegation can pay, a correctness fixture the arms never see, transcript-based detection, and a third arm with `Agent` denied. 15 runs, ~$45–60. Unrun. |
-| 2 | Out-of-box liveness | **NOT MET** | Needs three fresh-install sessions on natural prompts. Unrun. |
+| 2 | Out-of-box liveness | **NOT MET** | Needs three fresh-install sessions on natural prompts. Unrun. The criterion's second branch — "or the README says it will not and shows the unlock" — was an escape hatch a documentation edit could satisfy, so it no longer sits behind an "or": the run happens either way and its outcome decides which branch applies. See [CRITERIA-AUDIT-2026-08-29.md](./CRITERIA-AUDIT-2026-08-29.md) §4. |
 | 3 | Inertness is visible | **Half MET and verified, half unrun** | `scripts/check-adversarial.sh` installs a real rival plugin — real manifest, real `installed_plugins.json`, real hook binary, nothing stubbed — and passes 9/9 including CRLF frontmatter, a style declared outside `output-styles/`, `force-for-plugin: yes` rather than `true`, and a **stale duplicate of omc-slim itself**, which the hook exempted by name until v0.9.2. The other half, a session whose `Agent` tool is gated, needs a live run. |
-| 4 | Native-parity ledger published | **MET** | [NATIVE.md](./NATIVE.md), verified against binary 2.1.251, with a dated removal criterion and a pre-registered falsifying outcome for each crowded slot. |
-| 5 | Contradiction sweep is a release gate | **MET, and the lapse is kept on the record** | It skipped v0.9.5 and v0.9.6, and that is exactly where a gate-policy contradiction, a false pin count and a stale scope claim landed — all found later by a seven-seat review rather than by the sweep. It ran on v0.9.7, in two lanes over all eighteen prompt files, and found **eleven** contradictions: four output contracts with no slot for what their own rule demands, three words carrying two meanings, two wiring claims the harness contradicts, two skills disagreeing with their own siblings. All eleven closed. Two runs, two double-digit hauls, and both releases it skipped shipped defects — the evidence says this gate earns its cost and that skipping it is what costs. |
-| 6 | The surface ratchet holds | **NOT MET** | Static went 4,197 → 4,405 → 4,309 → 4,413. Net +216 across the run, stated rather than re-baselined. Three of the four earlier additions are required by criterion 3; the v0.9.7 addition of +70 is the catch-all precedence rule, taken because a router that sends explorer work to `general-purpose` wastes the whole 4,413 rather than saving 70. |
+| 4 | Native-parity ledger published | **MET as a ledger. 0 of 4 overlaps carry a measured win.** | [NATIVE.md](./NATIVE.md), verified against binary 2.1.251, with a dated removal criterion and a pre-registered falsifying outcome for each crowded slot. The criterion says "a measured win **or** a dated removal criterion", and all four rest on the second branch, because the benchmark that would measure a win is unrun. The ledger is the deliverable; parity is not established, and the row now says so. See [CRITERIA-AUDIT-2026-08-29.md](./CRITERIA-AUDIT-2026-08-29.md) §3. |
+| 5 | Contradiction sweep is a release gate | **MET for v0.9.7. Retroactively NOT MET for v0.9.5 and v0.9.6.** | It skipped v0.9.5 and v0.9.6, and that is exactly where a gate-policy contradiction, a false pin count and a stale scope claim landed — all found later by a seven-seat review rather than by the sweep. It ran on v0.9.7, in two lanes over all eighteen prompt files, and found **eleven** contradictions: four output contracts with no slot for what their own rule demands, three words carrying two meanings, two wiring claims the harness contradicts, two skills disagreeing with their own siblings. All eleven closed. Two runs, two double-digit hauls, and both releases it skipped shipped defects: the evidence says this gate earns its cost and that skipping it is what costs. The criterion read "zero open findings at tag time", which a sweep that never runs satisfies perfectly — and did, twice. It now requires the sweep to have run on this build with its finding count in the release notes. See [CRITERIA-AUDIT-2026-08-29.md](./CRITERIA-AUDIT-2026-08-29.md) §2. |
+| 6 | The surface ratchet holds | **NOT MET** | Static went 4,197 → 4,405 → 4,309 → 4,413. Net +216 across the run, stated rather than re-baselined. Three of the four earlier additions are required by criterion 3; the v0.9.7 addition of +70 is the catch-all precedence rule, taken because a router that sends explorer work to `general-purpose` wastes the whole 4,413 rather than saving 70. The criterion said "did not grow two releases running", which this run passes on its wording: it never grew twice consecutively and still grew 5.1%. A ratchet that resets on any single decrease is a sawtooth. It now measures against the lowest figure any release has reached. See [CRITERIA-AUDIT-2026-08-29.md](./CRITERIA-AUDIT-2026-08-29.md) §1. |
 | 7 | Every number re-derivable | **MET for every published figure**; the eval clause is amended below | Ten sites pinned to a real tokeniser, and the gate refuses to print a corrected number without one. v0.9.7 found the pin LIST was the weak part rather than the measurement: seven sites were enrolled and every other present-tense use of the same number was not, so three sentences kept quoting a superseded total. Also corrected the on-invoke ceiling, which was scaled from the static set's ratio and understated by 997 tokens. |
 
 ## The criterion-7 amendment, recorded rather than absorbed

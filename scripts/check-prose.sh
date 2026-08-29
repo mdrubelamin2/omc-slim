@@ -29,31 +29,59 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ "$#" -gt 0 ]; then
   FILES=("$@")
 else
-  # Only what a stranger reads before deciding: the README, the CHANGELOG, the
-  # native-parity position, the assessment, the readiness check and the pitch.
+  # Scope is DERIVED, not hand-listed, and that is the fix for how this gate
+  # spent three releases looking at six documents while claiming an estate.
   #
-  # The research reports — RESEARCH-2026-08-26, both VIABILITY passes, COMPRESSION,
-  # AUDIT — stay out of scope. They are lab notebooks, not a pitch, and holding a
-  # notebook to a landing page's standard is how a gate gets ignored. The line is
-  # whether a document argues a conclusion to a reader, or records what happened
-  # for the next maintainer.
-  # CHANGELOG.md is deliberately absent, and the reason is a mistake this gate
-  # already made. check-coverage.sh states the policy: "CHANGELOG is deliberately
-  # NOT enrolled. It is version-scoped history, and pinning a current figure into
-  # it forces rewriting what an earlier release actually shipped." This gate
-  # enrolled it anyway and produced exactly that: 355 changed lines inside the
-  # already-shipped v0.9.0, v0.9.1 and v0.9.2 entries. No fact moved — a multiset
-  # comparison of every number, link and quoted span came back empty both ways —
-  # but style is not a reason to edit history, and two gates holding opposite
-  # policies on one file is worse than either policy.
+  # It used to name its files. So a document had to be remembered into the list,
+  # and the ones nobody remembered were LIMITATIONS.md, ROUTING.md, BENCHMARK.md,
+  # MAINTAINERS.md and four more — thirteen of twenty-one failed the thresholds
+  # while the gate printed a clean line about the six it knew. Same asymmetry the
+  # mechanism gate closed for components and the figures gate closed for numbers:
+  # a list of things that must be checked is not a check that everything is on
+  # the list. Every new document now joins by existing.
   #
-  # The newest entry is checked separately below, because that one is not history
-  # yet.
-  FILES=("$ROOT/README.md" "$ROOT/docs/NATIVE.md"
-         "$ROOT/docs/ASSESSMENT-2026-08-29.md" "$ROOT/docs/RELEASE-READINESS.md"
-         "$ROOT/docs/DISTRIBUTION-DRAFT.md" "$ROOT/docs/QUALITY-BAR.md"
-         "$ROOT/output-styles/omc-slim.md" "$ROOT"/agents/*.md
-         "$ROOT"/skills/*/SKILL.md)
+  # The exclusions are named, and each is a closed record rather than an argument
+  # to a reader. That is the line: a document that argues a conclusion is in
+  # scope, one that records what happened on a date for the next maintainer is
+  # not. Holding a lab notebook to a landing page's standard is how a gate gets
+  # ignored. They are named individually rather than matched by date, because
+  # ASSESSMENT, DOGFOOD and CRITERIA-AUDIT carry dates too and are in scope.
+  #
+  # CHANGELOG.md is absent for a different and harder reason, and the reason is a
+  # mistake this gate already made. check-coverage.sh states the policy:
+  # "CHANGELOG is deliberately NOT enrolled. It is version-scoped history, and
+  # pinning a current figure into it forces rewriting what an earlier release
+  # actually shipped." This gate enrolled it anyway and produced exactly that:
+  # 355 changed lines inside the already-shipped v0.9.0, v0.9.1 and v0.9.2
+  # entries. No fact moved, and a multiset comparison of every number, link and
+  # quoted span came back empty both ways. But style is not a reason to edit
+  # history, and two gates holding opposite policies on one file is worse than
+  # either policy. The newest entry is checked separately below, because that one
+  # is not history yet.
+  EXCLUDE=(
+    "docs/AUDIT-2026-08-25.md"        # the audit this repository was rebuilt from
+    "docs/RESEARCH-2026-08-26.md"     # a research pass, closed
+    "docs/COMPRESSION-2026-08-28.md"  # the compression protocol's working record
+    "docs/VIABILITY-2026-08-28.md"    # viability pass I
+    "docs/VIABILITY-2026-08-28-II.md" # viability pass II
+    "CHANGELOG.md"                    # history; newest entry checked below
+  )
+  # A named exclusion that no longer exists is a hole nobody can see: the file was
+  # renamed and its replacement silently entered scope, or left it. Say so.
+  for skip in "${EXCLUDE[@]}"; do
+    [ -e "$ROOT/$skip" ] || echo "  STALE SKIP    $skip is excluded and does not exist"
+  done
+
+  FILES=()
+  for f in "$ROOT"/*.md "$ROOT"/docs/*.md; do
+    [ -e "$f" ] || continue
+    rel="${f#"$ROOT"/}"
+    for skip in "${EXCLUDE[@]}"; do
+      [ "$rel" = "$skip" ] && continue 2
+    done
+    FILES+=("$f")
+  done
+  FILES+=("$ROOT/output-styles/omc-slim.md" "$ROOT"/agents/*.md "$ROOT"/skills/*/SKILL.md)
 fi
 
 # The newest CHANGELOG entry, extracted to a temp file so the gate reads what is
