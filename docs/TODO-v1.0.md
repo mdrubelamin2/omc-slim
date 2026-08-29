@@ -138,6 +138,43 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
 
 ---
 
+---
+
+## Execution status — 2026-08-29
+
+Four releases shipped in one session on branch `v1.0-backlog`. **R0 half-answered,
+R1–R3 and R5 complete, R4 built but deliberately unfired, R6 in progress.**
+
+| Wagon | State |
+|---|---|
+| R0 instrument probe | `claude plugin eval --help` resolves on 2.1.251 with the full option set. **Whether execution is server-gated is unanswered and stays that way**: finding out costs money and the standing decision is no paid runs. |
+| R1 — v0.9.2 | All 24 audit findings fixed. Two release gates ran against the work and found 15 more, six introduced by the fixes; all remediated. |
+| R2 — v0.9.3 | Compression phases 1–2. 285 on-invoke tokens out, 70 static. **The ratchet is not paid back** — net +112 across the run — and that is stated rather than manufactured. |
+| R3 — v0.9.4 | Gems 1–6 (two already present, found by checking), `NATIVE.md`, `INSTRUMENTS-R4.md`, README pass, teams/CI/Windows, the first CI this repository has had, and 650 tokens into a conditional sibling. |
+| R4 — measurement | **Designed, not run.** Four instruments in `INSTRUMENTS-R4.md`, each ending in one command with a stated budget and a pre-registered falsifying outcome. |
+| R5 — restructuring | Upstream adopt-or-diverge executed (six pins advanced, one divergence recorded, one attribution re-sourced). §9 residue closed — zero VERIFY tags. **Compression Phase 4 remains blocked**, because Rule 1 needs eval execution and eval execution costs money. |
+| R6 — v1.0 | Criteria checked below; distribution drafted, not sent. |
+
+**Exit criteria, honestly:**
+
+1. **Delegation pays, measured** — **NOT MET, and not meetable without a paid
+   run.** The instrument now exists; it did not before.
+2. **Out-of-box liveness** — **NOT MET.** Needs three fresh-install sessions.
+3. **Inertness is visible** — **MET in mechanism, unverified in practice.** The
+   hook fixes landed and the style now reports an absent Agent tool; the two
+   adversarial sessions that would prove it have not run.
+4. **Native-parity ledger published** — **MET.** `docs/NATIVE.md`.
+5. **Contradiction sweep is a release gate** — **MET, and it earned it**: on its
+   first run as a gate it found eleven contradictions in the release being gated,
+   six introduced by that release, every one of which passed every presence check.
+6. **The surface ratchet holds** — **NOT MET.** +112 net. Stated, not hidden.
+7. **Every number re-derivable** — **MET for every published figure**; the eval
+   clause is unsatisfiable this run, and R6 records that as an amendment rather
+   than absorbing it silently.
+
+**Three criteria of seven need a paid run. That is the honest gap, and no amount
+of further prose closes it.**
+
 ## Cross-cutting items
 
 1. **FIX — type-mark the component namespace (R1).** Agents and skills
@@ -266,7 +303,9 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
 - **FIX (cross-cutting 1):** frontmatter description reference gets its
   type word.
 - **COMPRESS (R2 safe rows; rationale waits for Rule 1 in R5).**
-- **VERIFY:** positive control + maxTurns budgeting (§9 Should 13).
+- **CLOSED (§9 Should 13, verified 2026-08-29):** the positive-control rule is at
+  `agents/explorer.md` § *Prove the instrument before you report a negative*, and
+  `maxTurns: 100` is in frontmatter. Both were unpinned; both are pinned now.
 
 ### librarian — `agents/librarian.md`
 
@@ -276,7 +315,9 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
 - **FIX (cross-cutting 1):** type-marked references.
 - **COMPRESS (R2):** safe trims; register compresses in place, never
   deleted (styleless-agent rule).
-- **VERIFY:** gated open-web pass (§9 Should 23).
+- **CLOSED (§9 Should 23, verified 2026-08-29):** `agents/librarian.md` states the
+  condition, the four cases that require the pass, and the licence to skip it,
+  with the −39.02pp figure that makes it a condition rather than a ritual.
 
 ### fixer — `agents/fixer.md`
 
@@ -324,7 +365,9 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
   (the "that is omc-slim:tracer" clause).
 - **COMPRESS (R2):** escalation merge (merge, not delete), tool-motif
   and register compress-in-place; study evidence waits for Rule 1 (R5).
-- **VERIFY:** assigned-opposing-position rule (§9 Should 10).
+- **CLOSED (§9 Should 10, verified 2026-08-29):** `agents/oracle.md` § *Argue the
+  other side, as an assignment*, with the 99.2%-against-48.3% measurement and the
+  finding that instructing dissent alone is indistinguishable from baseline.
 
 ### tracer — `agents/tracer.md`
 
@@ -334,7 +377,9 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
   misroute-prone name.
 - **COMPRESS (R2):** dispatch-list merge (pin-migrated) + the one safe
   row; otherwise pinned wall-to-wall.
-- **VERIFY:** falsification criteria (§9 Should 11).
+- **CLOSED (§9 Should 11, verified 2026-08-29):** all three present in
+  `agents/tracer.md` — falsifiers written before evidence, hypotheses that must
+  differ in kind, and `undetermined` distinguished from `ruled out`.
 - **POSITION:** NATIVE.md row.
 
 ## Skills
@@ -406,7 +451,9 @@ collision (COMPRESSION §5 Phase 3) demanded.
 - **FIX (cross-cutting 1):** type-marked references.
 - **COMPRESS (R2):** provenance note relocates; template stays in-file;
   gate do-not-touch.
-- **VERIFY:** Must 8 pin; spec-names-files (§9 Should 16).
+- **CLOSED (Must 8 + §9 Should 16, verified 2026-08-29):** the approval gate is
+  pinned four times across both TSVs; the spec template carries
+  `## Files and interfaces` with the named-not-described rule.
 - **POSITION:** NATIVE.md row; the +14.50 measurement stays quotable.
 
 ### verification-planning — `skills/verification-planning/SKILL.md`
@@ -430,7 +477,9 @@ collision (COMPRESSION §5 Phase 3) demanded.
 - **FIX (cross-cutting 1):** type-marked references.
 - **COMPRESS (R2):** the two-scopes/explorer-routing duplicate; evidence
   rows wait for Rule 1 (R5).
-- **VERIFY:** §9 Should 21–22.
+- **CLOSED (§9 Should 21–22, verified 2026-08-29):** the declared-public-entrypoint
+  check runs first in § *Understand first*, and the introducing-commit rule
+  carries both refusals — shallow clone and move commit.
 
 ### codemap — `skills/codemap/SKILL.md` (+ scripts/codemap.mjs)
 
@@ -447,7 +496,9 @@ collision (COMPRESSION §5 Phase 3) demanded.
 - **COMPRESS (R2):** atlas example, frontmatter restatements; the
   legacy-state note gets a dated deprecation window with its removing
   release named in CHANGELOG; stale-citations evidence waits for Rule 1.
-- **VERIFY:** §9 Should 17.
+- **CLOSED (§9 Should 17, verified 2026-08-29):** `skills/codemap/SKILL.md` § *Cite
+  symbols, never line numbers*, with `omc-slim:review` named as the deliberate
+  exception and the reason it is one.
 
 ## Hooks — `hooks/`
 
@@ -485,7 +536,11 @@ same commit; "never blocks, always exit 0" stays load-bearing.
 - **FIX (C4):** on deadline expiry, report rivals already found.
 - **FIX (cross-cutting 1):** `systemMessage` texts use type-marked
   references.
-- **VERIFY:** wall-clock self-kill (Must 6) and mutants.
+- **CLOSED (Must 6, verified 2026-08-29):** both hooks carry an in-process
+  deadline (`SCAN_BUDGET_MS`, `BUDGET_MS`), each overridable so a test can set 0
+  and prove it is wired, and each covered by a mutant the suite kills. What it
+  cannot cover is stated in the file: a blocking read on fd 0, which no
+  in-process timer can preempt.
 
 ## Standing refusals (decided non-features; triggers observed via the incidents ledger, cross-cutting 8)
 
