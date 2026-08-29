@@ -306,10 +306,13 @@ Recorded so nobody re-opens them as oversights.
 
 - **`Task` vs `Agent`.** `Agent` is canonical and documented; `Task` is an
   undocumented legacy alias that still resolves. Both stay in `disallowedTools`:
-  one-level delegation is this plugin's only harness-enforced guarantee, the
-  alias path through permission resolution has not been traced end to end, and
-  `disallowedTools` costs zero static context. A redundant guard on the one
-  enforced promise is worth its zero cost. The 2026-08-25 audit called `Task` "a
+  one-level delegation is this plugin's only harness-enforced guarantee, and
+  the alias layer is host-configurable. Traced in 2.1.251: `toolAliases` is
+  "applied before name resolution", so an aliased call arrives under the mapped
+  name; the same build refuses a spawn when a host remap makes a name-bound
+  constraint unenforceable, and it validates the deny list, reporting an entry
+  that "matches no" tool. A deny list is name-bound, so denying one name and not
+  the other bets on a table the host owns. It also costs zero static context. The 2026-08-25 audit called `Task` "a
   dead entry"; it is not dead, and that is the correction.
 - **`observer:` / `observerMessage:` / `observeSubagents:`** exist in shipping
   code and in no documentation — a first-party supervisory-critic pattern.

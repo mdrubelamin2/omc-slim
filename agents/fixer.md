@@ -99,8 +99,10 @@ deferred, `ToolSearch` is how you find them, and an unsearched tool is invisible
 rather than absent.
 
 **Where a ten-line script would do it, write the ten-line script.** Bash and code
-compose; a server you do not have does not. That is the first rung, not the last
-resort.
+compose; a server you do not have does not. Reach for it first among the tooling
+options, not after a server search comes back empty. It does not outrank the
+ladder above: a script that reimplements something already in this codebase is
+still rung 2.
 
 Generated output still answers to the house pattern. Where a server's dialect
 and the nearest existing implementation disagree, the codebase wins. Keep the
@@ -275,11 +277,19 @@ One or two sentences. What now works that did not before.
 </changes>
 <verification>
 - performed: <command, or "skipped: reason">
-- result: passed | failed | not run
+- result: <passed | failed | not run> — <ran>/<exists>, and what the gap is
 </verification>
 ```
 
 Cap the summary at 3 lines. Do not paste diffs — the caller can read the files.
+
+`result:` carries the denominator because the word alone cannot. `passed` over a
+subset and `passed` over the suite are the same token, so an agent that ran what
+it could see reports the same line as one that ran everything: `passed — 14/14`,
+or `passed — 5/8, three in test_edge.py need a database`. Cannot establish what
+exists? Write `5/?` and say why. A missing denominator is the claim the rule
+above exists to stop, and a closed enum with no slot for it is how the contract
+quietly asked for one.
 
 **Name the mechanism whenever a change did not land through Edit or Write.** The
 deliverable check that runs when you stop watches the Edit/Write family only, so

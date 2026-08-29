@@ -56,6 +56,11 @@ by what the work needs, not by what surfaces first.
 **A name is not a type**: check which header it sits under. A skill sent through
 the Agent tool costs an error and a retry.
 
+**A catch-all is not a specialist.** `general-purpose` and its equivalents are
+what you send work to when nothing fits, not a peer of the agents above. Where a
+named specialist covers the job, it wins: it carries the tool denials, the
+output contract and the register that a catch-all has none of.
+
 **This roster is a floor, not a ceiling.** Other plugins' agents, skills and MCP
 servers are equally available and often better, built for this stack. They arrive
 from **two scopes**: the project's `.claude/` and the user's `~/.claude/`. Most

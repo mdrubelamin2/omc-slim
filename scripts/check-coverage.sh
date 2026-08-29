@@ -241,9 +241,22 @@ enc = tiktoken.get_encoding('cl100k_base')
 def real_of(path):
     return len(enc.encode(open(path, encoding='utf-8').read()))
 
-# The ceiling's correction uses the same measured ratio as the static figure, so
-# the two published numbers rest on one basis rather than two constants.
-ceiling_corr = f'{round(ceil_chars / 4 * int(real_measured) / int(measured)):,}'
+# The ceiling's correction is MEASURED over the on-invoke set, not scaled from
+# the static one.
+#
+# It used to be `ceil_chars / 4 * real_static / est_static`, justified as keeping
+# both published numbers on one basis rather than two constants. One basis, wrong
+# set. The static surface is twelve descriptions and the style body; the
+# on-invoke surface is twelve full prompt bodies, and they do not tokenise alike.
+# The scaled figure read 34,147 against a real 35,144 — understated by 997
+# tokens, in the direction that makes a budget look safe. That is the same defect
+# as the 1.135 constant one section up, committed again while quoting the fix.
+ceil_real = subprocess.run([os.path.join(root, 'scripts/measure-context.sh'), '--terse-invoke-real'],
+                           capture_output=True, text=True).stdout.strip()
+if not ceil_real.isdigit():
+    print('  UNMEASURED    measure-context.sh printed no on-invoke real ceiling')
+    raise SystemExit(1)
+ceiling_corr = f'{int(ceil_real):,}'
 
 # Every skill is measured WHOLE, frontmatter included, because that is what the
 # harness re-attaches after compaction. Measuring the body alone flattered review
@@ -886,7 +899,9 @@ bad = 0
 # name -> tools that MUST be denied. Hand-maintained on purpose.
 #   Agent, Task    one-level delegation. The plugin's central guarantee, and the
 #                  reason `Task` stays: it is a live legacy alias for `Agent`,
-#                  and the alias path through permission resolution is untraced.
+#                  and 2.1.251's `toolAliases` map is "applied before name
+#                  resolution", so a deny bound to one name is a deny the host's
+#                  alias table can move. Both names, or the guarantee is a bet.
 #   Edit/Write/... read-only agents. A read-only agent that can write is not one.
 #   WebSearch      the research boundary, on both writers, after v0.9.2 made it
 #                  one policy instead of prose on one side and a key on the other.

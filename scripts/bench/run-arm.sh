@@ -115,11 +115,19 @@ run_with_timeout() {
   local limit_secs="$1"; shift
   "$@" &
   local cmd_pid=$!
-  ( sleep "$limit_secs"; kill -TERM "$cmd_pid" 2>/dev/null; sleep 5; kill -KILL "$cmd_pid" 2>/dev/null ) &
+  # The watcher holds its sleep as a job and waits on it, so killing the watcher
+  # kills the sleep. A bare `sleep` inline is a CHILD of this subshell: killing
+  # the subshell orphans it, and it runs out the full limit under init. One
+  # stray sleep per run, and this script runs nine.
+  ( trap 'kill "$s" 2>/dev/null; exit' TERM
+    sleep "$limit_secs" & s=$!; wait "$s"
+    kill -TERM "$cmd_pid" 2>/dev/null
+    sleep 5 & s=$!; wait "$s"
+    kill -KILL "$cmd_pid" 2>/dev/null ) &
   local watcher_pid=$!
   local status=0
   wait "$cmd_pid" || status=$?
-  kill "$watcher_pid" 2>/dev/null || true
+  kill -TERM "$watcher_pid" 2>/dev/null || true
   wait "$watcher_pid" 2>/dev/null || true
   return "$status"
 }

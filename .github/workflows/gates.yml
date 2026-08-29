@@ -33,6 +33,11 @@ permissions:
 jobs:
   gates:
     runs-on: ubuntu-latest
+    # A hung node process inherits GitHub's 6-hour job default, and the mutant
+    # runners spawn 81 of them. The whole suite is minutes; anything past this
+    # is a hang, and a hang that reports as a hang beats one that burns the
+    # runner pool until someone notices.
+    timeout-minutes: 20
     env:
       OMC_SLIM_SKIP_REMOTE: "1"
     steps:

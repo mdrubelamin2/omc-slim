@@ -39,8 +39,8 @@ This is the only plugin in its category with a committed, re-runnable harness an
 a published negative result about itself. So the numbers come with their limits
 attached instead of a footnote.
 
-Static context is **~4,343 tokens**, measured with a real tokeniser.
-`./scripts/measure-context.sh` also reports **4,768 on a chars/4 basis**, the
+Static context is **~4,413 tokens**, measured with a real tokeniser.
+`./scripts/measure-context.sh` also reports **4,842 on a chars/4 basis**, the
 estimate this project's version series is tracked on, and prints the gap between
 them every run. That gap used to be a hard-coded 13.5% taken as one average
 across the whole repository. A single average does not hold per file, which is
@@ -325,11 +325,16 @@ the prompt rather than described.
 **Three layers, and only one of them is prose.** The harness enforces
 `disallowedTools`, the output-style flag and the hook matcher, with no model
 cooperation involved — `disallowedTools: [Agent, Task]` is why one-level
-delegation is a guarantee rather than a request. `Agent` is the canonical name
-and carries that guarantee; `Task` is its legacy alias, still resolving as of
-2.1.251, kept because the alias path through permission resolution has not been
-traced and a redundant guard on the one enforced promise is worth its zero
-cost. One hook is our own code, and it
+delegation is a guarantee rather than a request. Both names are denied, and that is
+not superstition. Traced in 2.1.251: the harness carries a `toolAliases` map
+"applied before name resolution", so an aliased `tool_use` reaches the execution
+path under the mapped name. The same build refuses to spawn an agent when a host
+remap would make a name-bound constraint unenforceable — "the host remaps ... via
+`toolAliases`, so the clamp cannot be guaranteed to apply on that surface". A
+deny list is a name-bound constraint, so denying one name and not the other bets
+on an alias table the host controls. It also validates the list, reporting a
+`disallowedTools` entry that "matches no" tool, so a dead name would be visible
+rather than silent. One hook is our own code, and it
 has a test. Everything else — every agent body, every skill, the output style
 itself — is prose, and holds exactly as well as a prompt holds.
 

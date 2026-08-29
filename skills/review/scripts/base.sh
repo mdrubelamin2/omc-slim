@@ -54,7 +54,13 @@ fetch_origin() {
       kill -TERM "$pid" 2>/dev/null
       sleep 1
       kill -KILL "$pid" 2>/dev/null
-      wait "$pid" 2>/dev/null
+      # Reap before claiming a timeout. The fetch can finish between the
+      # `kill -0` above and this branch, and the old code returned 124 for it —
+      # reporting a fresh base as a stale one, which sends the reviewer looking
+      # for phantom findings. If it did land, report what it actually returned.
+      local late=0
+      wait "$pid" 2>/dev/null || late=$?
+      [ "$late" -eq 0 ] && return 0
       return 124 # what timeout(1) reports, for anyone reading a trace
     fi
     sleep 1

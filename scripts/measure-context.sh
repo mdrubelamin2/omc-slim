@@ -23,6 +23,7 @@
 #   ./scripts/measure-context.sh              # table
 #   ./scripts/measure-context.sh --terse      # chars/4 static total, for scripting
 #   ./scripts/measure-context.sh --terse-real # real-tokeniser static total
+#   ./scripts/measure-context.sh --terse-invoke-real  # real-tokeniser on-invoke ceiling
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -30,6 +31,8 @@ TERSE=""
 REAL=""
 [ "${1:-}" = "--terse" ] && TERSE=1
 [ "${1:-}" = "--terse-real" ] && REAL=1
+INVOKE=""
+[ "${1:-}" = "--terse-invoke-real" ] && INVOKE=1
 
 # Count real BPE tokens over the concatenation of whatever is piped in.
 #
@@ -140,6 +143,74 @@ desc_chars() {
 
 tok() { echo $(( $1 / 4 )); }
 
+# Sibling files count too, and only the ones the skill reads unconditionally.
+# review/checklists.md is mandatory — "Read checklists.md now, before judging
+# anything" — so a figure that omits it understates every review by ~1,900
+# tokens, which it silently did until v0.9.0. The conditional siblings
+# (performance.md, depth.md, principles.md) are listed below the total and
+# excluded from it, because a file you open on one run in five is not a cost you
+# pay on every run.
+mandatory_sibling() {
+  case "$1" in review) echo "$ROOT/skills/review/checklists.md" ;; *) echo "" ;; esac
+}
+
+# Every file the on-invoke ceiling sums, one per line, so the table below and the
+# real-tokeniser figure cannot drift apart by counting different sets.
+invoke_files() {
+  local f n sib
+  for f in "$ROOT"/agents/*.md "$ROOT"/skills/*/SKILL.md; do
+    [ -e "$f" ] || continue
+    echo "$f"
+    n=$(basename "$(dirname "$f")")
+    case "$n" in agents) n=$(basename "$f" .md) ;; esac
+    sib=$(mandatory_sibling "$n")
+    [ -n "$sib" ] && [ -f "$sib" ] && echo "$sib"
+  done
+  return 0
+}
+
+# The on-invoke ceiling in real tokens, summed PER FILE — unlike the static
+# surface, which is tokenised as one string.
+#
+# That difference is not a shortcut, it is what the harness does. The static
+# surface arrives as one concatenated prompt, so BPE runs across the joins and
+# summing the fragments over-counts. Each on-invoke body arrives on its own, in
+# its own context, so per-file is the charge.
+#
+# It also has to be measured rather than scaled. Until 2026-08-29 this figure was
+# the chars/4 ceiling multiplied by the STATIC set's real-to-estimate ratio, on
+# the stated grounds that "the two published numbers rest on one basis rather
+# than two constants". One basis, wrong set: the static surface is descriptions
+# and the style body, the on-invoke surface is twelve prompt bodies, and they do
+# not tokenise alike. The scaled figure read 34,147 against a real 35,144 —
+# understated by 997 tokens, in the direction that makes a budget look safe.
+invoke_real() {
+  # argv, not a pipe: the heredoc below IS this python's stdin, so a piped file
+  # list arrives nowhere and the sum comes back 0 — a plausible number for a
+  # measurement that never ran.
+  local f files=()
+  while IFS= read -r f; do files+=("$f"); done < <(invoke_files)
+  [ ${#files[@]} -gt 0 ] || return 1
+  python3 - "${files[@]}" 2>/dev/null <<'IRPY'
+import sys
+try:
+    import tiktoken
+except ImportError:
+    raise SystemExit(1)
+enc = tiktoken.get_encoding("cl100k_base")
+
+def body(p):
+    t = open(p, encoding="utf-8").read()
+    if t.startswith("---"):
+        i = t.find("\n---", 3)
+        if i != -1:
+            return t[i + 4:].lstrip("\n")
+    return t
+
+print(sum(len(enc.encode(body(p))) for p in sys.argv[1:]))
+IRPY
+}
+
 style_c=$(body_chars "$ROOT/output-styles/omc-slim.md")
 
 agent_c=0; agent_n=0
@@ -170,6 +241,13 @@ fi
 
 if [ -n "$REAL" ]; then
   measured=$(static_real)
+  [ -n "$measured" ] || exit 1
+  echo "$measured"
+  exit 0
+fi
+
+if [ -n "$INVOKE" ]; then
+  measured=$(invoke_real)
   [ -n "$measured" ] || exit 1
   echo "$measured"
   exit 0
@@ -207,10 +285,6 @@ printf '  %-34s %8s  %10s\n' "---------" "-----" "-------"
 # (performance.md, depth.md, principles.md) are listed below the total and
 # excluded from it, because a file you open on one run in five is not a cost you
 # pay on every run.
-mandatory_sibling() {
-  case "$1" in review) echo "$ROOT/skills/review/checklists.md" ;; *) echo "" ;; esac
-}
-
 invoke_c=0
 for f in "$ROOT"/agents/*.md "$ROOT"/skills/*/SKILL.md; do
   [ -e "$f" ] || continue
