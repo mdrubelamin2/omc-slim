@@ -3,6 +3,72 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.6
+
+An adversarial audit found one structural defect wearing six hats, and four
+guards that failed open in silence. All ten are closed and every one is proved.
+
+The structural finding, in one sentence: **every gate here checked that a listed
+thing still exists, and nothing checked that an existing thing is listed.** Added
+Set member, edited matcher, deleted frontmatter key, gutted grader body, new
+unpinned agent, deleted sibling — one asymmetry, six symptoms.
+
+The most expensive of them: `disallowedTools` is described inside
+`check-coverage.sh` itself as *"the only harness-enforced guarantee this plugin
+has"*, and was asserted by nothing. Deleting the line from an agent grants it
+`Agent`, breaking one-level delegation, and `WebSearch`, breaking the research
+boundary, while its own description still promises neither. Every presence check
+passes on the prose the deleted key was enforcing.
+
+A new gate asserts the mechanisms from a hand-maintained table: per-agent tool
+denials, that the `SubagentStop` matcher still covers both write agents, that a
+declared hook timeout stays outside the hook's own scan budget, and that every
+component carries at least one pinned row. Five exploits reproduced, all now
+firing, including a `saboteur` agent with `disallowedTools: []` that previously
+passed 301/301.
+
+A pinned safety rule could be inverted in place with the original left above it
+in an HTML comment: anchor and co-occurrences still findable, so the reinforcement
+gate reported *"120/120 rules intact"* over text saying the opposite. Both gates
+strip comments now. Fences are deliberately not stripped, because they carry
+output contracts and spec templates that are the shipped rule — the first attempt
+reported `deep-interview`'s spec schema missing. The residual, a pin relocated
+into a fence headed "Rejected ideas", belongs to the contradiction sweep: a
+substring test cannot read a heading.
+
+`check-evals.sh` read grader frontmatter and never the body. All thirteen bodies
+could be replaced with `PASS.` — including the one whose job is catching a SQL
+injection — while it printed *"6/6 eval cases well-formed"*. Now type-aware,
+because getting that wrong fails correct files: a `regex` grader's criterion is
+its pattern, an `llm` grader's body is the whole rubric.
+
+Four guards failed open and silent, which is worse than crashing when the thing
+failing is a guard. A symlinked `~/.claude/settings.json` — the normal dotfiles
+setup — permanently disabled the collision hook, in exactly the population that
+runs several plugins at once. `codemap.mjs` was a silent exit-0 no-op through any
+symlinked path, from the one component that writes into the user's repository.
+`base.sh` stalled 75 s with no output on an unreachable remote, as the first step
+of every review; it is bounded at 10 s now and says which of fetching, timed out,
+failed or no-remote happened, because the silence was half the defect. And the
+mutation runner **scored a hung harness as a kill** — `spawnSync` sets
+`status = null` on timeout, `null !== 0`, so the else branch counted it killed.
+The mutation score is this project's strongest quality claim and one of its
+failure modes inflated it. Measured: a hanging mutant read `KILLED, score 1/1,
+exit 0` before, and `UNUSABLE, ETIMEDOUT, score 0/1, exit 3` after.
+
+The codemap suite was reachable from CI and from nothing else, so a local gate run
+reported green over a broken codemap. Both component suites are enrolled now.
+
+`codemap` artefacts state their own freshness: a provenance header carrying the
+commit and date, a `stale` subcommand that exits non-zero when a map no longer
+describes its tree, and an `AGENTS.md` block that teaches the check instead of
+commanding blind trust. A shallow clone never prints a distance it cannot
+compute, because that is what CI checks out and *"0 commits behind"* would be
+wrong in the reassuring direction. `NATIVE.md` records why this is a mitigation
+and not a fix, and why the obvious follow-up is declined rather than overlooked.
+
+Counts: 38 and 24 hook cases, 56 and 25 mutants, 17 codemap, 17 base resolution.
+
 ## v0.9.5
 
 A hook that catches the model certifying work it never ran, a gate against this

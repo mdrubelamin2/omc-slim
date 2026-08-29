@@ -288,6 +288,18 @@ session* and never committed: an artefact that cannot outlive the tree it
 describes cannot lie about it. That is a different component, not a patch to this
 one, and it is the open question this row carries into v1.0.
 
+**The obvious next step is deliberately not taken.** Wiring `stale` into the
+`SessionStart` hook would make the check fire without anyone remembering, which
+is the one thing that would move `codemap` further off the wrong side. It is
+small, and it is not being built, because building infrastructure to prop up a
+component whose architecture is under question is how a project ends up unable to
+cut anything. **Decide whether `codemap` ships in its current form first.** If it
+does, the hook is an afternoon; if it does not, the hook was work spent on a
+component that left.
+
+Recorded as a decision rather than a gap, because the difference matters: the
+work was identified, costed and declined, not overlooked.
+
 ## What is not a gap
 
 Recorded so nobody re-opens them as oversights.
