@@ -396,6 +396,7 @@ The full list, with evidence for each:
 | [ASSESSMENT-2026-08-29.md](./docs/ASSESSMENT-2026-08-29.md) | What this plugin actually is, written with an instruction not to look only at the good parts |
 | [QUALITY-BAR.md](./docs/QUALITY-BAR.md) | The checkpoints any plugin in this category has to clear, and the two nobody has built |
 | [RELEASE-READINESS.md](./docs/RELEASE-READINESS.md) | The v1.0 criteria, four met and three blocked on a run that spends money |
+| [DOGFOOD-2026-08-29.md](./docs/DOGFOOD-2026-08-29.md) | One real session, including the nine of twelve components that did not fire and three mistakes the gates did not catch |
 
 Re-derive the context cost with `./scripts/measure-context.sh`. Re-run the
 benchmark with `./scripts/bench/run-arm.sh`.

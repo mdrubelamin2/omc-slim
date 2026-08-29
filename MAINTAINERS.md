@@ -2058,8 +2058,24 @@ evidence rather than on impression.
 
 ### Incidents
 
-*(none recorded yet — this section is deliberately empty rather than absent, so
-that "no incidents" is distinguishable from "nobody looked")*
+**2026-08-29 — scanned, none found.** First scan under the release checklist,
+against a fourteen-hour session that produced 22 commits. Zero idle
+abandonments, zero identical-tool-call loops, zero format-drift findings. The
+standing-rule class remains unmeasured, because measuring it needs the drift
+instrument nobody has built. Transcript: `docs/DOGFOOD-2026-08-29.md`.
+
+For the first time the four refusals stand on an observation rather than on
+nobody having looked. One scan is not a body of evidence, and the counts
+accumulate.
+
+**Three orchestrator failures in the same session, recorded here because they are
+adjacent to the classes above without being any of them.** `git add -A` run twice
+while writer lanes were mid-edit; a gate exploit test that proved nothing because
+a concurrent lane made the gate exit early and the resulting silence was read as
+a pass; and a false justification written into the output style twenty minutes
+before research contradicted it. All three are acting on an assumption instead of
+a check, all three have a rule in this plugin against them, and none was caught
+by any gate. If a fifth failure class is ever added, it is this one.
 
 ## A refusal that expired: aider watch mode
 
