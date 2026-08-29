@@ -68,6 +68,7 @@ jobs:
         run: |
           node skills/codemap/scripts/codemap.test.mjs
           bash skills/review/scripts/base.test.sh
+          ./scripts/check-adversarial.sh
 
       - name: Coverage, reinforcement, shell, evals
         run: |

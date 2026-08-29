@@ -832,7 +832,8 @@ NSPY
 # over a broken codemap. The hook suites above are enrolled with README counts
 # because those counts are published; these two are enrolled for the exit code.
 for suite in "bash $ROOT/skills/review/scripts/base.test.sh" \
-             "node $ROOT/skills/codemap/scripts/codemap.test.mjs"; do
+             "node $ROOT/skills/codemap/scripts/codemap.test.mjs" \
+             "bash $ROOT/scripts/check-adversarial.sh"; do
   name=$(basename "${suite##* }")
   if suite_out=$($suite 2>&1); then
     echo "$suite_out" | tail -1 | sed "s|^|${name}: |"
