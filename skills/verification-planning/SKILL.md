@@ -15,7 +15,7 @@ the evidence path that later work follows.
 ## Who runs it, and with what
 
 This skill plans; other components execute. **Everything below is what the plan
-specifies, not what you personally perform** — the revert-and-re-run ritual, the
+specifies, not what you personally perform**: the revert-and-re-run ritual, the
 runnable path, the closing interpretation. You write them into the plan and name
 their owner. Send the locating work to the
 `omc-slim:explorer` agent — which checks already exist, what they cover — and the
@@ -47,7 +47,7 @@ this system can reveal the truth of this particular change.
 
 This standard applies at every step below, not only at the end.
 
-A check must be able to fail. "I reviewed it and it looks right" is not a check —
+A check must be able to fail. "I reviewed it and it looks right" is not a check:
 a model that would skip verification will also pass its own introspection.
 
 Acceptable:
@@ -127,5 +127,5 @@ carries its own **Complete when** so a step cannot be declared done by feel.
 
 **Open it when the work is multi-phase**, which is the case § Scope reserves this
 skill for. A small mechanical change does not need seven steps and should follow
-the project's own checks directly — but the standard above applies either way,
+the project's own checks directly. But the standard above applies either way,
 and it is the half that must never be skipped.

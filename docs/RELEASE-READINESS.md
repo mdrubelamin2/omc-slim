@@ -7,7 +7,7 @@ produce its evidence, not against how much was done near it.
 **Verdict: not v1.0. Four criteria met, three need a run that spends money, and
 one of the four was met by discovering the criterion rested on a false premise.**
 
-The version stands at **v0.9.4**. Calling it v1.0 would require either running
+The version stands at **v0.9.6**. Calling it v1.0 would require either running
 the measurements or quietly weakening the criteria, and the second is the failure
 this project's whole apparatus exists to prevent.
 

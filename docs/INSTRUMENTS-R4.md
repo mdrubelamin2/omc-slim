@@ -200,14 +200,16 @@ arm's score means nothing behind a fixture nobody watched fail.
 1. **`--max-cost-usd` does not exist on the CLI.** That flag is `claude plugin
    eval`'s. The session equivalent is `--max-budget-usd`, verified against 2.1.251
    by arg-parse probe, and is set to `$8.00` per run.
-2. **`Agent` and `Task` are in `--allowedTools` for every arm.** `run-arm.sh`'s
-   list omits them, and MAINTAINERS.md records that in `-p` mode a tool outside
-   the list stops the run at a permission prompt with no TTY to answer it. Had
-   this benchmark inherited that list, a zero-delegation result would have been
-   caused by the harness and published as a finding about the plugin. **This is
-   also a live question about the nine committed runs**: their zero-delegation
-   result is attributed above to task shape, and the allow-list is a second
-   sufficient explanation that has not been ruled out.
+2. **`Agent` and `Task` are in `--allowedTools` for every arm**, and the reason
+   recorded here on 2026-08-29 was wrong. It said `run-arm.sh`'s allow-list
+   omitted them and was therefore a second sufficient explanation for the nine
+   zero-delegation runs. Tested since: `--allowedTools` is an **additive
+   permission grant**, not an exclusive tool set, and under `run-arm.sh`'s exact
+   allow-list a subagent launches and returns. The nine runs had delegation
+   available and did not use it, which is the stronger reading and the original
+   one. They are added here for explicitness, not to fix a confound that never
+   existed.
+
 3. **The transcript is this harness's own `stream-json` capture**, not the
    session file under `~/.claude/projects`. Two reasons: the session file also
    carries sidechain entries for the subagents' own turns, which would inflate a

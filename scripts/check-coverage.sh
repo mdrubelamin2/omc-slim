@@ -177,7 +177,7 @@ PY
 # in CHANGELOG.md and RESEARCH.md can never fire. The cost of that is a new site
 # added later without enrolling it here, which is the cheaper failure.
 python3 - "$ROOT" <<'PY' || exit 1
-import glob, os, re, subprocess, sys
+import glob, json, os, re, subprocess, sys
 root = sys.argv[1]
 
 try:
@@ -281,32 +281,39 @@ for skill in sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md'))):
     if name == 'review':
         review_c4 = f'{os.path.getsize(skill) // 4:,}'
         review_corr = f'{tokens:,}'
-    # Comments and fences come out first. The exploit is one line under the
-    # frontmatter — an HTML comment quoting a pinned rule — which makes `find`
-    # return the comment's position instead of the rule's. The gate then reports
-    # TAIL DROPPED with "no pinned rule is in that tail", which is false, having
-    # been built for exactly the failure it is now denying.
-    searchable = re.sub(r'<!--.*?-->', '', text, flags=re.S)
-    hay = re.sub(' +', ' ', searchable.replace('\n', ' ')).lower()
+    # POSITION IS MEASURED ON THE RAW FILE, and that is the whole correctness of
+    # this block. The harness re-attaches the raw file, comments included, so a
+    # position computed on a stripped copy describes a document that is never
+    # loaded. An earlier version stripped comments here while `real_of` counted
+    # raw, and the two halves disagreed by construction: a 230-token comment
+    # after the frontmatter put deepwork's last pinned rule at token 5,099 while
+    # this block printed "no pinned rule is in that tail (worst sits at ~4,887)"
+    # — false by 99 tokens, in the sentence the block exists to make true.
+    #
+    # And the LAST occurrence, not the first. `find` returning the earliest match
+    # let a fenced block quoting a file's own pins report every rule at ~797
+    # while all of them sat past the cap. A rule quoted early and stated late is
+    # in the tail; a rule genuinely stated twice reports the later one, which
+    # over-states position and is the safe direction for a cap.
+    hay = re.sub(' +', ' ', text.replace('\n', ' ')).lower()
     worst = 0
     worst_pat = None
     for where, pat in pin_rows:
         if where != name:
             continue
         needle = re.sub(' +', ' ', pat.replace('\n', ' ')).lower()
-        at = hay.find(needle)
+        at = hay.rfind(needle)
         if at == -1:
             continue  # the presence loops above already own a missing pattern
-        # hay is whitespace-normalised, so map back by ratio. The ratio does
-        # NOT only over-state: collapsed whitespace lying BEFORE the match lands
-        # the estimate early, which is the unsafe direction — a rule past the cap
-        # reported as under it. Measured across all pin rows on 2026-08-29 the
-        # error was within ±4 tokens, but the bound is len(text)-len(hay) and it
-        # grows with any indented block added ahead of a pinned rule. So take the
-        # whole slack as a margin rather than trusting the average.
-        slack = len(searchable) - len(hay)
-        approx = min(len(searchable), int(at * len(searchable) / max(len(hay), 1)) + slack)
-        pos = len(enc.encode(searchable[:approx]))
+        # hay is whitespace-normalised, so map back by ratio. The ratio does NOT
+        # only over-state: collapsed whitespace lying BEFORE the match lands the
+        # estimate early, which is the unsafe direction. The bound is
+        # len(text)-len(hay), so take the whole slack as a margin rather than
+        # trusting an average that grows with every indented block added ahead of
+        # a pinned rule.
+        slack = len(text) - len(hay)
+        approx = min(len(text), int(at * len(text) / max(len(hay), 1)) + slack)
+        pos = len(enc.encode(text[:approx]))
         if pos > worst:
             worst, worst_pat = pos, pat
     if worst > RE_CAP:
@@ -340,6 +347,12 @@ sites = [
     # actually shipped — which this repository did once, publishing v0.9.1's
     # numbers inside the v0.9.0 entry.
 
+    # RELEASE-READINESS is the document a maintainer reads to decide whether to
+    # ship, and its version line said v0.9.4 while plugin.json said 0.9.6. It was
+    # the only headline document nothing watched.
+    ('docs/RELEASE-READINESS.md',
+     'The version stands at **v' + json.load(
+         open(os.path.join(root, '.claude-plugin/plugin.json')))['version'] + '**'),
     ('README.md',           f'~{corrected} tokens'),
     ('README.md',           f'**{total} on a chars/4 basis**'),
     ('docs/LIMITATIONS.md', f'**~{total} tok**'),
@@ -1150,12 +1163,27 @@ for name, pattern, scope in TAXONOMY:
         print('                  a rule only the reviewer has catches slop after it is written')
         bad += 1
 
+# The register rule has to reach the SUBAGENTS, and this is the direction that
+# gets missed. Skills run in the main thread and inherit the output style; agents
+# do not — this repository documents that as the reason every cross-file
+# "duplicate" whose canonical copy is the style is a false duplicate at runtime.
+# So the style telling the main thread how to write reaches none of the six
+# agents, and two of those six write the code the user reads.
+missing_register = [os.path.relpath(f, root) for f in sorted(glob.glob(os.path.join(root, 'agents/*.md')))
+                    if 'punctuate like someone typing fast' not in open(f, encoding='utf-8').read().lower()]
+for f in missing_register:
+    print(f'  NO REGISTER   {f} never tells its agent how to write')
+    print('                  subagents do not inherit the output style, so the')
+    print('                  register rule has to be in the agent or it reaches nothing')
+    bad += 1
+
 if bad:
     print('\nThe taxonomy is slop-scan\'s eight rules plus two from the complaint')
     print('corpus. Prevention belongs on the agent that writes the code.')
     raise SystemExit(1)
-print(f'{len(TAXONOMY)}/{len(TAXONOMY)} code-slop markers addressed, '
-      f'prevention on the writers where it belongs.')
+agents_n = len(glob.glob(os.path.join(root, 'agents/*.md')))
+print(f'{len(TAXONOMY)}/{len(TAXONOMY)} code-slop markers addressed, prevention on the '
+      f'writers; {agents_n}/{agents_n} agents carry the register rule.')
 SLOPPY
 
 # --- adoption provenance --------------------------------------------------

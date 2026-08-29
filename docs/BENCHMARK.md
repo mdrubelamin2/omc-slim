@@ -115,6 +115,34 @@ of run.
   future re-run must detect delegation from the transcript instead. The finding
   above stands for this run; the technique does not transfer.
 
+  **Retraction, 2026-08-29, later the same day.** The correction below was
+  **wrong**, and it is left standing rather than deleted because the sequence is
+  the useful part.
+
+  It claimed `--allowedTools` was an exclusive tool set, so omitting `Agent`
+  meant no arm could delegate. A seven-seat review tested that instead of reading
+  the comment it rested on. Against binary 2.1.251: `--allowedTools "Read Glob"`
+  leaves the tool list **unchanged**; `--disallowedTools "Agent"` removes `Task`;
+  deny beats allow. Then the behavioural check, in a fresh directory under this
+  script's **exact** allow-list — `--allowedTools "Read Write Edit Bash Glob
+  Grep"` — the model emitted a `Task` tool_use, **the subagent launched, ran and
+  returned**, `is_error: false`, `num_turns: 1`. No prompt, no hang.
+
+  `--allowedTools` is an additive permission grant, not a filter. **So delegation
+  was available in all nine runs and the model never chose it, which is a
+  stronger finding than the one it replaced.**
+
+  Where the mistake came from, since it is instructive: `run-arm.sh`'s comment
+  records a real and narrow observation — *"Write and Edit are the ones that bit
+  us before"*. Commit `8771909` generalised that to "a tool outside the
+  allow-list" and applied it to `Agent`, which is not gated the same way. The
+  generalisation was never tested. One caveat kept honest: the published runs
+  were 2026-08-22 on a binary nobody can now test, so the claim is that the
+  correction's **stated mechanism** is false on 2.1.251, not that it was false
+  that day.
+
+  The superseded correction follows.
+
   **Correction, 2026-08-29: there is a second sufficient cause and it was never
   ruled out.** `scripts/bench/run-arm.sh` sets
   `ALLOWED_TOOLS="Read Write Edit Bash Glob Grep"`. **`Agent` and `Task` are not

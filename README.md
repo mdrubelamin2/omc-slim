@@ -13,12 +13,16 @@ it, and it inherits whatever servers and skills your project already has.
 Benchmarked against a plain session on 2026-08-22, n=3 per arm: 18% cheaper, all
 nine runs graded equally correct, and **zero subagents ran in any arm**.
 
-That last part was read for months as evidence the win came from the prompt
-rather than the roster. It is not, and the correction was found today while
-building the instrument to settle it: **the benchmark's own allow-list never
-included the `Agent` tool**, so no arm could have delegated whatever the task
-was. The 18% is real. What the roster contributes is genuinely unknown, and
-[BENCHMARK.md](./docs/BENCHMARK.md) now says so instead of explaining it away.
+**Delegation was available in every one of those runs and the model never chose
+it.** That is a stronger result than it sounds, and it was nearly lost: a
+correction published earlier on 2026-08-29 claimed the benchmark's allow-list had
+excluded the `Agent` tool, which would have meant no arm could delegate. A review
+then tested it rather than reading the comment it rested on. `--allowedTools` is
+an additive permission grant, not an exclusive tool set — under that exact
+allow-list a subagent launches and returns normally. **The correction was wrong
+and is retracted. The original finding stands.** Both are on the record in
+[BENCHMARK.md](./docs/BENCHMARK.md), because a retracted retraction is worth more
+to a reader than a clean page.
 
 One more, since the first screen is where it belongs. Someone benchmarked a terse
 plugin against the literal instruction *"be brief."* across 24 prompts and found
@@ -35,8 +39,8 @@ This is the only plugin in its category with a committed, re-runnable harness an
 a published negative result about itself. So the numbers come with their limits
 attached instead of a footnote.
 
-Static context is **~4,309 tokens**, measured with a real tokeniser.
-`./scripts/measure-context.sh` also reports **4,735 on a chars/4 basis**, the
+Static context is **~4,343 tokens**, measured with a real tokeniser.
+`./scripts/measure-context.sh` also reports **4,768 on a chars/4 basis**, the
 estimate this project's version series is tracked on, and prints the gap between
 them every run. That gap used to be a hard-coded 13.5% taken as one average
 across the whole repository. A single average does not hold per file, which is
@@ -101,13 +105,13 @@ took the output-style slot. `/plugin disable` the other plugin, or check with
 
 One thing to know: the output-style flag takes precedence over your `outputStyle`
 setting for as long as the plugin is enabled. It is the only global change this
-plugin makes — it ships no MCP servers, writes no files and touches no settings.
+plugin makes: it ships no MCP servers, writes no files and touches no settings.
 To opt out, run `/plugin disable omc-slim`. Output style is part of the system
 prompt, so changes take effect after `/clear` or in a new session.
 
 **The plugin bundles no MCP servers, deliberately.** Up to v0.8.3 it shipped a
-`.mcp.json` that started `context7` and `grep.app` automatically — two remote
-third-party endpoints — while the README claimed the output style was the only
+`.mcp.json` that started `context7` and `grep.app` automatically, two remote
+third-party endpoints, while the README claimed the output style was the only
 global change. That was wrong, and the fix was to remove them rather than to
 document them. `librarian` discovers whatever documentation servers your project
 or user config already provides, so if you want those two, add them yourself:
@@ -133,7 +137,7 @@ who works in that repository, with no per-machine step:
 ```
 
 Two consequences worth stating before you do it. The output style applies to
-every teammate's main thread — that is the point, and it is also a change to how
+every teammate's main thread. That is the point, and it is also a change to how
 their sessions read, so tell them. And a teammate who disables it locally in
 `.claude/settings.local.json` wins, which is the right precedence and means
 nobody is trapped.
@@ -177,7 +181,7 @@ UI, and nothing it prints enters the context.
 
 ## Two settings worth knowing
 
-Neither is a plugin change — both are yours, and both cost more than anything in
+Neither is a plugin change. Both are yours, and both cost more than anything in
 this repository does.
 
 **`ENABLE_TOOL_SEARCH`.** MCP tool definitions load into every request. One
@@ -191,7 +195,7 @@ saving available to you:
 ```
 
 **`subagentPromptCacheTtl`** (Claude Code 2.1.242+). The main conversation gets a
-one-hour prompt cache on a subscription; **subagents, forks and compaction get
+one-hour prompt cache on a subscription. **Subagents, forks and compaction get
 five minutes.** A plugin that delegates runs most of its tokens in that
 five-minute bucket, so a specialist dispatched after a pause pays full price for
 a prefix it could have read from cache:

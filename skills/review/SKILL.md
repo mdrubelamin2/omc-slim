@@ -32,7 +32,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/base.sh"
 
 It fetches first, because a **stale base = phantom findings**. Then it resolves
 the branch's PR target, else the repository default, then `origin/HEAD`, then
-`main`, then `master`; with no remote, drop the prefix — and prints which it
+`main`, then `master`; with no remote, drop the prefix, and prints which it
 used. It diffs against `git merge-base`, not `HEAD` and not the base tip, so
 uncommitted **edits to tracked files** are included — review runs before the
 commit — and whatever landed on the base since is not. **A brand-new file is
@@ -48,16 +48,16 @@ steps, so every `master`-default repository died on `fatal: ambiguous argument`.
 It is a script now because a script can have a test, and `base.test.sh` runs that
 repository as its first case.
 
-**Read the whole diff before flagging anything** — the commonest false positive is
+**Read the whole diff before flagging anything**. The commonest false positive is
 a problem the same diff fixes three hunks later.
 
 ## 2. Intent, before quality
 
 Was this what was asked for — nothing more, nothing less?
 
-- **Scope creep** — changes tracing to no request. "While I was in there" widens
+- **Scope creep**: changes tracing to no request. "While I was in there" widens
   the blast radius of the review and of the rollback.
-- **Missing requirements** — asked for and quietly not delivered, or left at 80%.
+- **Missing requirements**: asked for and quietly not delivered, or left at 80%.
   The enum handled in one place of three, the error path skipped.
 
 Intent comes from this session's request, the plan, the issue, the commit
@@ -88,15 +88,15 @@ and finding is where you were blind.
 **Then find what judges this better than you can.** You have a cutoff; this
 repository has law you have not read.
 
-- **Read the project's own rules first** — `CLAUDE.md`/`AGENTS.md`,
+- **Read the project's own rules first**: `CLAUDE.md`/`AGENTS.md`,
   `.claude/rules/`, the lint, formatter and type config, a design system. They
   outrank your preferences; a finding contradicting a deliberate project decision
   is not a finding.
-- **Survey the toolset, in both scopes** — the project's `.claude/` and the user's
+- **Survey the toolset, in both scopes**: the project's `.claude/` and the user's
   `~/.claude/`, which usually carries more. Other plugins ship security,
   performance and framework reviewers built for this stack, and a documentation
   MCP is authoritative where you would be inferring. `ToolSearch` reaches deferred
-  tools — an unsearched tool is invisible, not absent. Name what you found, and
+  tools. An unsearched tool is invisible, not absent. Name what you found, and
   prefer a specialist built for this stack.
 
 **Read `checklists.md` now, before judging anything.** It holds what each lane
@@ -129,10 +129,10 @@ dispatch — **unless this session wrote the diff.** Then the shortcut is off at
 size: the author clearing their own lanes is the same defect the adversarial pass
 below already refuses, one level down. Above 50 lines either way, dispatch them
 **in parallel, in one message**, one subagent
-each — give each **a path to a prepared diff file**, not the diff and not a
+each: give each **a path to a prepared diff file**, not the diff and not a
 command to derive one, plus its lane text and the evidence gates in section 5.
 Either way, a lane the table triggers gets run and reported. **A dispatched lane
-returns its findings in its final message** — one that signs off with "done" has
+returns its findings in its final message**. One that signs off with "done" has
 returned nothing, because nothing else reaches you.
 
 Write it once before dispatching: commit list, `--stat`, `git diff -U10`. It
@@ -153,7 +153,7 @@ visible.
 
 Report which lanes ran and **which did not, with the reason**; a lane silently
 skipped reads as a lane that found nothing. **An always-on lane that found nothing
-says so** — "Tests: coverage adequate for the changed paths" is a result, and its
+says so**. "Tests: coverage adequate for the changed paths" is a result, and its
 absence is indistinguishable from never having looked.
 
 `performance.md` is not a lane, it is the discipline for *changing* something on
@@ -163,7 +163,7 @@ does not beat the noise is reverted rather than kept, and that is not a call to
 make from recall.
 
 **Two lanes reading the same bytes and agreeing is not corroboration.** Dispatch
-more than one and at least two get **different evidence** — `checklists.md` names
+more than one and at least two get **different evidence**. `checklists.md` names
 the four sources, and which one is the cheap win.
 
 **Then one adversarial pass, always**, whatever the size. Line count is not a
@@ -171,20 +171,20 @@ proxy for risk, and a five-line auth change can be the worst thing in the releas
 
 Run it **in a fresh context**: a subagent that did not write this code and holds
 no checklist, told what the lanes already found and asked for what they missed.
-**No component here can be it** — `checklists.md` says why, and carries the brief. A pass that
-both wrote a change and blesses it is not a review, however carefully it reads —
-the reasoning that produced the bug is still resident, and still finds it
+**No component here can be it**. `checklists.md` says why, and carries the brief. A pass that
+both wrote a change and blesses it is not a review, however carefully it reads.
+The reasoning that produced the bug is still resident, and still finds it
 reasonable. This is the one step you cannot do to yourself.
 
 Where a checklist partitions the work, the gaps between the partitions are where
-the real bug lives. **Ask what is absent, explicitly** — the unhandled case, the
+the real bug lives. **Ask what is absent, explicitly**: the unhandled case, the
 untested branch, the rollback that does not exist. And **do not stop at the first
 few findings**: surface problems mask structural ones. `checklists.md` names the
 seams to aim at.
 
 ## 5. Gates every finding passes
 
-**Filter at the end, never while looking.** Surface everything during discovery —
+**Filter at the end, never while looking.** Surface everything during discovery:
 low severity, half-formed, uncertain. Filtering instructions are followed
 faithfully, so a filter applied while reading suppresses the bug before it is ever
 seen. Every gate here runs at *report* time, on a full list. "Only important
@@ -202,23 +202,23 @@ get around the gate.
 
 **Cite the source, or you do not have a claim.** The quote gate covers this
 repository; anything outside it is checked against a current source,
-**never recalled** — an API signature, a default, a deprecation, a
+**never recalled**: an API signature, a default, a deprecation, a
 "recommended way", whether an advisory is reachable. A reviewer citing an
 argument that moved two versions ago is the most expensive false positive there
 is: specific, and it sounds researched. **You** send it to the `omc-slim:librarian`
 agent or the doc server for this stack; a dispatched lane cannot. Carry the
-source into the finding — an unsourced external claim is indistinguishable from a
+source into the finding. An unsourced external claim is indistinguishable from a
 recalled one.
 
 **The remedy gets the same rigour as the finding.** Reviewers are audited on the
 bug and trusted on the fix, which is backwards. Check whether the platform, the
 framework or a newer dependency already solves it, and before anything bespoke
-**look for prior art** — a named algorithm, a standard, an RFC, a widely used
+**look for prior art**: a named algorithm, a standard, an RFC, a widely used
 implementation. "Add a retry loop with jitter" is worse than naming the backoff
 the ecosystem already settled on.
 
 **Write the fix, and let it test the finding.** Before reporting, name the change
-that would resolve it — then ask what input behaves differently before and after.
+that would resolve it, then ask what input behaves differently before and after.
 If you cannot name one, or the "fix" changes nothing observable, **the finding
 was a false positive — drop it from the list and carry the count.** **One line
 per drop, not one line per review** — `file:line — what it was, and what the fix
@@ -232,7 +232,7 @@ confidence rule below.
 
 **Clearance needs evidence too.** "Handled elsewhere" cites the handling code;
 "tests cover this" names the test. *Likely handled* and *probably tested* are not
-review outputs — verify, or record it unverified. "Looks fine" is not a finding
+review outputs: verify, or record it unverified. "Looks fine" is not a finding
 *and not a clearance*.
 
 **Severity**, by consequence: **Critical** — a security hole, data loss or broken
@@ -247,11 +247,11 @@ replacing one, so a real hole this diff did not introduce is a
 everything the diff introduced, and let the author decide.
 
 **Confidence** 1–10, independent of severity: 8+ report; 6–7 report and say it
-needs confirming; **3 to 5 goes to Open questions, not to the findings list** —
+needs confirming; **3 to 5 goes to Open questions, not to the findings list**,
 phrased as the question you could not settle and what would settle it. Below 3
 you have a hunch, not a finding, and hunches are noise. A Critical **survives at
 any confidence** as an open question, never a blocker, because the cost of
-missing it is asymmetric — suppressing a low-confidence **Critical** entirely is
+missing it is asymmetric. Suppressing a low-confidence **Critical** entirely is
 how a real one gets deleted before anyone sees it. That is the one carve-out, not
 a licence to keep hunches. **The verdict is set by the worst finding you
 are confident about**, not the worst you can imagine — **counting only what this
@@ -265,7 +265,7 @@ not set the verdict: "ship it; there is a Critical here that predates you."
 - Flaw, or preference? A preference is a nit or it is nothing.
 - Rating it high because it is bad, or because you **found momentum and are now
   hunting**? Use the realistic worst case, not the theoretical maximum, and count
-  what already mitigates it — an existing test, a flag, a deploy gate.
+  what already mitigates it: an existing test, a flag, a deploy gate.
 - **Every downgrade names what mitigates it.** A quiet re-rating is how a real
   finding disappears. Data loss, a security breach and money **never get
   downgraded**.
@@ -306,7 +306,7 @@ discussion. An import or variable *this diff* orphaned, a stale comment, a magic
 number, a version mismatch.
 
 Two things are deliberately not on that list. **Pre-existing dead code** is
-reported, never deleted — the `omc-slim:simplify` skill treats "dead" as a claim
+reported, never deleted. The `omc-slim:simplify` skill treats "dead" as a claim
 about your search, not a property of the code. And **a performance fix is
 never mechanical**: `performance.md` requires a before-and-after measurement,
 which a review pass has no baseline to produce. **Ask** where reasonable
@@ -326,7 +326,7 @@ Batch every ask into **one** question with a recommendation. No asks, no
 question.
 
 More than a line or two of simplicity work, **hand it to `omc-slim:simplify`**,
-the deletion skill — it has the pin-down check for untested code and this does
+the deletion skill. It has the pin-down check for untested code and this does
 not. Missing coverage goes to the `omc-slim:verification-planning` skill.
 
 **Never commit, push or open a PR** from a review. Reviewing and publishing are
@@ -337,7 +337,7 @@ different decisions.
 Re-run the project's own checks whose inputs the review changed, not every check.
 Report what they said, failures included; a skipped check is named with its reason.
 
-**Evidence has a shelf life** — output from before the last edit describes a tree
+**Evidence has a shelf life**: output from before the last edit describes a tree
 that no longer exists. A green build **says the code compiles, not that it does
 what was asked**. "All tests pass" with no output, or a conclusion carried by
 *should*, *seems to* or *probably*, is a claim, not a result. **And a pass needs
@@ -360,22 +360,22 @@ possible**.
 ## Output
 
 ```
-Review: <ship | fix first | needs a decision> — N findings (X critical, Y required, Z optional; P of them pre-existing)
-Lanes: <ran> · skipped: <lane (reason)>
+Review: <ship | fix first | needs a decision>. N findings (X critical, Y required, Z optional; P of them pre-existing)
+Lanes: <ran>. Skipped: <lane (reason)>
 
 DROPPED
-- file:line — what it was, and what the proposed fix would not have changed
+- file:line  what it was, and what the proposed fix would not have changed
 
 FIXED
-- file:line — problem → what you did
+- file:line  problem, then what you did
 
 NEEDS A DECISION
-- [CRITICAL] (8/10) file:line — problem
+- [CRITICAL] (8/10) file:line  problem
   Fix: the specific change
-- [CRITICAL · PRE-EXISTING] (8/10) file:line — problem, not introduced here
+- [CRITICAL, PRE-EXISTING] (8/10) file:line  problem, not introduced here
 
 OPEN QUESTIONS
-- file:line — what you could not confirm, and the check that would settle it
+- file:line  what you could not confirm, and the check that would settle it
 ```
 
 Clean is `Review: ship — no findings.` in one line — plus the DROPPED block if any

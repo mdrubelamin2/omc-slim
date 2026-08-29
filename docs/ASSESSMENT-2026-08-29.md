@@ -35,7 +35,7 @@ plugin is broken. A user who installs "a discipline layer that also has
 specialists" and watches the main thread do the work tersely, check itself, and
 stop before building the wrong thing, concludes it is working. Because it is.
 
-## 2. Four independent sources say the central bet is wrong, and the fifth proved nothing
+## 2. Five independent sources say the central bet is wrong
 
 This is the part the project has documented honestly and then not acted on.
 
@@ -45,11 +45,16 @@ This is the part the project has documented honestly and then not acted on.
 | Cognition, *Don't Build Multi-Agents* | *"running multiple agents in collaboration only results in fragile systems"* — and they reversed their own prior position to say it |
 | MAST, arXiv 2503.13657 (NeurIPS 2025) | 1,600+ traces, 7 frameworks: *"performance gains on popular benchmarks are often minimal"* |
 | Nature MI | every multi-agent arm lost on SWE-bench Verified |
-| **This repository's own benchmark** | zero subagents ran in any arm; the measured win came from the prompt |
+| **This repository's own benchmark** | zero subagents ran in any arm, with delegation available and never chosen. Tested on 2026-08-29, not inferred |
 
-Four against, zero for, and one that turned out to prove nothing. No source in
-this repository's evidence supports delegation improving coding outcomes — and
-the one it has been citing hardest is the one that cannot. The honest reading is that the roster is a
+Five against, zero for. No source in this repository's evidence supports
+delegation improving coding outcomes, and the one it cites hardest was attacked
+twice in one day and survived: a mid-session correction claimed the benchmark's
+allow-list excluded the `Agent` tool, and a review then tested that rather than
+reading it. `--allowedTools` is an additive permission grant, so delegation was
+available and simply not chosen. The correction is retracted in
+[BENCHMARK.md](./BENCHMARK.md), where both versions stand. The honest reading is
+that the roster is a
 *context-isolation* device, which is a real and different benefit, worth having
 for `explorer` and `librarian` specifically. It is not a performance device.
 

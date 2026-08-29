@@ -70,7 +70,7 @@ in this skill can catch that: the checks prove you did what you planned, never
 that the plan was current.
 
 Three questions. Each closes with a **named source**, or an explicit "checked,
-found nothing" — silence is not an answer, and neither is your own memory.
+found nothing". Silence is not an answer, and neither is your own memory.
 
 **A stage check that fails twice is not a third attempt.** The second failure
 says the cause is not what you think it is, and a third guess costs more than
@@ -92,7 +92,7 @@ specialist cannot survey on your behalf and inherits only what the brief says.
    been replaced by something the platform now does for you.
 2. **What does the code on disk actually say?** The installed package's own types
    and an existing call site cannot be stale about this project. A doc page can.
-   Where disk and documentation disagree, disk wins — you are planning against
+   Where disk and documentation disagree, disk wins. You are planning against
    the code that will run.
 3. **What has already been tried here?** `git log`, the issue tracker, a comment
    that explains itself. A dead end someone already walked is the cheapest
@@ -100,7 +100,7 @@ specialist cannot survey on your behalf and inherits only what the brief says.
    rewrite loses a week.
 
 **Scale the pass, never skip it.** Reversible work with a precedent in this
-repository still owes questions 2 and 3 — both are local, both are minutes. Only
+repository still owes questions 2 and 3: both are local, both are minutes. Only
 question 1 scales with consequence, because an open-web pass costs real time. A
 migration, a published interface or anything users have already seen owes all
 three, in full.
@@ -122,7 +122,7 @@ made by reflex.
 
 ## 1. Write the stage map before touching anything
 
-Numbered stages, each with an expected output — this is how you avoid finding at
+Numbered stages, each with an expected output. This is how you avoid finding at
 stage 7 that stage 2 rested on a wrong assumption.
 
 ```
@@ -139,7 +139,7 @@ written.
 checkable, merge it into the next.
 
 The map is living, not a contract. Update it when what you learn invalidates the
-plan — and say that you did.
+plan, and say that you did.
 
 **An assumption that shrinks the deliverable is a question, not an assumption.**
 One that fills a gap is stated and worked past. One that removes work is a scope
@@ -165,7 +165,7 @@ their commit points. Then start.
 
 Without this the map is written and never seen, and every later clause about
 the commit points the user saw is gated on a moment that never happened.
-It is a presentation, not a gate — you are not asking permission for work already
+It is a presentation, not a gate. You are not asking permission for work already
 agreed, you are giving the one cheap chance to say "not that order" before the
 cost is sunk.
 
@@ -180,7 +180,7 @@ thought across lanes to use more agents.
 **Read a lane's last result before dispatching that lane again.** Reading it is
 what authorises the retry; re-dispatching an unread result buys a second copy of
 an answer you already hold, at full price. Upstream shipped this as a hook after
-a documented incident — as prose it costs nothing and touches no tool call.
+a documented incident. As prose it costs nothing and touches no tool call.
 
 **Keep delegation one level deep** — enforced, not advisory. Specialists cannot
 spawn agents, so a stage needing its own fan-out must be split into parallel lanes
@@ -189,7 +189,7 @@ sequentially.
 
 **Give every lane a `Consumes:` / `Produces:` block.** Names and types, not
 prose. A lane sees only its own brief, so this is the only way it learns what the
-neighbouring lanes call things — and without it, parallel lanes drift and the
+neighbouring lanes call things. Without it, parallel lanes drift and the
 drift surfaces at integration, when it is most expensive.
 
 ```
@@ -199,7 +199,7 @@ Produces: refreshToken(token: SessionToken): Promise<SessionToken>
 
 **The preflight conflict scan emits rows, not a verdict.** One row per lane pair
 sharing a file or an interface, with the shared thing named. *"The scan is clean"
-without those rows is not a scan you ran* — it is a claim about a scan. Same
+without those rows is not a scan you ran*. It is a claim about a scan. Same
 evidence-not-verdict rule the review lanes already follow, applied to planning.
 
 **And a floor: do not fan out when the work is coupled.** Fan-out buys
@@ -214,7 +214,7 @@ must agree on an interface are one lane.
 A test that runs; a file provably in the expected shape; a source actually fetched
 and read; output diffed against the spec.
 
-**"I reviewed it and it looks right" is not a check** — a model that would skip
+**"I reviewed it and it looks right" is not a check**: a model that would skip
 verification will also pass its own introspection. No failable check exists? Say
 so and mark its output unverified, so the gap is visible downstream.
 
@@ -241,12 +241,12 @@ shaped search is what catches that.
 code is gated by the `omc-slim:review` skill. A phase that makes an architecture,
 security or data-integrity call is gated by the `omc-slim:oracle` agent. A phase
 that does both gets the `omc-slim:review` skill as its gate plus **at most one** oracle
-escalation on the named decision — never both as parallel gates, which doubles
+escalation on the named decision. Never both as parallel gates, which doubles
 the spend and holds two budgets for one gate.
 
 **You own the marker and the count; the gate does not.** Stamp
 `Gate N — attempt M of K` into whichever gate you open, and the per-gate budget
-with it. A gate carries the marker you gave it and never issues its own — two
+with it. A gate carries the marker you gave it and never issues its own. Two
 components each keeping a count is how one gate silently becomes two.
 
 **Open a gate through its own tool.** `omc-slim:review` is a skill and goes
@@ -304,7 +304,7 @@ only these: an irreversible or destructive operation, a security-sensitive
 action, a side effect outside this worktree, or a plan so broken every path is a
 guess.
 
-Surfacing is a different act and that list does not bound it — the warning
+Surfacing is a different act and that list does not bound it: the warning
 threshold below stops to *report* three accumulated concerns, a third `Waived:`
 line stops to report all three, an exhausted review budget stops to *ask* about a
 risk still open, and §1's shrinking assumption stops to ask before the map runs.
@@ -323,7 +323,7 @@ Collect every ruling into the final message. **That roll-up is the only place
 decisions taken on the user's behalf reach them; a ruling that dies with the
 workspace was a decision made in secret.** A wrong ruling costs rework they can
 see and undo. A session parked on a question costs their whole day and buys
-nothing — one upstream report records a run blocked for nearly nine hours.
+nothing. One upstream report records a run blocked for nearly nine hours.
 
 ## 4. Self-critique before delivery
 
@@ -348,7 +348,7 @@ confirm the plan confirms it, every time, and tells you nothing.
 
 This repo has the case on record. Three independent seats were dispatched on one
 restructure question and two agreed with each other. The third read git history,
-found `51dfbcc`, and overturned both — a confirmation-shaped review would have
+found `51dfbcc`, and overturned both. A confirmation-shaped review would have
 shipped the wrong answer.
 
 **Verify a problem before flagging it** — the `omc-slim:verification-planning`
@@ -360,8 +360,8 @@ skill holds the procedure. Absence of evidence is not the finding.
 three, stop and surface** them together — three small things pointing the same way
 usually mean one real problem needing a decision.
 
-**Find-and-replace safety.** Anchor on word boundaries, and check the result —
-the `omc-slim:fixer` agent runs the bulk edits and holds that procedure.
+**Find-and-replace safety.** Anchor on word boundaries, and check the result.
+The `omc-slim:fixer` agent runs the bulk edits and holds that procedure.
 
 **Progress file, which is also the handover.** Reaching a context limit, write
 this file and start fresh rather than compacting in place — compaction preserves

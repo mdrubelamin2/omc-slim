@@ -6,7 +6,7 @@ when_to_use: '"make this simpler", "why is this so complicated", "clean this up"
 
 # Code Simplification
 
-Cut complexity, preserve behaviour exactly. The goal is not fewer lines — it is
+Cut complexity, preserve behaviour exactly. The goal is not fewer lines. It is
 code faster to read, change and debug. One test: **would a new team member
 understand this faster than the original?**
 
@@ -20,7 +20,7 @@ form is measurably slower. **"Already clean" is not on that list unless you can
 show it.** It holds only when nothing in the tables below fires. A nested
 ternary or a three-deep nest refutes it, so it never outranks *Be brave about
 size*. Skip any block with an explicit do-not-touch marker (`simplify-ignore`,
-`@preserve`, a comment naming a reason) — honour it and say you skipped it.
+`@preserve`, a comment naming a reason). Honour it and say you skipped it.
 
 ## The Five Principles
 
@@ -28,7 +28,7 @@ size*. Skip any block with an explicit do-not-touch marker (`simplify-ignore`,
 ordering and edge cases stay identical. Unsure? Do not make the change.
 
 - **A test is the evidence, so the test decides.** A test that has to change for
-  your simplification to pass means **you changed behaviour** — revert. Editing
+  your simplification to pass means **you changed behaviour**. Revert. Editing
   the test destroys the only evidence you had. Nothing tested it? **A green suite
   proves nothing.** Before touching non-trivial logic with no coverage, write the
   smallest check that pins current behaviour. Run it against the **original** to
@@ -41,14 +41,14 @@ churn. Conventions come from the repository, never from your preferred dialect.
 
 **3. Clarity over cleverness.** Explicit beats compact whenever compact needs a
 mental pause; keep a name that carries meaning even at a few extra lines. Delete
-comments restating the code, **keep comments that explain why** — intent is the
+comments restating the code, **keep comments that explain why**. Intent is the
 one thing code cannot say for itself. **Comment volume is its own smell.** A
 function needing a note every third line needs splitting or renaming instead. A
 comment surviving only because the name is bad goes *after* the rename.
 
 **4. Balance.** Over-simplification is real: do not inline away a meaningful
 name, merge unrelated logic, or optimise for line count. Do not remove an
-abstraction that earns its place — but **"serves extensibility" is not earning
+abstraction that earns its place, but **"serves extensibility" is not earning
 it.** One **pays rent when a second** implementation exists *today*, or a test
 really substitutes at that seam. One implementation and no substitution is the
 `yagni:` case: inline it. Evidence now, not a story about later.
@@ -78,7 +78,7 @@ ternary or a three-deep nest is the excuse this section exists to remove.
 - **An argument that defends a rule moves; it does not vanish.** In text that
   shapes behaviour, the passage answering "why bother" reads as padding and often
   is not. Cut it and the rule stops firing under pressure, while the file still
-  reads correctly — so nothing catches it. Relocate each rebuttal to where the
+  reads correctly, so nothing catches it. Relocate each rebuttal to where the
   excuse gets made: a rationalization row, or the step it guards.
 
 Never at the cost of the always-on floor the main thread already holds — see
@@ -165,7 +165,7 @@ unknown fence, and an unknown fence stays up.
 
 **A comment is a fence too.** Delete one that restates the code freely. One you do
 not *understand* gets `git log -S` on its own text first, because the cryptic
-line about ordering is usually the scar from an outage — and you want the commit
+line about ordering is usually the scar from an outage, and you want the commit
 that wrote it, not the one that last reflowed it.
 
 ### 2. Find the opportunities
@@ -281,7 +281,7 @@ saying so is a result.
 of LLM-generated refactorings are functionally non-equivalent, and roughly 21% of
 those are not caught by the existing test suite.** A green run means the change
 survived the paths that have tests, which is a smaller claim than the checkbox
-looks like — and for anything you deleted, the tests that would have caught you
+looks like. And for anything you deleted, the tests that would have caught you
 are the ones nobody wrote.
 
 So for a deletion, add one question the checklist cannot ask for you: **what
