@@ -115,6 +115,26 @@ of run.
   future re-run must detect delegation from the transcript instead. The finding
   above stands for this run; the technique does not transfer.
 
+  **Correction, 2026-08-29: there is a second sufficient cause and it was never
+  ruled out.** `scripts/bench/run-arm.sh` sets
+  `ALLOWED_TOOLS="Read Write Edit Bash Glob Grep"`. **`Agent` and `Task` are not
+  in it**, and the comment three lines above that assignment records why it
+  matters: in `-p` mode a tool outside the allow-list stops the run at a
+  permission prompt with no TTY to answer it. So no arm in this benchmark could
+  have delegated, whatever the task shape.
+
+  What survives and what does not. *"Nothing delegated"* survives — the Sonnet
+  detection was sound for a build where specialists were tier-pinned. *"Because a
+  single-file CLI is where delegation cannot pay"* does **not** survive as an
+  explanation: it may well be true, and this run cannot distinguish it from an
+  allow-list that forbade the tool. An experiment that could not observe the
+  outcome either way is not evidence about the outcome.
+
+  Found while building the multi-file benchmark, whose runner has to add `Agent`
+  and `Task` to the allow-list for delegation to be possible at all. Nothing here
+  is retracted; the causal claim is downgraded to an open question, and
+  `scripts/bench/run-delegation.sh` is the instrument that answers it.
+
   **The 18% saving therefore comes from the orchestrator prompt, not from tier
   routing.** Fewer turns and a smaller surface, on the same model. The claim that
   routing work to cheaper tiers beats doing it all on the main model lives or

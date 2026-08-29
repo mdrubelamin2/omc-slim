@@ -11,10 +11,14 @@ it, and it inherits whatever servers and skills your project already has.
 ```
 
 Benchmarked against a plain session on 2026-08-22, n=3 per arm: 18% cheaper, all
-nine runs graded equally correct, and **zero subagents ran in any arm**. So the
-measured win came from the prompt, not from the roster this plugin is named for.
-That is the least flattering true sentence available and it is the first one,
-because the alternative is you finding out in week two.
+nine runs graded equally correct, and **zero subagents ran in any arm**.
+
+That last part was read for months as evidence the win came from the prompt
+rather than the roster. It is not, and the correction was found today while
+building the instrument to settle it: **the benchmark's own allow-list never
+included the `Agent` tool**, so no arm could have delegated whatever the task
+was. The 18% is real. What the roster contributes is genuinely unknown, and
+[BENCHMARK.md](./docs/BENCHMARK.md) now says so instead of explaining it away.
 
 One more, since the first screen is where it belongs. Someone benchmarked a terse
 plugin against the literal instruction *"be brief."* across 24 prompts and found

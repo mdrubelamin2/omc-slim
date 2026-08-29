@@ -9,6 +9,10 @@ was not written down in advance is a measurement that will be reinterpreted.
 for this run is that nothing paid fires. Every one of them ends with a single
 command and a stated budget, so firing them is a decision and not a project.
 
+Instrument 1 is now **built** — see "The harness, as built" at the end of §1.
+Built is not run: no arm has fired and no cost has been incurred. Instruments 2,
+3 and 4 remain designs on paper.
+
 House rule carried in from `verification-planning`: a check that cannot fail is
 not a check, and a check that ran over nothing looks exactly like one that
 passed. Every design below prints the number of inputs that reached the assertion
@@ -132,6 +136,91 @@ result and the honest headline**, not a failed experiment.
 
 Budget: 15 runs. At the previously measured ~$1.01–1.24 per single-file run and a
 task roughly 3× larger, plan **$45–60** and set `--max-cost-usd` per run.
+
+### The harness, as built
+
+Three scripts, all under `scripts/bench/`. The design above is unchanged; this
+records the interface and the four places the implementation had to differ from
+what §1 assumed.
+
+| Script | What it is |
+|---|---|
+| `make-refund-fixture.sh` | Generates the repository, the held-out suite, and both reference implementations. Refuses to overwrite, like `make-fixture.sh`. |
+| `grade-refunds.sh` | Runs the held-out suite against one candidate. `--self-test` is the negative control. |
+| `run-delegation.sh` | The arms. Dry run by default; `--execute` required to spend. |
+
+**Start here, and stop early if it answers you.** The cheapest decisive slice is
+one arm, not fifteen runs:
+
+```bash
+./scripts/bench/run-delegation.sh --arms omc-slim --n 3 --execute   # $9.13
+```
+
+That answers the question that actually blocks release — *does the plugin
+delegate at all on a task where delegation could pay* — for about a fifth of the
+full design. **Zero dispatches across those three runs makes the full comparison
+unnecessary**, and the harness says so in as many words rather than leaving the
+reader to infer it. The full design remains one command away:
+
+```bash
+./scripts/bench/run-delegation.sh --execute                          # $48.99
+```
+
+Both figures are printed before anything is spent, derived from
+[BENCHMARK.md](./BENCHMARK.md)'s measured per-run means scaled 3× as budgeted
+above. The full-design estimate lands inside this section's own $45–60.
+
+**The task, as generated.** `repo/` is 16 files: four adapters that provably do
+not import each other (the generator's self-check fails if one ever does), four
+provider mocks that deliberately disagree about units, about whether failure
+raises or is returned in the body, and about whether a refund is synchronous,
+plus one shared `ledger.py` whose docstring states the two invariants — every
+write joins the caller's transaction, and every key is deterministic in the
+operation it records. A `smoke.py` proves the charge path green before the task
+starts, so no arm inherits a broken tree and measures repair.
+
+**The correctness fixture is red before it is green, and that was watched.**
+`grade-refunds.sh --self-test` grades three trees whose scores are predicted in
+`manifest.json` before they are run:
+
+| Tree | Predicted | Observed |
+|---|---|---|
+| the untouched repo | 20 executed, 0 passed | 20 executed, 0 passed |
+| the seeded-defect reference | 16 passed, red on 4 named cases | red on exactly `paypal.double`, `adyen.exceeds`, `ledger.references_charge`, `ledger.partial_amount_recorded` |
+| the correct reference | 20 passed | 20 passed |
+
+Predicting the red set case by case is what makes this a control rather than a
+shrug: a broken tree that fails on the *wrong* cases would pass a bare
+"something went red" check while measuring nothing. `run-delegation.sh --execute`
+runs this self-test as a hard gate and refuses to spend if it fails, because an
+arm's score means nothing behind a fixture nobody watched fail.
+
+**Four deviations from §1 as written**, each a correction rather than a shortcut:
+
+1. **`--max-cost-usd` does not exist on the CLI.** That flag is `claude plugin
+   eval`'s. The session equivalent is `--max-budget-usd`, verified against 2.1.251
+   by arg-parse probe, and is set to `$8.00` per run.
+2. **`Agent` and `Task` are in `--allowedTools` for every arm.** `run-arm.sh`'s
+   list omits them, and MAINTAINERS.md records that in `-p` mode a tool outside
+   the list stops the run at a permission prompt with no TTY to answer it. Had
+   this benchmark inherited that list, a zero-delegation result would have been
+   caused by the harness and published as a finding about the plugin. **This is
+   also a live question about the nine committed runs**: their zero-delegation
+   result is attributed above to task shape, and the allow-list is a second
+   sufficient explanation that has not been ruled out.
+3. **The transcript is this harness's own `stream-json` capture**, not the
+   session file under `~/.claude/projects`. Two reasons: the session file also
+   carries sidechain entries for the subagents' own turns, which would inflate a
+   top-level dispatch count into something that looks like more fan-out than
+   happened; and a run killed by the wall-clock guard still leaves a usable
+   partial stream, where a whole-file parse leaves nothing. Counts are therefore
+   **top-level dispatches** — a subagent dispatching a further subagent is not
+   counted, and the write-up must say so.
+4. **The `nodelegate` arm denies `Agent` with `--disallowedTools`, not by
+   omitting it from the allow-list.** Deny beats allow, so the arm differs from
+   the full one by exactly one flag; and a denied attempt still appears in the
+   transcript, which is what makes attempted-minus-returned readable as the
+   gated-tool signal criterion 3 wants rather than as silence.
 
 ---
 
