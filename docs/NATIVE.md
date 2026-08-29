@@ -6,14 +6,14 @@ either a measured win or a dated removal criterion.** That is release gate 4 in
 it is discharged.
 
 The reason this file exists rather than a paragraph in the README: **the baseline
-moves faster than the layer.** Between 2026-08-26 and 2026-08-29 — three days —
+moves faster than the layer.** In the three days between 2026-08-26 and 2026-08-29,
 Claude Code shipped a filesystem-change hook that retired one of this plugin's
 standing refusals, added a fifth built-in output style with no changelog entry,
 grew the `SubagentStop` payload, and reversed the semantics of an environment
 variable this project reasons about. A plugin that does not re-check its own
 overlap every minor release is describing a build that no longer exists.
 
-**Verified against the installed binary 2.1.251 on 2026-08-29**, build
+Verified against the installed binary 2.1.251 on 2026-08-29, build
 `2026-08-28T14:51:38Z`. Where the binary and the documentation disagree, the
 binary wins and the row says so. Every row is re-checked at each minor Claude
 Code release; a row whose date is more than one minor release old is stale and
@@ -37,7 +37,8 @@ criterion, because there is nothing to be removed in favour of.
 
 ### `explorer` vs the built-in `Explore` agent
 
-**Position: candidate for removal, decided by a component ablation, not by this document.**
+Position: candidate for removal, decided by a component ablation rather than by
+this document.
 
 Native `Explore` is real and auto-invoked. From the binary:
 `{agentType:"Explore", disallowedTools:[…], source:"built-in", model:"inherit", omitClaudeMd:true}`,
@@ -60,7 +61,7 @@ Three residuals, and the second is newly material:
    measured ~30%-post-compaction-violation class ([LIMITATIONS.md](./LIMITATIONS.md)),
    so retiring the component trades an enforced surface for a degradable one.
 
-**Removal criterion, dated.** A component ablation — full build against
+Removal criterion, dated. A component ablation, full build against
 build-minus-explorer — scoring **downstream-consumer success** (can the
 orchestrator act on the returned locations?) plus token cost. The ablated arm's
 native `Explore` receives the map contract as a delegation brief, because that
@@ -72,8 +73,8 @@ unjustified one.**
 
 ### `review` vs three native tiers
 
-**Position: keep, reposition, and measure.** The honest comparison target is the
-**free local `/code-review`**, not the paid tiers.
+Position: keep, reposition, and measure. The honest comparison target is the free
+local `/code-review`, not the paid tiers.
 
 | Tier | What it is | Cost |
 |---|---|---|
@@ -92,7 +93,7 @@ The cost side belongs in the position: `review` is the heaviest component in thi
 plugin, and it sat 298 tokens **over** the post-compaction re-attach cap until
 v0.9.2 — against a native tier that costs nothing.
 
-**Removal criterion, pre-registered before the run.** Seeded-defect diffs with
+Removal criterion, pre-registered before the run. Seeded-defect diffs with
 ground truth, both tools, n≥3, precision *and* recall reported. The judge model
 only matches reported findings to seeds; it does not rule on validity, because a
 haiku judge is too weak to adjudicate that unaided. `review` survives if its
@@ -136,7 +137,7 @@ The seam is real, and it is quotable from the vendor's own page: workflows have
 own workflow."* A human gate between dependent stages is precisely what
 `deepwork` is, and it is what a workflow structurally cannot hold.
 
-**The honest risk is not obsolescence, it is reimplementation.** A plugin that
+The honest risk is not obsolescence, it is reimplementation. A plugin that
 shipped `workflows/` would get progress UI, resumability and cache-aware
 staggering for free. `deepwork` reimplements none of those and does not try to.
 Whether to ship a workflow *alongside* the skill is an open decision, recorded
@@ -158,8 +159,8 @@ The style is the largest single item in this plugin's static context and, on the
 benchmark evidence, the thing that produced its measured win. Its position rests
 on one fact:
 
-**The only default-on native coordination is subagent auto-delegation. Agent
-teams remain experimental and off by default.** Verified in the binary:
+The only default-on native coordination is subagent auto-delegation, and agent
+teams remain experimental and off by default. Verified in the binary:
 
 ```
 if (!env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS && !argv.includes("--agent-teams")) return false;

@@ -12,6 +12,18 @@
  * written nothing at all. Those are two different states and they get two
  * different messages; neither one accuses.
  *
+ * A third state is not about writing at all: the agent asserted a verification
+ * result, and nothing in its transcript ran a check. Measured rather than
+ * theorised — a benchmark of 45 Python bug-fix tasks had the agent report 45/45
+ * complete; against held-out tests 26 passed, 19 false positives, and the same
+ * 19 failed identically on two different vendors' models, so it is the agent
+ * loop's shape rather than a model defect. The transcript reads "[Round 3] 5/5
+ * tests pass. Build successful! All verified." against a suite of eight.
+ * `agents/fixer.md` already says a check counts only while it can still fail and
+ * `skills/review/SKILL.md` already says "all tests pass" with no output is a
+ * claim, not a result; neither can tell whether a check ran at all. This can,
+ * because it already holds the transcript.
+ *
  * Deliberately advisory: it never blocks the subagent from stopping.
  *
  * It emits `systemMessage` (surfaced to the user) and never
@@ -98,6 +110,76 @@ const SCAN_BUDGET_MS = (() => {
 
 /** Tools whose successful use counts as having produced a deliverable. */
 const WRITE_TOOLS = new Set(["Edit", "Write", "NotebookEdit", "MultiEdit"]);
+
+/**
+ * Tools that hand work to another agent. A successful dispatch means a check may
+ * have run in a transcript this one cannot see, so the claim state abstains.
+ */
+const DISPATCH_TOOLS = new Set(["Task", "Agent"]);
+
+/**
+ * Substrings that make a Bash command look like a check runner.
+ *
+ * Deliberately generous, and matched as plain substrings: a false negative here
+ * is silence, a false positive is an accusation, and this hook's charter is
+ * never to accuse. `git log --oneline latest` contains "test" and buys silence;
+ * that is the trade taken on purpose.
+ *
+ * The broad entries subsume the obvious runners — `test` covers pytest, vitest,
+ * `go test`, `cargo test`, `npm`/`yarn`/`pnpm`/`make`/`dotnet test`; `lint`
+ * covers eslint; `check` covers typecheck and type-check. The rest are the
+ * runners whose names contain none of those.
+ */
+const CHECK_COMMAND_HINTS = [
+  "test",
+  "lint",
+  "build",
+  "check",
+  "jest",
+  "mocha",
+  "tsc",
+  "mypy",
+  "ruff",
+  "gradle",
+  "mvn",
+  "rspec",
+  "phpunit",
+  "npm t",
+];
+
+/**
+ * Assertions of a verification OUTCOME — not mentions of testing.
+ *
+ * "I should run the tests" and "the test file lives in src/" are not results,
+ * and matching them would flag an agent for describing its own work. Each entry
+ * is tested against one sentence at a time; see assertsVerification.
+ */
+const VERIFICATION_CLAIMS = [
+  // "tests pass", "all tests passing", "the suite passes"
+  /\b(tests?|suites?|specs?)\s+(all\s+)?(pass|passes|passed|passing)\b/,
+  // "5/5 tests pass", "45/45 passed"
+  /\b\d+\s*\/\s*\d+\s+(tests?\s+)?(pass|passes|passed|passing|green)\b/,
+  // "45 of 45 passed"
+  /\b\d+\s+of\s+\d+\s+(tests?\s+)?(pass|passes|passed|passing)\b/,
+  // "build succeeded", "build successful"
+  /\bbuild\s+(is\s+)?(succeeded|successful|success|passed|passes|clean|green)\b/,
+  // "typecheck clean", "lint clean", "tsc passed"
+  /\b(type-?checks?|typechecking|tsc|mypy|lint|linting|linter|eslint|ruff)\s+(is\s+|are\s+|came\s+back\s+)?(clean|passes|passed|green)\b/,
+  // "all green"
+  /\ball\s+green\b/,
+  // "verified", which only survives the filter below in an unhedged sentence
+  /\bverified\b/,
+];
+
+/**
+ * What disqualifies a sentence from being an assertion of success: a reported
+ * failure, a negation, a hedge, an intention.
+ *
+ * "2 tests failed" and "not all tests pass" are the honest reporting this hook
+ * exists to protect, and flagging them would punish the behaviour we want.
+ */
+const NOT_AN_ASSERTION =
+  /\b(fail\w*|error\w*|broke\w*|missing|no|not|never|cannot|unable|unverified|unchecked|untested|skip\w*|should|would|need\w*|must|todo|pending|assume\w*|unless|if|expect\w*|hope\w*|believe\w*)\b|n't\b/;
 
 function debug(...args) {
   if (process.env.OMC_SLIM_DEBUG === "1") console.error("[omc-slim]", ...args);
@@ -209,34 +291,17 @@ function readStdin() {
 }
 
 /**
- * Did this agent SUCCESSFULLY write a file INSIDE the project?
+ * Everything one pass over the agent's own transcript can establish, or null
+ * when the transcript cannot be read at all.
  *
- * Four answers, because two different false accusations came out of one boolean:
- *
- *   null       cannot tell. The caller stays silent.
- *   true       at least one successful write landed in the project root.
- *   "outside"  successful writes, every one of them outside the root.
- *   "none"     no successful write at all.
- *
- * An attempted write is not a deliverable. A permission-denied Edit still
- * appears as a `tool_use` block, so matching on tool_use alone reports success
- * for an agent that was blocked and produced nothing — the exact situation most
- * worth flagging. Pinned by "denied write is not a deliverable" in
- * verify-deliverables.test.mjs, which re-runs this against a real denial payload.
- *
- * So: collect write-tool `tool_use` ids with the path each one wrote, then
- * require a matching `tool_result` that is not `is_error`. A tool_use with no
- * result at all (agent died mid-call) also counts as no write.
- *
- * A successful write whose path cannot be placed — no path in the input, or a
- * null `root` — counts as `true`. Silence is the only safe reading of a write
- * this cannot locate.
+ * null is "cannot tell", and every state built on it must then stay silent: both
+ * of them are accusations if they fire against a transcript nobody read.
  *
  * @param {string|null} transcriptPath
- * @param {string|null} root  resolved project root, or null to skip the test
- * @returns {null|true|"outside"|"none"}
+ * @returns {null|{pendingWrites: Map, succeeded: Set, dispatches: Set,
+ *                 sawCheckCommand: boolean, finalAssistantText: string|null}}
  */
-function sawWriteTool(transcriptPath, root) {
+function scanTranscript(transcriptPath) {
   if (!transcriptPath) {
     debug("cannot tell: no agent transcript path in payload");
     return null;
@@ -274,18 +339,27 @@ function sawWriteTool(transcriptPath, root) {
     return null;
   }
 
-  /** id of every write-tool tool_use block -> the path it wrote, or null */
-  const pendingWrites = new Map();
-  /** ids whose tool_result came back clean */
-  const succeeded = new Set();
+  const scan = {
+    /** id of every write-tool tool_use block -> the path it wrote, or null */
+    pendingWrites: new Map(),
+    /** ids whose tool_result came back clean */
+    succeeded: new Set(),
+    /** ids of every Task/Agent dispatch, resolved against `succeeded` later */
+    dispatches: new Set(),
+    /** did any Bash command look like a test, build or typecheck run? */
+    sawCheckCommand: false,
+    /** the text of the last assistant turn that carried any, or null */
+    finalAssistantText: null,
+  };
 
   const deadline = Date.now() + SCAN_BUDGET_MS;
   let scanned = 0;
 
   for (const line of raw.split("\n")) {
     // Checked every 256 lines rather than every line: Date.now() per line on a
-    // 50 MB transcript is itself measurable, and 256 lines cannot overrun a
-    // 2 s budget by anything that matters.
+    // 50 MB transcript is itself measurable, and 256 lines of parse plus the
+    // text extraction below cannot overrun a 2 s budget by anything that
+    // matters.
     if ((scanned++ & 0xff) === 0 && Date.now() >= deadline) {
       debug("cannot tell: scan budget exhausted", scanned, transcriptPath);
       return null;
@@ -297,8 +371,45 @@ function sawWriteTool(transcriptPath, root) {
     } catch {
       continue;
     }
-    collectBlocks(obj, pendingWrites, succeeded);
+    collectBlocks(obj, scan);
+    const text = assistantLineText(obj);
+    if (text !== null) scan.finalAssistantText = text;
   }
+
+  return scan;
+}
+
+/**
+ * Did this agent SUCCESSFULLY write a file INSIDE the project?
+ *
+ * Four answers, because two different false accusations came out of one boolean:
+ *
+ *   null       cannot tell. The caller stays silent.
+ *   true       at least one successful write landed in the project root.
+ *   "outside"  successful writes, every one of them outside the root.
+ *   "none"     no successful write at all.
+ *
+ * An attempted write is not a deliverable. A permission-denied Edit still
+ * appears as a `tool_use` block, so matching on tool_use alone reports success
+ * for an agent that was blocked and produced nothing — the exact situation most
+ * worth flagging. Pinned by "denied write is not a deliverable" in
+ * verify-deliverables.test.mjs, which re-runs this against a real denial payload.
+ *
+ * So: the scan collected write-tool `tool_use` ids with the path each one wrote;
+ * this requires a matching `tool_result` that is not `is_error`. A tool_use with
+ * no result at all (agent died mid-call) also counts as no write.
+ *
+ * A successful write whose path cannot be placed — no path in the input, or a
+ * null `root` — counts as `true`. Silence is the only safe reading of a write
+ * this cannot locate.
+ *
+ * @param {object|null} scan  scanTranscript's result, or null for "cannot tell"
+ * @param {object|null} root  resolved project root, or null to skip the test
+ * @returns {null|true|"outside"|"none"}
+ */
+function writeVerdict(scan, root) {
+  if (scan === null) return null;
+  const { pendingWrites, succeeded } = scan;
 
   let sawSuccess = false;
   for (const [id, path] of pendingWrites) {
@@ -310,29 +421,130 @@ function sawWriteTool(transcriptPath, root) {
   return sawSuccess ? "outside" : "none";
 }
 
-/** Depth-bounded walk collecting write tool_use ids and clean tool_result ids. */
-function collectBlocks(node, pendingWrites, succeeded, depth = 0) {
+/** Depth-bounded walk collecting the tool blocks every state is built from. */
+function collectBlocks(node, scan, depth = 0) {
   if (depth > 6 || node === null || typeof node !== "object") return;
   if (Array.isArray(node)) {
     for (const child of node) {
-      collectBlocks(child, pendingWrites, succeeded, depth + 1);
+      collectBlocks(child, scan, depth + 1);
     }
     return;
   }
 
-  if (node.type === "tool_use" && WRITE_TOOLS.has(node.name) && node.id) {
-    pendingWrites.set(node.id, writtenPath(node.input));
+  if (node.type === "tool_use" && node.id) {
+    if (WRITE_TOOLS.has(node.name)) {
+      scan.pendingWrites.set(node.id, writtenPath(node.input));
+    }
+    if (DISPATCH_TOOLS.has(node.name)) scan.dispatches.add(node.id);
+    if (node.name === "Bash" && isCheckCommand(node.input)) {
+      scan.sawCheckCommand = true;
+    }
   }
   // `is_error` is absent on success and true on failure.
   if (node.type === "tool_result" && node.tool_use_id && node.is_error !== true) {
-    succeeded.add(node.tool_use_id);
+    scan.succeeded.add(node.tool_use_id);
   }
 
   for (const value of Object.values(node)) {
     if (value !== null && typeof value === "object") {
-      collectBlocks(value, pendingWrites, succeeded, depth + 1);
+      collectBlocks(value, scan, depth + 1);
     }
   }
+}
+
+/**
+ * The text of one assistant transcript line, or null if it carries none.
+ *
+ * Only the entry's own content array. A `tool_result` also holds text, and it
+ * belongs to the user turn that carried it — crediting a test runner's own
+ * output to the agent would read the evidence back as the claim.
+ */
+function assistantLineText(entry) {
+  if (entry === null || typeof entry !== "object") return null;
+  if (entry.type !== "assistant") return null;
+  const content = entry.message && entry.message.content;
+  if (!Array.isArray(content)) return null;
+
+  const text = content
+    .filter(
+      (block) =>
+        block !== null &&
+        typeof block === "object" &&
+        block.type === "text" &&
+        typeof block.text === "string",
+    )
+    .map((block) => block.text)
+    .join("\n");
+  return text.trim() === "" ? null : text;
+}
+
+/** Does this Bash tool input look like it ran a test, build or typecheck? */
+function isCheckCommand(input) {
+  if (input === null || typeof input !== "object") return false;
+  if (typeof input.command !== "string") return false;
+  const command = input.command.toLowerCase();
+  return CHECK_COMMAND_HINTS.some((hint) => command.includes(hint));
+}
+
+/**
+ * Does the agent's final message assert a verification outcome?
+ *
+ * Sentence by sentence, and that granularity is the whole design. A real final
+ * message mixes an assertion with prose — "I fixed the bug. All tests pass. No
+ * other files were touched." — so testing the whole text against the hedge list
+ * below would find "no" and fall silent on every realistic report. Testing each
+ * sentence keeps the honest carve-out (a sentence that reports a failure is not
+ * a claim) without muting the state it exists to catch.
+ */
+function assertsVerification(text) {
+  // The curly apostrophe is what a model actually emits, and "didn't" spelled
+  // with one would otherwise slip past the hedge list as an assertion.
+  const normalised = text.replace(/[\u2018\u2019]/g, "'").toLowerCase();
+  for (const sentence of normalised.split(/[.!?;\n]+/)) {
+    if (NOT_AN_ASSERTION.test(sentence)) continue;
+    if (VERIFICATION_CLAIMS.some((claim) => claim.test(sentence))) return true;
+  }
+  return false;
+}
+
+/**
+ * The agent's final message: the payload's field, else the transcript's last
+ * assistant text, else null.
+ *
+ * SubagentStop carries `last_assistant_message` — "Text content of the last
+ * assistant message before stopping. Avoids the need to read and parse the
+ * transcript file." (verified against binary 2.1.251, 2026-08-29). The
+ * transcript walk is the fallback for a payload that omits it.
+ */
+function finalAssistantMessage(scan, payloadMessage) {
+  if (typeof payloadMessage === "string" && payloadMessage.trim() !== "") {
+    return payloadMessage;
+  }
+  return scan === null ? null : scan.finalAssistantText;
+}
+
+/** Did any dispatch to another agent come back clean? */
+function sawDelegation(scan) {
+  for (const id of scan.dispatches) {
+    if (scan.succeeded.has(id)) return true;
+  }
+  return false;
+}
+
+/**
+ * Did the agent report a verification result that nothing in its transcript ran?
+ *
+ * Both halves have to hold, and each is biased towards silence: the message must
+ * assert an outcome rather than mention testing, and no Bash command anywhere in
+ * the transcript may look like a check.
+ */
+function claimedUnrunCheck(scan, payloadMessage) {
+  const finalText = finalAssistantMessage(scan, payloadMessage);
+  if (finalText === null || !assertsVerification(finalText)) return false;
+  // A transcript that could not be read cannot show the check that did run, and
+  // a dispatched agent runs its checks in a transcript this one never sees.
+  if (scan === null || scan.sawCheckCommand || sawDelegation(scan)) return false;
+  return true;
 }
 
 /**
@@ -372,36 +584,75 @@ function main() {
     data.agent_transcript_path ?? data.agentTranscriptPath ?? null;
 
   const root = projectRoot(data.cwd);
-  const wrote = sawWriteTool(agentTranscript, root);
-  debug("agent", bare, "root", root, "wrote:", wrote);
+  const scan = scanTranscript(agentTranscript);
+  const wrote = writeVerdict(scan, root);
+  const claimed = claimedUnrunCheck(
+    scan,
+    data.last_assistant_message ?? data.lastAssistantMessage ?? null,
+  );
+  debug("agent", bare, "root", root, "wrote:", wrote, "unrun claim:", claimed);
 
-  // null => could not determine. Say nothing rather than cry wolf.
-  if (wrote === null || wrote === true) return emit(null);
-
-  // Two states, two messages, because one message would be a lie in one of them.
+  // Three states, three messages, because one message would be a lie in two of
+  // them. `null` for the write verdict means "could not determine" and says
+  // nothing rather than crying wolf.
   //
-  // Neither accuses. The fixer's own brief sanctions `sed`, `git mv` and bulk
-  // shell edits, and prefers an MCP code-generation server to hand-written
+  // None of them accuses. The fixer's own brief sanctions `sed`, `git mv` and
+  // bulk shell edits, and prefers an MCP code-generation server to hand-written
   // boilerplate — none of which leaves a write-tool block in the transcript. An
   // agent that followed its instructions used to be reported to the user as
   // having "finished without editing or writing any file", which is the false
   // accusation this hook's own header promises never to make.
+  //
+  // The write states and the claim state are independent: an agent can write
+  // nothing AND report a check it never ran, and both are worth saying. The user
+  // gets one message, not two.
+  const advisories = [];
   if (wrote === "outside") {
-    return emit(
-      `omc-slim: the ${bare} agent's only successful writes landed outside the ` +
-        `project directory (a scratch path such as /tmp). Nothing in the project ` +
-        `changed. If that was the intent, ignore this; if it was not, check the ` +
-        `work before trusting the report.`,
-    );
+    advisories.push(outsideWriteAdvisory(bare));
+  } else if (wrote === "none") {
+    advisories.push(noWriteAdvisory(bare));
   }
+  if (claimed) advisories.push(unrunCheckAdvisory(bare));
 
-  // "successful" carries weight: this state also covers the agent whose every
-  // write was denied, and "no tool use was seen" would be false of that one.
-  return emit(
-    `omc-slim: no successful Edit/Write-family tool use was seen from the ` +
-      `${bare} agent. If the work landed through the shell (sed, git mv, a bulk ` +
-      `rewrite) or an MCP server, ignore this. Otherwise, check the work before ` +
-      `trusting the report.`,
+  return emit(advisories.length ? `omc-slim: ${advisories.join("\n")}` : null);
+}
+
+/** Successful writes, every one of them outside the project root. */
+function outsideWriteAdvisory(agentName) {
+  return (
+    `the ${agentName} agent's only successful writes landed outside the ` +
+    `project directory (a scratch path such as /tmp). Nothing in the project ` +
+    `changed. If that was the intent, ignore this; if it was not, check the ` +
+    `work before trusting the report.`
+  );
+}
+
+/**
+ * No successful write at all. "successful" carries weight: this state also
+ * covers the agent whose every write was denied, and "no tool use was seen"
+ * would be false of that one.
+ */
+function noWriteAdvisory(agentName) {
+  return (
+    `no successful Edit/Write-family tool use was seen from the ` +
+    `${agentName} agent. If the work landed through the shell (sed, git mv, a bulk ` +
+    `rewrite) or an MCP server, ignore this. Otherwise, check the work before ` +
+    `trusting the report.`
+  );
+}
+
+/**
+ * A verification result asserted with nothing in the transcript that ran one.
+ *
+ * It names the state, not the person, and it offers the innocent reading first —
+ * an MCP server or a tool that is not Bash is a check this hook cannot see.
+ */
+function unrunCheckAdvisory(agentName) {
+  return (
+    `the ${agentName} agent reported a verification result, and no test, build ` +
+    `or typecheck command appears in its transcript. If it verified another way ` +
+    `— an MCP server, a tool that is not Bash — ignore this. Otherwise the ` +
+    `result is a claim, not an observation.`
   );
 }
 

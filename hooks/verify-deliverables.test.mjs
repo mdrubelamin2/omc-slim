@@ -94,6 +94,17 @@ const SCRATCH_PATH = "/tmp/omc-slim-scratch-notes.md";
 
 // --- fixture builders: real Claude Code transcript lines ----------------------
 
+/** One tool call, in the envelope a real assistant turn carries. */
+function assistantTool(id, name, input) {
+  return {
+    type: "assistant",
+    message: {
+      role: "assistant",
+      content: [{ type: "tool_use", id, name, input }],
+    },
+  };
+}
+
 /**
  * One write-tool call, on the path field the real tool actually uses.
  *
@@ -102,20 +113,25 @@ const SCRATCH_PATH = "/tmp/omc-slim-scratch-notes.md";
  */
 function assistantWrite(id, name = "Edit", filePath = SCRATCH_PATH) {
   const key = name === "NotebookEdit" ? "notebook_path" : "file_path";
-  return {
-    type: "assistant",
-    message: {
-      role: "assistant",
-      content: [
-        {
-          type: "tool_use",
-          id,
-          name,
-          input: filePath === null ? {} : { [key]: filePath },
-        },
-      ],
-    },
-  };
+  return assistantTool(id, name, filePath === null ? {} : { [key]: filePath });
+}
+
+/** One shell command, the only evidence this hook has that a check ran. */
+function assistantBash(id, command) {
+  return assistantTool(id, "Bash", { command, description: "run it" });
+}
+
+/** One dispatch to another agent, whose own transcript this hook cannot see. */
+function assistantDispatch(id) {
+  return assistantTool(id, "Task", {
+    subagent_type: "omc-slim:fixer",
+    prompt: "run the suite and report",
+  });
+}
+
+/** A write that lands in the project, so only the claim state can speak. */
+function cleanInProjectWrite(root) {
+  return [assistantWrite(WRITE_ID, "Edit", inProject(root)), toolResultOk(WRITE_ID)];
 }
 
 /** An in-project path under the fixture root. The parent dir need not exist. */
@@ -314,6 +330,9 @@ function contractViolation(res) {
 const NO_WRITE_PHRASE = "no successful Edit/Write-family tool use";
 const OUTSIDE_PHRASE = "landed outside the";
 
+/** State 3, which is about the report rather than about the files. */
+const CLAIM_PHRASE = "reported a verification result";
+
 function warningViolation(out, expected, rejected) {
   const { systemMessage } = out;
   if (typeof systemMessage !== "string")
@@ -368,6 +387,44 @@ function expectOutsideWarningNaming(agentName) {
   };
 }
 
+/**
+ * State 3: a verification result asserted with nothing that ran a check.
+ *
+ * It rejects both write-state phrases, which is what pins the states as
+ * independent: these fixtures write cleanly into the project, so a hook that
+ * reports the claim as a write problem is saying something false.
+ */
+function expectClaimWarning(res) {
+  const violation = contractViolation(res);
+  if (violation) return violation;
+  const { systemMessage } = parseStdout(res.stdout);
+  if (typeof systemMessage !== "string")
+    return "expected a systemMessage, got none";
+  if (!systemMessage.includes(CLAIM_PHRASE))
+    return `systemMessage did not report an unrun check: ${systemMessage}`;
+  if (systemMessage.includes(NO_WRITE_PHRASE) || systemMessage.includes(OUTSIDE_PHRASE))
+    return `the claim message carried a write-state message too: ${systemMessage}`;
+  return null;
+}
+
+/**
+ * Both states at once, in ONE message. Two systemMessages cannot happen — a hook
+ * emits one JSON object — so the failure this guards against is the second
+ * advisory being dropped, or the first being replaced by it.
+ */
+function expectCombinedWarning(res) {
+  const violation = contractViolation(res);
+  if (violation) return violation;
+  const { systemMessage } = parseStdout(res.stdout);
+  if (typeof systemMessage !== "string")
+    return "expected a systemMessage, got none";
+  for (const phrase of [NO_WRITE_PHRASE, CLAIM_PHRASE]) {
+    if (!systemMessage.includes(phrase))
+      return `systemMessage dropped "${phrase}": ${systemMessage}`;
+  }
+  return null;
+}
+
 /** Tracing must go to stderr only: a stray console.log corrupts the JSON. */
 function expectDebugTrace(res) {
   const violation = outputViolation(res);
@@ -397,12 +454,13 @@ function expectSilence(res) {
  * what the containment test measures against. A case passes null to model a
  * payload with no cwd at all.
  */
-function payload(agentType, agentTranscript, root, cwd = root) {
+function payload(agentType, agentTranscript, root, cwd = root, lastMessage = null) {
   return JSON.stringify({
     agent_type: agentType,
     agent_transcript_path: agentTranscript,
     transcript_path: writeDecoy(root),
     ...(cwd === null ? {} : { cwd }),
+    ...(lastMessage === null ? {} : { last_assistant_message: lastMessage }),
   });
 }
 
@@ -785,6 +843,209 @@ const cases = [
         return payload("otherco:fixer", transcript, root);
       }),
     check: expectSilence,
+  },
+
+  // --- state 3: a verification result nothing in the transcript ran ----------
+  // Every fixture below writes cleanly INTO the project, so the two write states
+  // are silent and only the claim state can speak. That is deliberate: it proves
+  // the states are independent rather than a rewording of each other.
+  {
+    // The measured failure, in the agent's own words: a benchmark of 45 Python
+    // bug-fix tasks reported 45/45 complete and 26 held up against the real
+    // suite. The transcript said this, and ran nothing.
+    name: "a verification result with nothing that ran a check is flagged",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantText("[Round 3] 5/5 tests pass. Build successful! All verified."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectClaimWarning,
+  },
+  {
+    // The same claim with a runner behind it. This is the ordinary, correct run,
+    // and it is the case that must stay silent or the hook is unusable.
+    name: "a verification result with a test run behind it stays silent",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantBash("bash1", "npm test -- --run"),
+          toolResultOk("bash1"),
+          assistantText("All tests passing."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectSilence,
+  },
+  {
+    // Reporting a failure is the behaviour this plugin asks for. Flagging it
+    // would punish honesty, so a sentence carrying a failure is never a claim —
+    // and the sentence has to contain a matching phrase too, or the case would
+    // pass with the whole filter deleted.
+    name: "a reported failure is not a claim",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantText("3 of 5 tests passed and 2 failed, so I stopped."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectSilence,
+  },
+  {
+    // No `last_assistant_message` worth reading and no assistant text in the
+    // transcript either. There is no claim to test, and "no claim" must never
+    // collapse into "an unverified claim".
+    name: "an empty last_assistant_message with no assistant text stays silent",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+        ]);
+        return payload("fixer", transcript, root, root, "");
+      }),
+    check: expectSilence,
+  },
+  {
+    // The work may have been delegated, and a dispatched agent runs its checks
+    // in a transcript this hook never sees. Cannot rule it out, so say nothing.
+    name: "a claim with a successful dispatch behind it stays silent",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantDispatch("task1"),
+          toolResultOk("task1"),
+          assistantText("All tests pass."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectSilence,
+  },
+  {
+    // SubagentStop carries `last_assistant_message` and the harness says it
+    // "avoids the need to read and parse the transcript file", so it wins. The
+    // transcript's own last text is innocuous here: a hook reading only the
+    // transcript falls silent and fails this case.
+    name: "the payload's last_assistant_message is what gets read",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantText("I made the change."),
+        ]);
+        return payload("fixer", transcript, root, root, "Typecheck clean.");
+      }),
+    check: expectClaimWarning,
+  },
+  {
+    // A Bash block is not evidence of a check; a Bash block that looks like a
+    // runner is. `git status --short` matches nothing in the vocabulary, so the
+    // claim still stands unanswered.
+    name: "a shell command that is not a check does not answer the claim",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantBash("bash1", "git status --short"),
+          toolResultOk("bash1"),
+          assistantText("All green."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectClaimWarning,
+  },
+  {
+    // A dispatch that came back an error delegated nothing. Counting it would
+    // let any failed Task silence the state permanently.
+    name: "a failed dispatch is not work having been delegated",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantDispatch("task1"),
+          toolResultDenied("task1"),
+          assistantText("The suite passes."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectClaimWarning,
+  },
+  {
+    // Both states at once — nothing written AND a result reported that nothing
+    // ran. Both are worth saying; the user gets one message, not two.
+    name: "a write state and a claim state arrive as one message",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantText("Build succeeded."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectCombinedWarning,
+  },
+  {
+    // No agent transcript means no evidence either way. The payload still
+    // carries a claim, and a claim alone is not a finding: a transcript that
+    // could not be read cannot show the check that did run.
+    name: "a claim with no readable transcript stays silent",
+    run: () =>
+      runHook((root) =>
+        JSON.stringify({
+          agent_type: "fixer",
+          transcript_path: writeQuietDecoy(root),
+          last_assistant_message: "All tests pass.",
+        }),
+      ),
+    check: expectSilence,
+  },
+  {
+    // Real final messages mix an assertion with prose. Testing the whole message
+    // against the hedge list finds "No other files" and falls silent on every
+    // realistic report, which is how this state would quietly stop existing.
+    name: "a claim still counts among sentences that hedge elsewhere",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantText(
+            "I fixed the bug. 45/45 passed. No other files were touched.",
+          ),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectClaimWarning,
+  },
+  {
+    // Each phrasing in the vocabulary gets a fixture where it is the ONLY match,
+    // so dropping one is a case that fails rather than a silent narrowing. This
+    // one and the next cover the two the fixtures above never reach alone.
+    name: "an unhedged 'verified' is a claim on its own",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantText("All verified."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectClaimWarning,
+  },
+  {
+    name: "the N-of-N phrasing is a claim",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          ...cleanInProjectWrite(root),
+          assistantText("45 of 45 passed."),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectClaimWarning,
   },
 ];
 
