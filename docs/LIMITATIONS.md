@@ -83,6 +83,21 @@ warns about the **condition** — it cannot see which style actually won, becaus
 the SessionStart payload does not carry one. Settle it with
 `claude -p "One line: which output style is active?"`.
 
+**The core mechanism sits on a surface the platform once deprecated.** Output
+styles were deprecated around CC v2.0.30 and restored at v2.0.32 on community
+pushback; the `/output-style` command was then deprecated at v2.1.73 and removed
+at v2.1.91 — the docs say verbatim: *"deprecated in v2.1.73 and removed in
+v2.1.91. Use `/config`."* If Anthropic removes `force-for-plugin`, omc-slim's
+orchestration layer goes with it, and no hook can bring it back. The current
+signal points the other way — `keep-coding-instructions` shipped at v2.1.94, a
+built-in Concise style at v2.1.237, and a mid-session style-drift fix at
+v2.1.221, all investment rather than retreat
+([output-styles docs](https://code.claude.com/docs/en/output-styles),
+[changelog](https://code.claude.com/docs/en/changelog); the v2.0.30–32 episode
+is mirror-sourced, releases that old are pruned). One documented limit stands
+regardless: *"styles don't change how subagents respond"* — the style governs
+the main loop only, and every specialist runs on its own file's prose.
+
 **It reads your plugin configuration at startup.** That hook parses
 `~/.claude/settings.json`, `installed_plugins.json` and other plugins' output-style
 frontmatter. It reads nothing else, sends nothing anywhere, and writes nothing.
@@ -209,8 +224,12 @@ the output tokens it did then, and carries Claude Code's built-in skills — so 
 two runs are not one series. The old table is kept in the appendix of
 [`docs/BENCHMARK.md`](./BENCHMARK.md).
 
-So the honest claim is not "better than plain". It is *close to plain cost, with
-materially more verification, at a fraction of a heavyweight discipline layer.*
+So the honest claim is not "better than plain". It is *cheaper than plain, with
+a smaller and markedly more consistent deliverable, at a fraction of a
+heavyweight discipline layer.* An earlier version of this sentence said
+"materially more verification" — the table above falsifies that (21 tests
+against plain's 39), and BENCHMARK.md says it plainly: it writes fewer tests
+than plain, not more.
 
 What it does **not** show: the central bet. A single-file CLI is exactly where
 "smallest thing that works" wins and delegation cannot pay — **no subagent ran in
