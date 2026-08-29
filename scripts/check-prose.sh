@@ -92,7 +92,7 @@ awk '/^## /{n++} n==1' "$ROOT/CHANGELOG.md" > "$NEWEST"
 if [ -s "$NEWEST" ] && [ "$#" -eq 0 ]; then FILES+=("$NEWEST"); fi
 
 python3 - "${FILES[@]}" <<'PY'
-import re, sys, statistics
+import collections, re, sys, statistics
 
 # Sourced thresholds
 # 10.0 rests on the HUMAN corpus, and the provenance of each half differs enough
@@ -161,7 +161,36 @@ for path in sys.argv[1:]:
     sections = max(1, len(re.findall(r'^## ', t, flags=re.M)))
     em = t.count('—')
     em1k = em * 1000 / words
-    lead = sum(1 for p in paras if re.match(r'^[-*]?\s*\*\*', p))
+    # A bolded lead-in is invented emphasis: a phrase bolded to make a paragraph
+    # feel like it has a thesis. A TAG is different — a label drawn from a closed
+    # vocabulary the document declares, repeated on every member of a list.
+    #
+    # This counted both, and that is not a cosmetic difference. docs/TODO-v1.0.md
+    # declares a tag legend and marks every backlog item with one. A writer lane
+    # sent to lower this metric could not lower it without destroying the
+    # taxonomy, so it stripped `- **POSITION:**` off all seven of that tag's
+    # items, taking the count from 7 to 0 while leaving the legend in place. A
+    # style gate had pushed a structural change into a backlog, and the fact
+    # multiset saw nothing because no fact moved.
+    #
+    # A bolded opener on a LIST ITEM that repeats three or more times verbatim is
+    # a taxonomy. Slop is varied invented emphasis, never the same label forty
+    # times. Paragraph-level bold openers still all count, and a bullet label
+    # used once or twice still counts, so the escape needs an actual convention
+    # rather than a bolded phrase.
+    bold_open = re.compile(r'^[-*]?\s*\*\*([^*]{1,40})\*\*')
+    bullet_labels = collections.Counter(
+        m.group(1) for p in paras
+        if p.lstrip().startswith(('-', '*')) and (m := bold_open.match(p)))
+    taxonomy = {k for k, n in bullet_labels.items() if n >= 3}
+    def is_leadin(p):
+        m = bold_open.match(p)
+        if not m:
+            return bool(re.match(r'^[-*]?\s*\*\*', p))
+        if p.lstrip().startswith(('-', '*')) and m.group(1) in taxonomy:
+            return False
+        return True
+    lead = sum(1 for p in paras if is_leadin(p))
     lead_per_sec = lead / sections
     tri = len(re.findall(r'\b\w+, \w+ and \w+\b|\b\w+, \w+, and \w+\b', t))
     tri500 = tri * 500 / words

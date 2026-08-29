@@ -191,10 +191,10 @@ The roster it asserts is **six agents, six skills, two hooks**. It is stated her
 in prose because the check requires this file to carry it, and a sentence
 survives a compression pass better than a pasted line does.
 
-The itemised lines used to be pasted here in full. They went stale three times,
-and `CHANGELOG.md` records correcting two of those rounds. Only two of the nine
-literals were ever enrolled in the check, and this checker's own source
-predicts exactly that: *"A doc that quotes a checker and is not checked by it
+The itemised lines used to be pasted here in full. They went stale three times, and
+`CHANGELOG.md` records correcting two of those rounds. They went stale because
+only two of the nine literals were ever enrolled in the check, and this checker's
+own source predicts exactly that: *"A doc that quotes a checker and is not checked by it
 will always drift."* The fix was to stop quoting what is not checked, rather than
 to patch it a fourth time.
 
@@ -306,3 +306,26 @@ include uncommitted work — true for tracked edits, **false for untracked new
 files**, and review runs before the commit, which is exactly when new files
 exist. Reproduced in a scratch repository, fixed in
 `skills/review/scripts/base.sh`, and pinned by two cases in its suite.
+
+## A name collision we did not know about
+
+Recorded 2026-08-29, after a research pass found it. Sourcegraph Amp ships
+built-in subagents named **Oracle**, documented as handling "difficult reasoning
+and planning questions", and **Librarian**, documented as researching "external
+codebases and large bodies of source material". Verified directly against
+`ampcode.com/docs/models-and-subagents` on 2026-08-29.
+
+Those are two of our six agent names, doing the same two jobs. `agents/oracle.md`
+is our second opinion on an architecture call; `agents/librarian.md` is our
+external-research agent that reads installed source before anything written about
+it.
+
+We cannot establish which came first. Both of ours were created on 2026-08-13 in
+v0.1.0, and this file has no record of where either name came from, which is
+itself the finding: a provenance document that cannot say where a name originated
+is not doing its job. Amp appeared nowhere in this repository until today.
+
+No claim of derivation is made in either direction. What is recorded is that a
+shipped competitor uses two of our names for the same roles, that we did not know
+it, and that anyone comparing the two projects will notice before we do if this
+stays unwritten.

@@ -189,9 +189,8 @@ The fix is not to go silent about neighbours. It is two-sided:
   reader to keep.
 - **External capability is discovered, never named.** Every agent and skill that
   would benefit says what *class* of tool would help: a structural search
-  server, an observability server, a docs server for this stack. It reaches that
-  server by reading tool descriptions, with `ToolSearch` where tools are
-  deferred. That is the same mechanism proven blind against a server called
+  server, an observability server, a docs server for this stack. They reach it by
+  reading tool descriptions, with `ToolSearch` where tools are deferred. That is the same mechanism proven blind against a server called
   `kb`.
 
 Boundaries in a description are therefore stated as capabilities: "not a first
@@ -696,8 +695,8 @@ failure class this plugin exists to prevent.
 An attempt to justify lifting it failed. `Agent` was enabled on `oracle` on
 the theory that opus review should offload recon to haiku explorers. `oracle`
 never fired on a 15-file fixture across three runs: implicit, explicitly named,
-and with the proven unlock phrasing. Reading 15 three-line files directly is
-cheaper than delegating. No benefit could be demonstrated, so the change was
+and with the proven unlock phrasing. It did not fire because reading 15
+three-line files directly is cheaper than delegating. No benefit could be demonstrated, so the change was
 reverted rather than shipped unverified.
 
 Independent reasons to keep it denied elsewhere, regardless of the above:

@@ -279,7 +279,7 @@ of further prose closes it.
 
 ## Output style: `output-styles/omc-slim.md`
 
-Position: the moat argument (agent teams experimental, off by default) is
+- **POSITION:** the moat argument (agent teams experimental, off by default) is
 re-checked each minor CC release, and NATIVE.md carries the expiry condition.
 - **FIX (B2):** rewrite the cheap/expensive tiers as escalation-order
   semantics ("first call" vs "escalation, use sparingly"), because no
@@ -336,7 +336,7 @@ re-checked each minor CC release, and NATIVE.md carries the expiry condition.
 
 ### librarian: `agents/librarian.md`
 
-Position: a NATIVE.md row, since there is no native equivalent.
+- **POSITION:** a NATIVE.md row, since there is no native equivalent.
 - **ADOPT (gem 3):** scripts-over-MCP sentence, recipe form ("write the
   ten-line script" as the action).
 - **FIX (cross-cutting 1):** type-marked references.
@@ -398,7 +398,7 @@ Position: a NATIVE.md row, since there is no native equivalent.
 
 ### tracer: `agents/tracer.md`
 
-Position: a NATIVE.md row.
+- **POSITION:** a NATIVE.md row.
 - **FIX (B10):** description boundary rewritten to the work's state, not
   the arrival path.
 - **FIX (cross-cutting 1):** type-marked references, the second-most
@@ -449,7 +449,7 @@ collision (COMPRESSION §5 Phase 3) demanded.
 
 ### deepwork: `skills/deepwork/SKILL.md` (+ depth.md)
 
-Position: complementary to `/batch`, which earns a NATIVE.md row and one
+- **POSITION:** complementary to `/batch`, which earns a NATIVE.md row and one
 README sentence.
 - **FIX (A1/M4, the owner):** writer/decision/mixed-phase gate rules;
   marker + budget stamped into dispatched gate agents.
@@ -469,7 +469,7 @@ README sentence.
 
 ### deep-interview: `skills/deep-interview/SKILL.md`
 
-Position: a NATIVE.md row, and the +14.50 measurement stays quotable.
+- **POSITION:** a NATIVE.md row, and the +14.50 measurement stays quotable.
 - **FIX (B1):** description follows the body (two to four questions).
 - **FIX (B6):** scores cite what settled them; Outcome=3 keeps the
   interview open regardless of sum.
@@ -485,7 +485,7 @@ Position: a NATIVE.md row, and the +14.50 measurement stays quotable.
 
 ### verification-planning: `skills/verification-planning/SKILL.md`
 
-Position: a NATIVE.md row; it was checked, and nothing native was found.
+- **POSITION:** a NATIVE.md row; it was checked, and nothing native was found.
 - **DO (R3, moved from the ambiguous R0/R5 slot so R4 does not consume
   unbuilt artifacts):** the four instrument designs: the Rule 1
   pressure-test harness (consumed by R5's Phase-4 cuts), the
@@ -499,7 +499,7 @@ Position: a NATIVE.md row; it was checked, and nothing native was found.
 
 ### simplify: `skills/simplify/SKILL.md` (+ principles.md)
 
-Position: the native split, which earns a NATIVE.md row.
+- **POSITION:** the native split, which earns a NATIVE.md row.
 - **FIX:** consolidate the does-not-auto-fire disclosure to one place.
 - **FIX (cross-cutting 1):** type-marked references.
 - **COMPRESS (R2):** the two-scopes/explorer-routing duplicate; evidence

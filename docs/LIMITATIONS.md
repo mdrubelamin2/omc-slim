@@ -353,3 +353,43 @@ exists so that cannot recur; treat pre-v0.8.1 points as approximate.
 
 If further measurement holds this direction, the right response is to shrink
 toward Karpathy, not to add features.
+
+## Auto mode edits with the shell, and that is where the deliverable check goes blind
+
+Recorded 2026-08-29. Auto mode became the default on 2026-08-10, and its system
+prompt tells the model to prefer the shell: read with `cat`, `head` or `sed -n`,
+search with `grep` and `find`, and *"make file changes with `sed`, heredocs, or
+short scripts."* Quoted from the harness text in `anthropics/claude-code#87971`,
+which carries 40 reactions; `#88041` and `#87575` report the same cause, the
+latter for `/rewind` silently failing on files a Bash command edited.
+
+`hooks/verify-deliverables.mjs` decides a subagent wrote something by watching
+`Edit`, `Write`, `NotebookEdit` and `MultiEdit`. Bash is inspected only for
+commands that look like a test or build run, never for writes. So an agent that
+does its whole job through a heredoc produces no write the hook can see.
+
+Tested on 2026-08-29 against the shipping hook, with a transcript whose only
+tool use is `cat > file <<E`. It reports: *"no successful Edit/Write-family tool
+use was seen from the fixer agent. If the work landed through the shell (sed, git
+mv, a bulk rewrite) or an MCP server, ignore this."*
+
+Two things follow, and the second is the one that matters.
+
+It does not false-accuse. The advisory names the shell case and tells the reader
+to disregard it, which is the behaviour `agents/fixer.md` already relies on when
+it requires the agent to name its mechanism.
+
+But the advisory was written for an occasional case and auto mode makes it the
+common one. A warning that is correct to ignore on most dispatches is a warning
+nobody reads, and a check that degrades to "cannot tell" by default is not a
+check. The fixer's name-the-mechanism rule now carries the whole weight, and that
+rule is prose, which is the layer this project says holds worst.
+
+Not fixed here, and the reason is scope rather than difficulty. Detecting a
+mutating shell command means parsing arbitrary Bash, and a detector that is wrong
+in the permissive direction restores the false confidence the three-valued write
+check was built to remove. `PostToolUse` on `Bash`, or the `FileChanged` event
+present in 2.1.251, are the candidates. Neither is built, and no measurement says
+which is right.
+
+The plugin's own gates are unaffected: they read files on disk, not tool calls.
