@@ -16,6 +16,13 @@ measured win came from the prompt, not from the roster this plugin is named for.
 That is the least flattering true sentence available and it is the first one,
 because the alternative is you finding out in week two.
 
+One more, since the first screen is where it belongs. Someone benchmarked a terse
+plugin against the literal instruction *"be brief."* across 24 prompts and found
+them **indistinguishable on both tokens and quality**. Compression is not what a
+register buys you. What it buys, and what the two-word version cannot, is
+consistency of output shape across runs — which is the one thing the 18% run
+measured that a single-shot comparison cannot see.
+
 ---
 
 ## The numbers, and what they do not say
@@ -50,9 +57,20 @@ prompts as they were **before** the current restructure, so it describes an
 earlier build than the one you install. Read
 [BENCHMARK.md](./docs/BENCHMARK.md) before quoting it.
 
-The class of claim matters too. Four independent studies find that a rules layer
-moves cost, runtime and code size, and does not move correctness. These numbers
-fit that pattern exactly. Nothing here claims omc-slim makes Claude more correct.
+The class of claim matters too. Four independent studies find that a *behavioural*
+rules layer moves cost, runtime and code size and does not move correctness, and
+these numbers fit that pattern exactly. Nothing here claims omc-slim makes Claude
+more correct.
+
+That claim is scoped deliberately, because one study cuts the other way and it
+would be dishonest to leave it out. SkillsBench (87 tasks, 8 domains, 18
+model-harness configurations) found **curated, task-matched skills raising pass
+rate from 33.9% to 50.5%** — and, in the same result, that *"focused Skills with
+at most three modules outperform larger or exhaustive bundles"*. Expertise a task
+needs is not the same thing as discipline applied to every task, and this plugin
+is the second kind. The finding that should worry a reader of this page is the
+second half: **this plugin ships twelve components, and the measured optimum in
+that study is three.**
 
 Where every component stands against what Claude Code already ships, with a
 measured win or a dated removal criterion for each:
@@ -156,36 +174,15 @@ a prefix it could have read from cache:
 { "subagentPromptCacheTtl": "1h" }
 ```
 
-## Agents
+## The hooks, first, because they are the part that lasts
 
-Every agent inherits the model you are running. None pins its own tier, so the
-roster costs what your session costs.
+The engineer who built Claude Code recommends deleting your skills, hooks and
+`CLAUDE.md` every six months to see whether the model still needs them. That is
+the right test, and prose loses it more often than machinery does: a rule that
+compensates for a model's weakness expires when the weakness does, while a check
+that reads a transcript does not.
 
-**Find things**
-
-| Agent | Ask it | What comes back |
-|---|---|---|
-| [explorer](./agents/explorer.md) | *"Where is the retry logic?"* | A `file:line` map, not prose. The first call for any where/what/which question |
-| [librarian](./agents/librarian.md) | *"Is this still the recommended API?"* | Current docs and real usage, read off disk before anything written about it |
-| [fixer](./agents/fixer.md) | *"Rename this across nine files."* | A spec you already decided on, executed. Not research, not architecture |
-| [designer](./agents/designer.md) | *"This form looks wrong."* | Layout, hierarchy, spacing, colour, motion, responsive behaviour |
-| [oracle](./agents/oracle.md) | *"Is this design going to hold up?"* | A second opinion on an architecture or security call. Escalation, not a default step |
-| [tracer](./agents/tracer.md) | *"I have fixed this twice and it keeps coming back."* | Three competing hypotheses, ranked by what would falsify them |
-
-## Skills
-
-| Skill | Ask it | What it does |
-|---|---|---|
-| [review](./skills/review/SKILL.md) | *"Is this ready to ship?"* | Every axis at once, behind an evidence gate that keeps false positives out |
-| [deepwork](./skills/deepwork/SKILL.md) | *"This is too big to get right in one pass."* | Stage plan, parallel lanes, a failable check per stage |
-| [deep-interview](./skills/deep-interview/SKILL.md) | *"I want to build something, I am not sure what yet."* | Interviews you, writes a spec, and stops for approval before any code |
-| [verification-planning](./skills/verification-planning/SKILL.md) | *"How do I prove this did not break anything?"* | Designs the evidence path. Does not write the tests |
-| [simplify](./skills/simplify/SKILL.md) | *"This is over-built."* | Deletes speculative abstraction, config nobody sets, hand-rolled standard library |
-| [codemap](./skills/codemap/SKILL.md) | *"Nobody here has read this repository."* | A codemap per directory plus a root atlas. Expensive, and it says so first |
-
-## The hooks
-
-Two, and neither can block anything. Both emit `systemMessage` only, always exit
+Two hooks, and neither can block anything. Both emit `systemMessage` only, always exit
 0, and stay silent when they cannot tell.
 
 `SubagentStop`, for `fixer` and `designer` only, reports three states to you: no
@@ -215,6 +212,33 @@ on stderr.
 
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
 path.
+
+## Agents
+
+Every agent inherits the model you are running. None pins its own tier, so the
+roster costs what your session costs.
+
+**Find things**
+
+| Agent | Ask it | What comes back |
+|---|---|---|
+| [explorer](./agents/explorer.md) | *"Where is the retry logic?"* | A `file:line` map, not prose. The first call for any where/what/which question |
+| [librarian](./agents/librarian.md) | *"Is this still the recommended API?"* | Current docs and real usage, read off disk before anything written about it |
+| [fixer](./agents/fixer.md) | *"Rename this across nine files."* | A spec you already decided on, executed. Not research, not architecture |
+| [designer](./agents/designer.md) | *"This form looks wrong."* | Layout, hierarchy, spacing, colour, motion, responsive behaviour |
+| [oracle](./agents/oracle.md) | *"Is this design going to hold up?"* | A second opinion on an architecture or security call. Escalation, not a default step |
+| [tracer](./agents/tracer.md) | *"I have fixed this twice and it keeps coming back."* | Three competing hypotheses, ranked by what would falsify them |
+
+## Skills
+
+| Skill | Ask it | What it does |
+|---|---|---|
+| [review](./skills/review/SKILL.md) | *"Is this ready to ship?"* | Every axis at once, behind an evidence gate that keeps false positives out |
+| [deepwork](./skills/deepwork/SKILL.md) | *"This is too big to get right in one pass."* | Stage plan, parallel lanes, a failable check per stage |
+| [deep-interview](./skills/deep-interview/SKILL.md) | *"I want to build something, I am not sure what yet."* | Interviews you, writes a spec, and stops for approval before any code |
+| [verification-planning](./skills/verification-planning/SKILL.md) | *"How do I prove this did not break anything?"* | Designs the evidence path. Does not write the tests |
+| [simplify](./skills/simplify/SKILL.md) | *"This is over-built."* | Deletes speculative abstraction, config nobody sets, hand-rolled standard library |
+| [codemap](./skills/codemap/SKILL.md) | *"Nobody here has read this repository."* | A codemap per directory plus a root atlas. Expensive, and it says so first |
 
 ## The gates
 

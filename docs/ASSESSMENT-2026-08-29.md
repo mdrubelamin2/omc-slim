@@ -47,7 +47,7 @@ This is the part the project has documented honestly and then not acted on.
 | Nature MI | every multi-agent arm lost on SWE-bench Verified |
 | **This repository's own benchmark** | zero subagents ran in any arm; the measured win came from the prompt |
 
-**Five against, zero for.** No source in this repository's evidence supports
+Five against, zero for. No source in this repository's evidence supports
 delegation improving coding outcomes. The honest reading is that the roster is a
 *context-isolation* device, which is a real and different benefit, worth having
 for `explorer` and `librarian` specifically. It is not a performance device.
@@ -306,7 +306,91 @@ $51 in additional coordination overhead."* Its author published eight named
 failure classes for the delegation architecture, then archived the tool. That is
 a complete pre-mortem for the bet this project has still not tested.
 
-## 11. The assumption nobody has tested
+## 11. What the retention data says, and it is not what I assumed
+
+The complaint sweep answered the question I had been answering by intuition, and
+corrected me on it.
+
+**People do not abandon a plugin. They stop noticing it, and delete it months
+later during an audit triggered by something else.** Two events, a long gap
+between them, and everything written about churn conflates the two. The decision
+is made in session one; the deletion happens when `/context` reads 51,400 and its
+owner spends an afternoon removing everything he cannot point at. One documented
+inventory went from **235 components to 87**; others cut 44%, 79%, and 20 global
+skills down to 6. Nothing survived above about half in any class.
+
+So a plugin is not uninstalled because it failed. It is uninstalled because, at
+audit time, its owner cannot name anything it did. Survivors are not the useful
+ones. They are the *legible* ones.
+
+The deletion cadence is published, by the person who built Claude Code: *"for
+people that aren't building agentic products but you're using Claude Code, every
+6 months delete your CLAUDE.md, delete your skills, delete your hooks. See what
+the model does and it might surprise you."* The vendor also ships `/doctor` to
+find what to prune. This is not a hostile audience — it is the platform owner
+recommending ablation on a schedule that resets every model release.
+
+Three properties predict survival, and "single-purpose" was only one of them.
+My earlier reading — that the field rewards one skill with one number — is right
+and under-specified in a way that kills plugins:
+
+1. **Narrow scope**, and this is now measured. SkillsBench across 87 tasks and 18
+   configurations: *"focused Skills with at most three modules outperform larger
+   or exhaustive bundles."* This plugin ships twelve.
+2. **Cheap when idle.** Prune pressure tracks how often something loads, not how
+   useful it is. Hooks are deterministic and cost zero attention, so they are not
+   on the axis at all.
+3. **Attributable.** The owner must be able to name what it did — and since
+   2026-08-17 that is mechanically enforceable, because Claude Code emits a
+   `skill_activated` telemetry event per invocation with name, trigger and source.
+
+**The structural problem that follows, and it is the sharpest finding in the
+sweep: an output style never emits an invocation event.** It is applied, not
+invoked. So the largest, most expensive, always-on component in this plugin is
+also the only one that can never appear in the telemetry its owner will use to
+decide what to keep. It carries the highest prune pressure in the repository and
+produces the least evidence of having earned it.
+
+That is the field's pricing mechanism arriving at the same answer two audit lanes
+already gave, from the opposite direction.
+
+And a claim of mine narrowed. Someone benchmarked a terse plugin against the
+literal instruction *"be brief."* across 24 prompts: **indistinguishable on
+tokens and on quality**. Compression is not what a register buys. What it buys is
+consistency of output shape across runs — which is exactly what this project's
+own benchmark measured and a single-shot comparison structurally cannot. The
+honest claim is narrower than "terse output is the most valuable thing this
+ships", and it is still a real claim.
+
+## 12. Six agents on one model is one perspective billed six times
+
+Anthropic's own multi-agent research, published 2026-08-16, is the strongest
+argument against this plugin's architecture that exists, and it is not from a
+competitor:
+
+- Swarms building a game: *"In all three versions the resulting games were
+  (perhaps predictably) bad."*
+- **18 of 30 agents** independently created a git branch named `mvp-game-loop`.
+- Multiple agents, across multiple runs, titled a piece of fiction *"The
+  Cartographer's Last Commission"* with no subject guidance.
+- *"We consistently saw a multiagent turf war… they sabotaged others with
+  increasingly aggressive, self-replicating malware."*
+- *"Individual agents are 'low variance': they often act the same in situations
+  where different people might take a much more diverse range of actions."*
+
+A roster of six specialists running on one model does not buy six perspectives.
+**It buys one perspective, billed six times.** The defensible exception is
+context isolation — `explorer` and `librarian` return a map and a sourced
+finding instead of filling the caller's window — and that argument does not
+extend to the other four.
+
+The field agrees from experience rather than from research. *"Sub-agents make
+more sense in cases where the agent is dumb to begin with."* *"You would have
+been better off handling it serially with yourself in the loop."* And the one
+positive delegation report in the whole corpus uses **three** agents and claims
+token efficiency, not correctness.
+
+## 13. The assumption nobody has tested
 
 Every file in this repository rests on one unexamined premise: **that prompt text
 changes behaviour enough to be worth its context cost, on the current model
