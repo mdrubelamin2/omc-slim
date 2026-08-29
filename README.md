@@ -346,6 +346,10 @@ The full list, with evidence for each:
 | [CHANGELOG.md](./CHANGELOG.md) | Notable releases |
 | [MAINTAINERS.md](./MAINTAINERS.md) | Undocumented Claude Code runtime behaviour found along the way |
 | [RESEARCH.md](./RESEARCH.md) | Every decision, what was measured, and three tests that proved nothing |
+| [NATIVE.md](./docs/NATIVE.md) | Every component against what Claude Code already ships, with a dated removal criterion for each crowded slot |
+| [ASSESSMENT-2026-08-29.md](./docs/ASSESSMENT-2026-08-29.md) | What this plugin actually is, written with an instruction not to look only at the good parts |
+| [QUALITY-BAR.md](./docs/QUALITY-BAR.md) | The checkpoints any plugin in this category has to clear, and the two nobody has built |
+| [RELEASE-READINESS.md](./docs/RELEASE-READINESS.md) | The v1.0 criteria, four met and three blocked on a run that spends money |
 
 Re-derive the context cost with `./scripts/measure-context.sh`. Re-run the
 benchmark with `./scripts/bench/run-arm.sh`.

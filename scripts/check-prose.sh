@@ -39,7 +39,7 @@ else
   # for the next maintainer.
   FILES=("$ROOT/README.md" "$ROOT/CHANGELOG.md" "$ROOT/docs/NATIVE.md"
          "$ROOT/docs/ASSESSMENT-2026-08-29.md" "$ROOT/docs/RELEASE-READINESS.md"
-         "$ROOT/docs/DISTRIBUTION-DRAFT.md")
+         "$ROOT/docs/DISTRIBUTION-DRAFT.md" "$ROOT/docs/QUALITY-BAR.md")
 fi
 
 python3 - "${FILES[@]}" <<'PY'
