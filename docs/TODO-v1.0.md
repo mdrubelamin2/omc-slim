@@ -38,40 +38,64 @@ because part II states them in prose without labels:
 
 House law binding every item: a roster or behaviour change is a release;
 no claim without a basis; every prompt change re-runs the contradiction
-sweep; the ratchet, which means static may not grow two releases running, and **every
-wagon that touches a measured file states that file's token net once, in
-its own release**; compression follows COMPRESSION-2026-08-28.md Rules
-0–5 including Rule 0b (pin retirement).
+sweep; the ratchet, which means static may not grow two releases running,
+and **every wagon that touches a measured file states that file's token
+net once, in its own release**; compression follows
+COMPRESSION-2026-08-28.md Rules 0–5 including Rule 0b (pin retirement).
 
 ---
 
 ## v1.0 exit criteria (part I §8; each names the item that produces its evidence)
 
 1. **Delegation pays, measured.** ≥1 multi-file task class, delegation
-   verified from transcript, beats plain on cost or wall-clock at equal
-   correctness, n≥3, non-overlapping spreads. *Producing items: the R3
-   benchmark-construction item (the current harness is a single-file task
-   that structurally cannot delegate, so a re-run alone cannot satisfy or
-   falsify this) and the R4 run.*
+   verified from transcript, beats plain at equal correctness, n≥3,
+   non-overlapping spreads. Name the primary metric and the correctness
+   tolerance in `INSTRUMENTS-R4.md` **before the arms fire**, and report both
+   cost and wall-clock whichever way they fall. This read "cost or wall-clock"
+   until 2026-08-29, which let the winning metric be chosen after the data
+   arrived. *Producing items: the R3 benchmark-construction item (the current
+   harness is a single-file task that structurally cannot delegate, so a re-run
+   alone cannot satisfy or falsify this) and the R4 run.*
 2. **Out-of-box liveness.** A fresh default install on the current
-   flagship produces one delegation on a natural prompt, or the README's
-   first screen says it will not and shows the unlock. *Producing item:
-   R4's fresh-install liveness runs.*
-3. **Inertness is visible.** A stolen style slot or a gated Agent tool
-   is learned from the product within one session. *Producing items: hook
-   fixes C3/C4 (slot), the style's absent-Agent-tool line (gate), and
-   R4's two adversarial-install sessions.*
-4. **Native-parity ledger published.** Every overlapping component
-   carries a measured win or a dated removal criterion. *Producing item:
-   R3's NATIVE.md.*
-5. **Contradiction sweep is a release gate.** Zero open findings at tag
-   time. *Producing item: R1 institutes it; every wagon re-runs it.*
-6. **The surface ratchet holds.** Static did not grow two releases
-   running; nets re-derived per wagon, never extrapolated. *Producing
-   item: the per-wagon net statements plus `measure-context.sh`.*
+   flagship produces one delegation on a natural prompt. The run happens either
+   way and its outcome decides what the README's first screen says: a run that
+   produces no delegation obliges that screen to say so and show the unlock.
+   Writing the sentence without running is not the second branch, it is skipping
+   the criterion, and until 2026-08-29 an "or" made a documentation edit
+   sufficient. *Producing item: R4's fresh-install liveness runs.*
+3. **Inertness is visible.** A stolen style slot **and** a gated Agent tool are
+   each learned from the product within one session. Two independent ways to be
+   silently inert, so satisfying one leaves the other invisible, which is the
+   failure this is named for. The conjunction was an "or" until 2026-08-29.
+   *Producing items: hook fixes C3/C4 (slot), the style's absent-Agent-tool line
+   (gate), and R4's two adversarial-install sessions.*
+4. **Native-parity ledger published.** Every overlapping component carries a
+   measured win or a dated removal criterion, **and the count of overlaps
+   carrying a measured win is stated** wherever the criterion is scored. The
+   ledger is the deliverable; parity is not, and a row that rests on a date must
+   not read as evidence of a win. Currently 0 of 4. *Producing item: R3's
+   NATIVE.md.*
+5. **Contradiction sweep is a release gate.** The sweep ran on this build, over
+   the full prompt surface, and its finding count is in the release notes. Zero
+   is a result only when it is the result of running. This read "zero open
+   findings at tag time" until 2026-08-29, which a sweep that never runs
+   satisfies perfectly, and did, for v0.9.5 and v0.9.6. *Producing item: R1
+   institutes it; every wagon re-runs it.*
+6. **The surface ratchet holds.** Static does not exceed the lowest figure any
+   release has reached, unless the increase is named, costed and accepted in the
+   release notes with what it buys; nets re-derived per wagon, never
+   extrapolated. This read "did not grow two releases running" until 2026-08-29,
+   which alternating growth and shrinkage passes while the surface climbs. A
+   ratchet that resets on any single decrease is a sawtooth. *Producing item: the
+   per-wagon net statements plus `measure-context.sh`.*
 7. **Every number re-derivable.** Benchmark re-run on the shipping
    build; the eval suite has executed at least once. *Producing items:
    R4; contingency in R0 if eval is server-gated.*
+
+Every criterion above was audited against itself on 2026-08-29, in
+[CRITERIA-AUDIT-2026-08-29.md](./CRITERIA-AUDIT-2026-08-29.md). Six of the seven
+could be satisfied without doing the thing they name. Every amendment tightens,
+and three criteria that had been scored met were met through the loophole.
 
 ## The release train (dependency order; every wagon ships)
 
@@ -255,10 +279,10 @@ Position: the moat argument (agent teams experimental, off by default) is
 re-checked each minor CC release, and NATIVE.md carries the expiry condition.
 - **FIX (B2):** rewrite the cheap/expensive tiers as escalation-order
   semantics ("first call" vs "escalation, use sparingly"), because no
-  mechanism produces a cost difference today. The mechanism that *would* (per-agent
-  `model:` frontmatter) exists and was removed; its non-re-adoption is
-  recorded in the standing refusals with a trigger, so this rewrite is a
-  documented ruling, not an oversight.
+  mechanism produces a cost difference today. The mechanism that *would*
+  (per-agent `model:` frontmatter) exists and was removed; its
+  non-re-adoption is recorded in the standing refusals with a trigger, so
+  this rewrite is a documented ruling, not an oversight.
 - **FIX (B7, with review):** the style keeps "the pass that produced a
   change cannot be the pass that clears it"; review carries the
   carve-out.
@@ -385,11 +409,11 @@ Position: a NATIVE.md row.
 
 ### review: `skills/review/SKILL.md` (+ checklists.md, performance.md)
 
-The R1 package lands as one unit with one netted margin statement:
-the in-file reorder (every pinned rule before char 20,000), the
-~850-char checklists-canonical offload, the A1/M4 marker change, B3, B7,
-B8, and **the one real-tokenizer measurement**, which lives in this
-wagon only (it was previously double-booked into R4; it is not there).
+The R1 package lands as one unit with one netted margin statement: the
+in-file reorder (every pinned rule before char 20,000), the ~850-char
+checklists-canonical offload, the A1/M4 marker change, B3, B7, B8, and
+**the one real-tokenizer measurement**, which lives in this wagon only
+(it was previously double-booked into R4; it is not there).
 Landing additions and cuts in the same wagon is what the recorded pool
 collision (COMPRESSION §5 Phase 3) demanded.
 
@@ -457,7 +481,7 @@ Position: a NATIVE.md row, and the +14.50 measurement stays quotable.
 
 ### verification-planning: `skills/verification-planning/SKILL.md`
 
-Position: a NATIVE.md row, checked, with nothing native found.
+Position: a NATIVE.md row; it was checked, and nothing native was found.
 - **DO (R3, moved from the ambiguous R0/R5 slot so R4 does not consume
   unbuilt artifacts):** the four instrument designs: the Rule 1
   pressure-test harness (consumed by R5's Phase-4 cuts), the
