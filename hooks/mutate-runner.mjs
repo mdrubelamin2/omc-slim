@@ -82,6 +82,8 @@ export function runMutants({ hook, test, mutants }) {
 
   let killed = 0;
   const survivors = [];
+  // Neither killed nor survived. See the classification below.
+  const unusable = [];
 
   console.log(`mutants: ${mutants.length}\n`);
 
@@ -108,7 +110,29 @@ export function runMutants({ hook, test, mutants }) {
     const output = (run.stdout || "") + (run.stderr || "");
     const failures = (output.match(/^FAIL/gm) || []).length;
 
-    if (run.status === 0) {
+    // A run that never finished is not a result. `spawnSync` reports a timeout
+    // as `error.code === "ETIMEDOUT"` with `status === null`, and `null === 0`
+    // is false — so a mutant that made the HARNESS HANG used to fall into the
+    // else branch and be counted as killed. The mutation score is the strongest
+    // quality claim this repository makes, and that is one of its failure modes
+    // inflating it.
+    //
+    // Reported as its own outcome and failed on, because a harness that hangs
+    // under a mutant is a defect in the harness whichever way the mutant went.
+    // Signals and spawn failures land here for the same reason: nothing was
+    // measured.
+    const unusableReason = run.error
+      ? `${run.error.code || "error"}: ${run.error.message}`
+      : run.status === null
+        ? `terminated by ${run.signal}`
+        : null;
+
+    if (unusableReason) {
+      unusable.push([label, consequence, unusableReason]);
+      console.log(
+        `  UNUSABLE  ${label.padEnd(46)} ${unusableReason} <-- neither killed nor survived`,
+      );
+    } else if (run.status === 0) {
       survivors.push([label, consequence, "harness passed anyway"]);
       console.log(`  SURVIVED  ${label.padEnd(46)} <-- hole in the tests`);
     } else {
@@ -124,6 +148,15 @@ export function runMutants({ hook, test, mutants }) {
 
   console.log(`\nscore: ${killed}/${mutants.length} killed`);
 
+  if (unusable.length) {
+    console.log(
+      `\n${unusable.length} produced no result — the harness never finished, so nothing was measured:`,
+    );
+    for (const [label, consequence, why] of unusable) {
+      console.log(`  - ${label}: ${consequence} (${why})`);
+    }
+  }
+
   if (survivors.length) {
     console.log(
       "\nsurvivors — each is a regression the harness would not catch:",
@@ -138,5 +171,8 @@ export function runMutants({ hook, test, mutants }) {
   );
 
   if (!restored) return 2;
+  // Its own exit code: an unusable run is not a hole in the tests, it is a
+  // harness that cannot answer, and the two need different fixes.
+  if (unusable.length) return 3;
   return survivors.length === 0 ? 0 : 1;
 }

@@ -73,7 +73,8 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" init \
 
 This creates:
 - `.slim/codemap.json` - File and folder hashes for change detection
-- Empty `codemap.md` files in all relevant subdirectories
+- Empty `codemap.md` files in all relevant subdirectories, each opening with a
+  provenance header naming the commit, date and file count it was written against
 
 4. **Delegate codemap writing to Fixer agents** - Dispatch one fixer per folder, using the brief in "Dispatching a codemap fixer" below.
 
@@ -98,12 +99,29 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" changes \
    re-aggregate their children's summaries go to **one** dispatch, deepest first
    — a leaf edit used to spawn a fixer for every level above it, three of which
    rewrote maps whose own directories had not changed.
-4. **Run update** to save new state:
+4. **Run update LAST**, after the fixers have returned. It saves the new hashes
+   *and* re-stamps every `codemap.md` provenance header, which is the run's
+   statement that the maps are current. Run it before the fixers and it certifies
+   maps nobody touched.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" update \
   --root ./
 ```
+
+### Checking freshness
+
+A stale map is worse than no map: it is confidently wrong context in a file
+agents were told to trust. `stale` answers, per mapped directory, whether its map
+still describes the tree — exits non-zero if any does not, so it works as a check.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" stale --root ./
+```
+
+Each row is `FRESH`, or a status and the reason it cannot be trusted — files
+changed, no header, never written, header skewed, map missing. A commit distance
+it cannot know (no repository, shallow clone) is named, never guessed.
 
 ### Step 4: Finalize Repository Atlas (Root Codemap)
 
@@ -124,14 +142,16 @@ Once all specific directories are mapped, the Orchestrator must create or update
 ```markdown
 ## Repository Map
 
-A full codemap is available at `codemap.md` in the project root.
+`codemap.md` in the project root, and one per mapped directory, describe this
+repo's architecture, responsibilities and data flow. **They are generated, and
+they go stale.** Each states the commit it was written against in its header.
 
-Before working on any task, read `codemap.md` to understand:
-- Project architecture and entry points
-- Directory responsibilities and design patterns
-- Data flow and integration points between modules
+Check before you rely on one:
 
-For deep work on a specific folder, also read that folder's `codemap.md`.
+    node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" stale --root ./
+
+For any directory it lists: ignore that map and read the code, or regenerate it
+with the codemap skill. A map is a shortcut to the code, never a substitute.
 ```
 
 This is idempotent - repeated codemap runs will detect the existing section and skip. No duplication.
@@ -160,7 +180,10 @@ paths under it is a directory that contributes no files of its own and only
 aggregates its children's maps. Diagnostics go to stderr, so stdout needs no
 filtering. Run it after `init`; it re-selects from disk, so it stays current.
 
-> Write `<dir>/codemap.md`, replacing whatever is there now.
+> Write `<dir>/codemap.md`. It opens with a machine-maintained provenance header
+> ending in `<!-- /codemap:provenance -->`. **Leave every line up to and including
+> that marker exactly as it is**, and replace everything below it. `update`
+> rewrites that header; anything you put in it is lost.
 >
 > Read only these files: `<the paths listed under this directory's header by
 > `codemap.mjs files`>`.

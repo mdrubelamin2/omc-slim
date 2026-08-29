@@ -45,6 +45,25 @@ resolve() {
   esac
 }
 
+
+# One place that decides what counts as shipped text. A comment and a fenced
+# block both reach the model, but neither is the rule — a rule quoted inside
+# either is a mention, and a mention must not stand in for the thing.#
+# Fenced blocks are deliberately NOT stripped. They carry output contracts and
+# spec templates that ARE the shipped rule — `deep-interview`'s spec schema pins
+# `## Files and interfaces`, which lives inside a fenced template, and stripping
+# fences reported that rule missing. The residual risk is a pin relocated into a
+# fence headed "Rejected ideas", which is real and is the contradiction sweep's
+# job rather than this one's: a substring test cannot read a heading.
+strip_inert() {
+  python3 -c '
+import re, sys
+raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+raw = re.sub(r"<!--.*?-->", "", raw, flags=re.S)
+sys.stdout.write(re.sub(" +", " ", raw.replace("\n", " ")))
+' "$1"
+}
+
 missing=0
 checked=0
 
@@ -69,7 +88,14 @@ while IFS=$'\t' read -r origin rule where pattern; do
   # Collapse all whitespace to single spaces so line-wrapped prose still
   # matches. Without this, a rule that happens to wrap across two lines reads
   # as absent — which cost a false alarm the first time this was run by hand.
-  if tr '\n' ' ' < "$target" | tr -s ' ' | grep -qiF -- "$pattern"; then
+  #
+  # Commented-out and fenced text is removed first, and that is not tidiness. A
+  # rule can be inverted in place with the original left three lines above inside
+  # an HTML comment: the pattern is still findable, so this loop reports the rule
+  # present while the shipped text says the opposite. Demonstrated against the
+  # output style's safety floor. A pin relocated into a fenced block headed
+  # "Rejected ideas" was the same trick with a different lid.
+  if strip_inert "$target" | grep -qiF -- "$pattern"; then
     checked=$((checked + 1))
   else
     printf '  DROPPED       %-32s expected in %s\n' "$rule" "$where"
@@ -251,7 +277,13 @@ for skill in sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md'))):
     if name == 'review':
         review_c4 = f'{os.path.getsize(skill) // 4:,}'
         review_corr = f'{tokens:,}'
-    hay = re.sub(' +', ' ', text.replace('\n', ' ')).lower()
+    # Comments and fences come out first. The exploit is one line under the
+    # frontmatter — an HTML comment quoting a pinned rule — which makes `find`
+    # return the comment's position instead of the rule's. The gate then reports
+    # TAIL DROPPED with "no pinned rule is in that tail", which is false, having
+    # been built for exactly the failure it is now denying.
+    searchable = re.sub(r'<!--.*?-->', '', text, flags=re.S)
+    hay = re.sub(' +', ' ', searchable.replace('\n', ' ')).lower()
     worst = 0
     worst_pat = None
     for where, pat in pin_rows:
@@ -268,9 +300,9 @@ for skill in sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md'))):
         # error was within ±4 tokens, but the bound is len(text)-len(hay) and it
         # grows with any indented block added ahead of a pinned rule. So take the
         # whole slack as a margin rather than trusting the average.
-        slack = len(text) - len(hay)
-        approx = min(len(text), int(at * len(text) / max(len(hay), 1)) + slack)
-        pos = len(enc.encode(text[:approx]))
+        slack = len(searchable) - len(hay)
+        approx = min(len(searchable), int(at * len(searchable) / max(len(hay), 1)) + slack)
+        pos = len(enc.encode(searchable[:approx]))
         if pos > worst:
             worst, worst_pat = pos, pat
     if worst > RE_CAP:
@@ -801,6 +833,134 @@ else
   echo "$base_out" | sed 's/^/                  /'
   exit 1
 fi
+
+# --- the harness-enforced mechanisms, asserted -----------------------------
+# Every other block in this file checks that a LISTED thing still exists. None
+# of them checks that an EXISTING thing is listed, and that one asymmetry is a
+# single bug wearing six hats: an added Set member, an edited matcher, a deleted
+# frontmatter key, a gutted grader body, a new unpinned agent, a deleted sibling.
+#
+# The most expensive hat: `disallowedTools` is described three lines below this
+# comment's own neighbourhood as "the only harness-enforced guarantee this plugin
+# has", and until now it was asserted by NOTHING. Deleting the line from an agent
+# grants it `Agent` — breaking one-level delegation — and `WebSearch` — breaking
+# the research boundary — while the agent's own description still promises "no
+# subagents, no web research". Every presence check passes on the prose the
+# deleted key was enforcing. That is 51dfbcc at the mechanism layer.
+#
+# So this block asserts the mechanisms directly, from a table that has to be
+# edited by hand. A new agent fails until someone decides what it may not do,
+# which is the point: the decision is the guarantee.
+python3 - "$ROOT" <<'MECHPY' || exit 1
+import glob, json, os, re, sys
+root = sys.argv[1]
+bad = 0
+
+# name -> tools that MUST be denied. Hand-maintained on purpose.
+#   Agent, Task    one-level delegation. The plugin's central guarantee, and the
+#                  reason `Task` stays: it is a live legacy alias for `Agent`,
+#                  and the alias path through permission resolution is untraced.
+#   Edit/Write/... read-only agents. A read-only agent that can write is not one.
+#   WebSearch      the research boundary, on both writers, after v0.9.2 made it
+#                  one policy instead of prose on one side and a key on the other.
+REQUIRED = {
+    'explorer':  {'Edit', 'Write', 'NotebookEdit', 'Agent', 'Task'},
+    'librarian': {'Edit', 'Write', 'NotebookEdit', 'Agent', 'Task'},
+    'oracle':    {'Edit', 'Write', 'NotebookEdit', 'Agent', 'Task'},
+    'tracer':    {'Edit', 'Write', 'NotebookEdit', 'Agent', 'Task'},
+    'fixer':     {'Agent', 'Task', 'WebSearch'},
+    'designer':  {'Agent', 'Task', 'WebSearch'},
+}
+
+present = {os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'agents/*.md'))}
+for extra in sorted(present - set(REQUIRED)):
+    print(f'  UNGOVERNED    agents/{extra}.md has no entry in the disallowedTools table')
+    print('                  decide what it may not do, then add it here')
+    bad += 1
+for gone in sorted(set(REQUIRED) - present):
+    print(f'  STALE ENTRY   the disallowedTools table governs {gone}, which no longer exists')
+    bad += 1
+
+for name in sorted(present & set(REQUIRED)):
+    src = open(os.path.join(root, f'agents/{name}.md'), encoding='utf-8').read()
+    m = re.search(r'^disallowedTools:\s*\[([^\]]*)\]', src, re.M)
+    if not m:
+        print(f'  NO GUARANTEE  agents/{name}.md declares no disallowedTools')
+        print('                  its description still promises the boundary the key enforced')
+        bad += 1
+        continue
+    got = {tool.strip() for tool in m.group(1).split(',') if tool.strip()}
+    missing = REQUIRED[name] - got
+    if missing:
+        print(f'  WEAKENED      agents/{name}.md no longer denies {", ".join(sorted(missing))}')
+        bad += 1
+
+# The SubagentStop matcher governs which agents the deliverable hook covers, and
+# hooks.json was parsed only to COUNT hooks. Narrowing it to one name silently
+# unregisters the hook for half the write-capable roster, while the mutation
+# suite carries a dedicated mutant for that identical defect one layer down —
+# now guarding nothing.
+cfg = json.load(open(os.path.join(root, 'hooks/hooks.json')))
+WRITERS = {'fixer', 'designer'}
+matchers = [g.get('matcher', '') for g in cfg['hooks'].get('SubagentStop', [])]
+covered = set()
+for pat in matchers:
+    try:
+        rx = re.compile(pat)
+    except re.error:
+        print(f'  BAD MATCHER   hooks.json SubagentStop matcher does not compile: {pat!r}')
+        bad += 1
+        continue
+    for w in WRITERS:
+        if rx.search(w) or rx.search(f'omc-slim:{w}'):
+            covered.add(w)
+for w in sorted(WRITERS - covered):
+    print(f'  UNCOVERED     hooks.json SubagentStop does not match {w!r}')
+    print('                  the deliverable check silently stops running for it')
+    bad += 1
+
+# verify-deliverables reasons from the declared timeout: its own comment says the
+# internal budget sits "well inside the 5 s declared in hooks.json". Cut the
+# declared value below the internal one and the hook is killed mid-scan instead
+# of abstaining — it stops reporting "cannot tell" and starts reporting nothing.
+src = open(os.path.join(root, 'hooks/verify-deliverables.mjs'), encoding='utf-8').read()
+budget = re.search(r'return (\d+);\s*\n\s*const n = Number\(raw\)', src)
+internal_ms = int(budget.group(1)) if budget else 2000
+for ev, groups in cfg['hooks'].items():
+    for g in groups:
+        for h in g.get('hooks', []):
+            declared_ms = int(h.get('timeout', 0)) * 1000
+            if declared_ms and declared_ms <= internal_ms:
+                print(f'  BUDGET FLIP   {ev} declares {declared_ms // 1000}s, '
+                      f'inside the hook\'s own {internal_ms}ms scan budget')
+                print('                  the hook is killed mid-scan rather than abstaining')
+                bad += 1
+
+# Every component must carry at least one pinned row. A new agent or skill with
+# zero rows passes every other block in this file, including the one that prints
+# "N/N adopted behaviours present".
+pinned = set()
+for tsv, col in (('COVERAGE.tsv', 2), ('REINFORCEMENT.tsv', 1)):
+    for line in open(os.path.join(root, tsv), encoding='utf-8'):
+        if line.startswith('#') or not line.strip():
+            continue
+        cols = line.rstrip('\n').split('\t')
+        if len(cols) > col:
+            pinned.add(cols[col].split('/')[0])
+components = present | {os.path.basename(os.path.dirname(f))
+                        for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))}
+for c in sorted(components - pinned):
+    print(f'  UNPINNED      {c} ships with no COVERAGE or REINFORCEMENT row')
+    print('                  nothing would notice its rules being removed')
+    bad += 1
+
+if bad:
+    print('\nEvery other block here checks a listed thing still exists. This one')
+    print('checks an existing thing is listed, which is the direction the scar runs.')
+    raise SystemExit(1)
+print(f'{len(REQUIRED)}/{len(REQUIRED)} agents keep their tool denials; '
+      f'{len(components)} components pinned; hook coverage and budgets hold.')
+MECHPY
 
 # --- every component reference carries its type ---------------------------
 # Agents and skills both reach the model as bare `omc-slim:<name>` strings. The

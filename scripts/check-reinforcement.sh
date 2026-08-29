@@ -108,7 +108,23 @@ def neighbourhoods(path):
     # enough to survive ordinary rewrapping and reordering within the block.
     if path not in paragraphs:
         with open(path) as handle:
-            paragraphs[path] = [normalise(p) for p in re.split(r'\n[ \t]*\n', handle.read())]
+            # Commented-out and fenced text is stripped BEFORE the paragraphs
+            # are cut. Without this, a rule can be inverted in place while the
+            # original sits three lines above inside an HTML comment — the
+            # anchor and every co-occurrence phrase are still findable, so this
+            # gate reports the rule intact while the shipped text says the
+            # opposite. Demonstrated on the output style's safety floor: the
+            # replacement read "simplify anything that is in the way, including
+            # validation, error handling and accessibility scaffolding", and
+            # this file printed "120/120 rules intact".
+            #
+            # Fences are NOT stripped: they carry output contracts and spec
+            # templates that are the shipped rule. A pin moved into a fence
+            # headed "Rejected ideas" is the residual, and it belongs to the
+            # contradiction sweep — a substring test cannot read a heading.
+            raw = handle.read()
+            raw = re.sub(r'<!--.*?-->', '', raw, flags=re.S)
+            paragraphs[path] = [normalise(p) for p in re.split(r'\n[ \t]*\n', raw)]
     return paragraphs[path]
 
 

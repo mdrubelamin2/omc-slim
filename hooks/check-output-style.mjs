@@ -58,7 +58,7 @@
  * Set OMC_SLIM_DEBUG=1 to trace on stderr.
  */
 
-import { readFileSync, readdirSync, lstatSync, realpathSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { join, basename, dirname } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -155,9 +155,27 @@ function claudeHome() {
   return process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
 }
 
+/**
+ * `stat`, not `lstat`, and the distinction is load-bearing in both directions.
+ *
+ * The sibling hook lstats its transcript because that path is HANDED TO IT by
+ * the harness, and following a symlink there turns the hook into an
+ * arbitrary-path read — a real finding from a prior audit. Every path reached
+ * from here is one this file BUILT, from claudeHome() or an installPath plus a
+ * fixed filename, so there is no attacker-controlled component to follow.
+ *
+ * lstat reports the LINK, so a symlinked `~/.claude/settings.json` — the normal
+ * dotfiles setup — failed `isFile()`, readJson returned null, enabledPlugins
+ * returned "cannot tell", and the hook went silent forever, in exactly the
+ * population most likely to run several plugins at once. Do not revert this to
+ * lstat without moving the path construction too.
+ *
+ * The size cap stays: it is what keeps a hostile or corrupt file from being read
+ * into memory, and stat resolves the link before measuring it.
+ */
 function readJson(path) {
   try {
-    const st = lstatSync(path);
+    const st = statSync(path);
     if (!st.isFile() || st.size > MAX_STYLE_BYTES) return null;
     return JSON.parse(readFileSync(path, "utf8"));
   } catch {
@@ -225,7 +243,10 @@ function installPaths() {
 function forcedNameIn(file) {
   let text;
   try {
-    const st = lstatSync(file);
+    // stat, not lstat, for the reason spelled out on readJson: a symlinked
+    // style file is a file we found ourselves under a plugin's own directory,
+    // and refusing to read it means the rival it belongs to goes unreported.
+    const st = statSync(file);
     if (!st.isFile() || st.size > MAX_STYLE_BYTES) return null;
     text = readFileSync(file, "utf8");
   } catch {

@@ -110,6 +110,40 @@ for case in cases:
             continue
         types.append(gm['type'])
 
+        # The BODY, which nothing read until now. This block's own header claims
+        # it proves the suite "cannot silently degenerate into a trigger-only
+        # suite that measures nothing" — and every one of the thirteen grader
+        # bodies could be replaced with the single line `PASS.` while it printed
+        # "6/6 eval cases well-formed". Including the grader whose whole job is
+        # to catch a SQL injection.
+        #
+        # A grader that cannot fail is the same defect as a test that cannot
+        # fail, which this repository refuses everywhere else. So: a grader must
+        # say what passes AND what fails, and must be long enough to have said
+        # something. Both bars are deliberately low — this catches gutting, not
+        # weak judgement, and no substring test can reach the second.
+        body = open(g, encoding='utf-8').read()
+        body = body.split('---', 2)[-1] if body.startswith('---') else body
+        words = len(body.split())
+
+        # The bar depends on the type, and getting that wrong is how a gate
+        # starts failing correct files. For a `regex` grader the PATTERN is the
+        # criterion and the body is documentation, so it only has to exist. For
+        # an `llm` grader the body IS the criterion — it is the whole rubric the
+        # judge is handed — so a body with no stated condition hands the judge
+        # nothing and scores on vibes.
+        if gm['type'] == 'llm':
+            stated = re.search(r'\b(PASS|FAIL)\b', body) is not None
+            if words < 15 or not stated:
+                why = f'{words} words' if words < 15 else 'states no PASS or FAIL condition'
+                print(f'  HOLLOW        {rel} — an llm grader whose body {why}')
+                print('                  the body IS the rubric; the judge is handed nothing')
+                bad += 1
+        elif words < 4:
+            print(f'  UNDOCUMENTED  {rel} — {words} words of explanation')
+            print('                  the pattern is the criterion, but nothing says why')
+            bad += 1
+
     if types and set(types) <= TRIGGER_ONLY:
         print(f'  TRIGGER ONLY  evals/{name} scores only on {sorted(set(types))}')
         print('                  excluded from the score in both ablation arms')

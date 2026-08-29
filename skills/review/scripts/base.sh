@@ -24,8 +24,59 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 # A stale base produces phantom findings: problems already fixed on the base
-# branch look like problems in this diff. Failure is fine — offline is normal.
-git fetch -q origin 2>/dev/null || true
+# branch look like problems in this diff. So the fetch is worth doing — but it
+# is also the only step here that can block, for git's own connect timeout of
+# 75 s or for as long as a VPN keeps the socket open, and `-q` with a discarded
+# stderr hid that anything was happening at all. It ran first, on every review.
+#
+# Two halves to the fix. Bound it, so a dead remote costs seconds rather than
+# minutes; and say which of the three things happened, because a fetch that did
+# not run leaves a base that may be stale, and a silent skip is a stale base
+# nobody knows about.
+#
+# The bound is a background fetch plus a polling wait rather than `timeout(1)`:
+# that is GNU coreutils, and a default macOS install does not have it.
+FETCH_TIMEOUT_SECONDS="${REVIEW_FETCH_TIMEOUT_SECONDS:-10}"
+# A non-numeric override would make `-ge` error on every iteration and the loop
+# never exit — the same hang, arrived at from the other side.
+case "$FETCH_TIMEOUT_SECONDS" in
+  '' | *[!0-9]*) FETCH_TIMEOUT_SECONDS=10 ;;
+esac
+
+fetch_origin() {
+  git fetch -q origin >/dev/null 2>&1 &
+  local pid=$!
+  local waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$FETCH_TIMEOUT_SECONDS" ]; then
+      # TERM then KILL: git's transport child can sit in a blocking read, and a
+      # TERM it does not act on would leave this waiting for what it just bounded.
+      kill -TERM "$pid" 2>/dev/null
+      sleep 1
+      kill -KILL "$pid" 2>/dev/null
+      wait "$pid" 2>/dev/null
+      return 124 # what timeout(1) reports, for anyone reading a trace
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$pid"
+}
+
+STALE="the base may be stale, so anything already fixed on it can look like a finding here"
+
+if ! git remote get-url origin >/dev/null 2>&1; then
+  echo "review-base: no origin remote — comparing against local refs only"
+else
+  echo "review-base: fetching origin (up to ${FETCH_TIMEOUT_SECONDS}s)"
+  fetch_origin
+  FETCH_STATUS=$?
+  if [ "$FETCH_STATUS" -eq 124 ]; then
+    echo "review-base: fetch timed out after ${FETCH_TIMEOUT_SECONDS}s — $STALE"
+  elif [ "$FETCH_STATUS" -ne 0 ]; then
+    echo "review-base: fetch failed (exit $FETCH_STATUS) — $STALE"
+  fi
+fi
 
 # First ref that resolves wins. The order is the review's own precedence:
 # the branch's PR target, the repository default, then the conventional names

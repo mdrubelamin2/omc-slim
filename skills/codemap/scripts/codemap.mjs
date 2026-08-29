@@ -7,6 +7,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   statSync,
   writeFileSync,
@@ -406,13 +407,10 @@ export function saveState(root, state) {
   );
 }
 
-export function createEmptyCodemap(folderPath, folderName) {
-  const codemapPath = path.join(folderPath, CODEMAP_FILE);
-  if (existsSync(codemapPath)) return;
-
-  const content = `# ${folderName}/
-
-<!-- Fixer: Fill in this section with architectural understanding -->
+// The body init seeds. The `<!-- Fixer:` marker is also how `stale` recognises a
+// map nobody ever wrote: an empty map registered in AGENTS.md is the worst case
+// this tool has, because it reads as authoritative and says nothing.
+const EMPTY_BODY = `<!-- Fixer: Fill in this section with architectural understanding -->
 
 ## Responsibility
 
@@ -431,7 +429,123 @@ export function createEmptyCodemap(folderPath, folderName) {
 <!-- How does it connect to other parts of the system? -->
 `;
 
-  writeFileSync(codemapPath, content);
+export const UNWRITTEN_MARKER = '<!-- Fixer: Fill in this section';
+
+// Provenance header. Every codemap.md this tool writes states, in its own first
+// lines, the commit it was verified against — because the failure mode of a
+// generated map is not being useless, it is being confidently wrong in a file an
+// agent was told to trust.
+//
+// Two forms of the same three facts, deliberately: the comment is what `stale`
+// parses, the blockquote is what a reader sees. The comment alone would be
+// invisible to a human skimming the rendered file; the prose alone would need
+// parsing back out of English.
+//
+// The block ends at PROVENANCE_END so the fixer has an unambiguous line to write
+// below and `update` has an unambiguous span to replace. Nothing here is an `##`
+// heading, so the four-heading contract the fixer brief requires is untouched.
+export const PROVENANCE_END = '<!-- /codemap:provenance -->';
+const PROVENANCE_RE =
+  /<!-- codemap:provenance commit=(\S+) date=(\S+) files=(\d+) -->/;
+
+export function renderCodemap(folderName, provenance, body) {
+  const { commit, date, files } = provenance;
+  const asOf =
+    commit === 'none'
+      ? `${date} (no commit — not a git repository)`
+      : `\`${commit}\` (${date})`;
+
+  return `# ${folderName}/
+<!-- codemap:provenance commit=${commit} date=${date} files=${files} -->
+> **Generated map — it goes stale.** Current as of ${asOf}, for the ${files} file(s)
+> in this directory. Verify with \`codemap.mjs stale --root ./\`; if this directory
+> is listed, read the code instead. Header is machine-maintained: rewrite only
+> what is below this line.
+${PROVENANCE_END}
+
+${body}`;
+}
+
+export function readProvenance(text) {
+  const match = PROVENANCE_RE.exec(text);
+  if (!match) return null;
+  return { commit: match[1], date: match[2], files: Number(match[3]) };
+}
+
+// Everything the fixer wrote, with the machine-maintained header taken off.
+export function stripProvenance(text) {
+  const end = text.indexOf(PROVENANCE_END);
+  if (end !== -1) {
+    return text.slice(end + PROVENANCE_END.length).replace(/^\n+/, '');
+  }
+  // A map written before this header existed carries its own `# dir/` title.
+  // The header supplies that title, so drop it rather than leave two H1s.
+  return text.replace(/^# [^\n]*\n+/, '');
+}
+
+// The commit a map is being verified against, or null outside a repository and
+// in a repository with no commits yet.
+export function gitHead(root) {
+  const result = spawnSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], {
+    encoding: 'utf8',
+  });
+  if (result.error || result.status !== 0) return null;
+  return result.stdout.trim() || null;
+}
+
+export function runProvenance(root) {
+  return {
+    commit: gitHead(root) ?? 'none',
+    date: new Date().toISOString().slice(0, 10),
+  };
+}
+
+export function createEmptyCodemap(folderPath, folderName, provenance, files) {
+  const codemapPath = path.join(folderPath, CODEMAP_FILE);
+  // An existing map is left exactly as it is, header included. `init` runs when
+  // there is no state, so it has no grounds to certify a map it did not write —
+  // re-stamping one here would silently claim that whatever is on disk describes
+  // today's tree. `stale` reports the resulting mismatch instead.
+  if (existsSync(codemapPath)) return;
+
+  writeFileSync(
+    codemapPath,
+    renderCodemap(folderName, { ...provenance, files }, EMPTY_BODY),
+  );
+}
+
+// Re-stamp a map's header, keeping the body underneath. This is what makes the
+// header mean anything after the first run: `update` is the workflow's statement
+// that the maps are current, so it must move the header with the state it saves,
+// or every header stays pinned to the init commit forever.
+//
+// It follows that `update` must be run AFTER the fixers have rewritten the maps,
+// not before — running it early certifies maps nobody has touched.
+export function refreshCodemap(folderPath, folderName, provenance, files) {
+  const codemapPath = path.join(folderPath, CODEMAP_FILE);
+  const body = existsSync(codemapPath)
+    ? stripProvenance(readFileSync(codemapPath, 'utf8'))
+    : EMPTY_BODY;
+
+  writeFileSync(
+    codemapPath,
+    renderCodemap(folderName, { ...provenance, files }, body),
+  );
+}
+
+// Files a directory contributes itself, which is what its own codemap.md
+// describes — not its subtree, which its children's maps cover.
+function ownFileCounts(root, selectedFiles, folders) {
+  const counts = new Map([...folders].map((folder) => [folder, 0]));
+  for (const fullPath of selectedFiles) {
+    const dir = parentDir(toRelPath(root, fullPath));
+    counts.set(dir, (counts.get(dir) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function folderLabel(root, folder) {
+  return folder === '.' ? path.basename(root) : folder;
 }
 
 // An unreadable file can never be diffed by content, so the only way the user
@@ -457,6 +571,7 @@ function buildState(
   excludePatterns,
   exceptions,
   selectedFiles,
+  provenance,
 ) {
   const fileHashes = {};
   for (const filePath of selectedFiles) {
@@ -475,6 +590,12 @@ function buildState(
     metadata: {
       version: VERSION,
       last_run: new Date().toISOString(),
+      // The commit every codemap.md header was stamped with by this run. A map
+      // whose header disagrees with it was not written by the run that recorded
+      // these hashes, so its freshness is unestablished however clean the hashes
+      // look — that is the only handle there is on a hand-edited map.
+      commit: provenance.commit,
+      date: provenance.date,
       root,
       include_patterns: includePatterns,
       exclude_patterns: excludePatterns,
@@ -512,27 +633,70 @@ export function cmdInit({ root, include = [], exclude = [], exception = [] }) {
 
   console.log(`Selected ${selectedFiles.length} files`);
 
+  const provenance = runProvenance(resolvedRoot);
   const { state, folders } = buildState(
     resolvedRoot,
     includePatterns,
     excludePatterns,
     exceptions,
     selectedFiles,
+    provenance,
   );
 
   saveState(resolvedRoot, state);
   console.log(`Created ${STATE_DIR}/${STATE_FILE}`);
 
+  const counts = ownFileCounts(resolvedRoot, selectedFiles, folders);
   for (const folder of folders) {
     const folderPath =
       folder === '.' ? resolvedRoot : path.join(resolvedRoot, folder);
-    const folderName = folder === '.' ? path.basename(resolvedRoot) : folder;
-    createEmptyCodemap(folderPath, folderName);
+    createEmptyCodemap(
+      folderPath,
+      folderLabel(resolvedRoot, folder),
+      provenance,
+      counts.get(folder) ?? 0,
+    );
   }
 
-  console.log(`Created ${folders.size} empty codemap.md files`);
+  console.log(
+    `Created ${folders.size} empty codemap.md files, stamped ${provenance.commit} (${provenance.date})`,
+  );
   reportUnreadable(state.file_hashes);
   return 0;
+}
+
+// The one comparison in this tool: what is on disk now against what the state
+// recorded. `changes` reports it per file, `stale` reports it per map — neither
+// gets its own notion of what changed.
+function diffAgainstState(root, state) {
+  const metadata = state.metadata ?? {};
+  const currentFiles = selectFiles(
+    root,
+    metadata.include_patterns ?? ['**/*'],
+    metadata.exclude_patterns ?? [],
+    metadata.exceptions ?? [],
+  );
+
+  const currentHashes = Object.fromEntries(
+    currentFiles.map((filePath) => [
+      toRelPath(root, filePath),
+      computeFileHash(filePath),
+    ]),
+  );
+
+  const savedHashes = state.file_hashes ?? {};
+  const currentPaths = new Set(Object.keys(currentHashes));
+  const savedPaths = new Set(Object.keys(savedHashes));
+
+  return {
+    currentFiles,
+    currentHashes,
+    added: [...currentPaths].filter((p) => !savedPaths.has(p)).sort(),
+    removed: [...savedPaths].filter((p) => !currentPaths.has(p)).sort(),
+    modified: [...currentPaths]
+      .filter((p) => savedPaths.has(p) && currentHashes[p] !== savedHashes[p])
+      .sort(),
+  };
 }
 
 export function cmdChanges({ root }) {
@@ -543,39 +707,10 @@ export function cmdChanges({ root }) {
     return 1;
   }
 
-  const metadata = state.metadata ?? {};
-  const includePatterns = metadata.include_patterns ?? ['**/*'];
-  const excludePatterns = metadata.exclude_patterns ?? [];
-  const exceptions = metadata.exceptions ?? [];
-
-  const currentFiles = selectFiles(
+  const { currentHashes, added, removed, modified } = diffAgainstState(
     resolvedRoot,
-    includePatterns,
-    excludePatterns,
-    exceptions,
+    state,
   );
-
-  const currentHashes = Object.fromEntries(
-    currentFiles.map((filePath) => [
-      path.relative(resolvedRoot, filePath).replaceAll(path.sep, '/'),
-      computeFileHash(filePath),
-    ]),
-  );
-
-  const savedHashes = state.file_hashes ?? {};
-  const currentPaths = new Set(Object.keys(currentHashes));
-  const savedPaths = new Set(Object.keys(savedHashes));
-
-  const added = [...currentPaths]
-    .filter((filePath) => !savedPaths.has(filePath))
-    .sort();
-  const removed = [...savedPaths]
-    .filter((filePath) => !currentPaths.has(filePath))
-    .sort();
-  const modified = [...currentPaths]
-    .filter((filePath) => savedPaths.has(filePath))
-    .filter((filePath) => currentHashes[filePath] !== savedHashes[filePath])
-    .sort();
 
   reportUnreadable(currentHashes);
 
@@ -727,20 +862,201 @@ export function cmdUpdate({ root }) {
     exceptions,
   );
 
-  const { state: nextState } = buildState(
+  const provenance = runProvenance(resolvedRoot);
+  const { state: nextState, folders } = buildState(
     resolvedRoot,
     includePatterns,
     excludePatterns,
     exceptions,
     selectedFiles,
+    provenance,
   );
 
   saveState(resolvedRoot, nextState);
+
+  const counts = ownFileCounts(resolvedRoot, selectedFiles, folders);
+  for (const folder of folders) {
+    const folderPath =
+      folder === '.' ? resolvedRoot : path.join(resolvedRoot, folder);
+    refreshCodemap(
+      folderPath,
+      folderLabel(resolvedRoot, folder),
+      provenance,
+      counts.get(folder) ?? 0,
+    );
+  }
+
   console.log(
     `Updated ${STATE_DIR}/${STATE_FILE} with ${selectedFiles.length} files`,
   );
+  console.log(
+    `Re-stamped ${folders.size} codemap.md headers with ${provenance.commit} (${provenance.date})`,
+  );
   reportUnreadable(nextState.file_hashes);
   return 0;
+}
+
+// How far behind HEAD a recorded commit is, or why that cannot be answered.
+//
+// Three reasons it cannot, and each gets its own words rather than a number:
+// there is no repository, the commit is not in this clone's history because the
+// clone is shallow, or the commit is simply unknown — a rewritten history, a
+// dropped branch, an edited header. A shallow clone is the case that matters
+// most, because a shallow clone is exactly what CI checks out, and a check that
+// printed "0 commits behind" there would be wrong in the reassuring direction.
+function commitDistance(root, commit) {
+  if (!commit || commit === 'none') return { behind: null, note: 'no commit recorded' };
+
+  const result = spawnSync(
+    'git',
+    ['-C', root, 'rev-list', '--count', `${commit}..HEAD`],
+    { encoding: 'utf8' },
+  );
+  if (!result.error && result.status === 0) {
+    return { behind: Number(result.stdout.trim()), note: '' };
+  }
+
+  const shallow = spawnSync(
+    'git',
+    ['-C', root, 'rev-parse', '--is-shallow-repository'],
+    { encoding: 'utf8' },
+  );
+  if (!shallow.error && shallow.stdout.trim() === 'true') {
+    return { behind: null, note: 'distance unknowable (shallow clone)' };
+  }
+  return { behind: null, note: `commit ${commit} not in this history` };
+}
+
+// One directory's verdict. Everything that is not demonstrably fresh is stale:
+// a map that cannot be checked is not a map that can be trusted, and treating
+// "unknown" as "fine" is how a dead document keeps being read as a live one.
+function assessCodemap(mapPath, ownChanges, stateCommit) {
+  if (!existsSync(mapPath)) {
+    return { fresh: false, status: 'MISSING', detail: 'no codemap.md in this directory' };
+  }
+
+  const text = readFileSync(mapPath, 'utf8');
+  const provenance = readProvenance(text);
+  if (!provenance) {
+    return {
+      fresh: false,
+      status: 'NO HEADER',
+      detail: 'no provenance header — predates it, or was edited out; unverifiable',
+    };
+  }
+  if (text.includes(UNWRITTEN_MARKER)) {
+    return {
+      fresh: false,
+      status: 'UNWRITTEN',
+      provenance,
+      detail: 'still the init template — no map was ever written here',
+    };
+  }
+  if (stateCommit && provenance.commit !== stateCommit) {
+    return {
+      fresh: false,
+      status: 'SKEWED',
+      provenance,
+      detail: `header says ${provenance.commit}, last map run was ${stateCommit} — not refreshed by it`,
+    };
+  }
+  if (ownChanges) {
+    return {
+      fresh: false,
+      status: 'STALE',
+      provenance,
+      detail: `${ownChanges} file(s) in this directory changed since`,
+    };
+  }
+  return { fresh: true, status: 'FRESH', provenance, detail: 'matches the files it describes' };
+}
+
+// Whether each map still describes its directory, in a form a human reads in one
+// line and CI reads as an exit code. It adds no comparison of its own: the file
+// hashes come from the same diff `changes` runs, and the commit comes from the
+// header the map carries.
+export function cmdStale({ root }) {
+  const resolvedRoot = path.resolve(root);
+  const state = loadState(resolvedRoot);
+  if (!state) {
+    console.error("No codemap state found. Run 'init' first.");
+    return 1;
+  }
+
+  const { currentFiles, added, removed, modified } = diffAgainstState(
+    resolvedRoot,
+    state,
+  );
+
+  const changedPerDir = new Map();
+  for (const filePath of [...added, ...removed, ...modified]) {
+    const dir = parentDir(filePath);
+    changedPerDir.set(dir, (changedPerDir.get(dir) ?? 0) + 1);
+  }
+
+  // Directories the state knows about, plus any that exist now — a directory
+  // whose files were all deleted still has a codemap.md describing them.
+  const folders = new Set([
+    ...Object.keys(state.folder_hashes ?? {}),
+    ...getFoldersWithFiles(currentFiles, resolvedRoot),
+  ]);
+
+  const stateCommit = state.metadata?.commit ?? null;
+  const head = gitHead(resolvedRoot);
+  const distances = new Map();
+
+  const rows = [...folders].sort().map((folder) => {
+    const mapPath = path.join(
+      folder === '.' ? resolvedRoot : path.join(resolvedRoot, folder),
+      CODEMAP_FILE,
+    );
+    const verdict = assessCodemap(
+      mapPath,
+      changedPerDir.get(folder) ?? 0,
+      stateCommit,
+    );
+
+    const commit = verdict.provenance?.commit;
+    if (commit && !distances.has(commit)) {
+      distances.set(commit, commitDistance(resolvedRoot, commit));
+    }
+    const distance = commit ? distances.get(commit) : null;
+    const age = !distance
+      ? ''
+      : distance.note
+        ? `${commit}, ${distance.note}`
+        : `${commit}, ${distance.behind} commit(s) behind HEAD`;
+
+    return { folder, ...verdict, age };
+  });
+
+  console.log(
+    head
+      ? `Freshness of ${rows.length} mapped directories against HEAD ${head}:`
+      : `Freshness of ${rows.length} mapped directories (not a git repository — file hashes only, no commit provenance):`,
+  );
+
+  const width = Math.max(...rows.map((row) => row.folder.length)) + 1;
+  for (const row of rows) {
+    const label = `${row.folder === '.' ? '.' : row.folder}/`.padEnd(width + 1);
+    console.log(
+      `  ${row.status.padEnd(10)} ${label} ${row.age ? `${row.age}; ` : ''}${row.detail}`,
+    );
+  }
+
+  const stale = rows.filter((row) => !row.fresh);
+  if (!stale.length) {
+    console.log(`\nAll ${rows.length} maps describe the current tree.`);
+    return 0;
+  }
+
+  console.log(
+    `\n${stale.length} of ${rows.length} maps cannot be trusted: ${stale.map((row) => row.folder).join(' ')}`,
+  );
+  console.log(
+    'For each: regenerate it (changes -> fixers -> update), or ignore the map and read the code.',
+  );
+  return 1;
 }
 
 export function parseArgs(argv) {
@@ -777,7 +1093,7 @@ export function main(argv = process.argv.slice(2)) {
 
     if (!command || !options.root) {
       console.error(
-        'Usage: codemap.mjs <init|changes|files|update> --root /path [--include glob] [--exclude glob] [--exception path]',
+        'Usage: codemap.mjs <init|changes|files|stale|update> --root /path [--include glob] [--exclude glob] [--exception path]',
       );
       return 1;
     }
@@ -785,6 +1101,7 @@ export function main(argv = process.argv.slice(2)) {
     if (command === 'init') return cmdInit(options);
     if (command === 'changes') return cmdChanges(options);
     if (command === 'files') return cmdFiles(options);
+    if (command === 'stale') return cmdStale(options);
     if (command === 'update') return cmdUpdate(options);
 
     console.error(`Unknown command: ${command}`);
@@ -795,7 +1112,27 @@ export function main(argv = process.argv.slice(2)) {
   }
 }
 
-const currentFilePath = fileURLToPath(import.meta.url);
-if (process.argv[1] && path.resolve(process.argv[1]) === currentFilePath) {
+// Both sides are resolved through the filesystem before they are compared.
+// Node hands `import.meta.url` back with symlinks already resolved, while
+// `process.argv[1]` is whatever the caller typed — so invoking this through a
+// link (a symlinked ${CLAUDE_PLUGIN_ROOT}, an npx or bin shim) made the two
+// disagree, `main` never ran, and the process exited 0 having done nothing.
+// Silent success from the component that rewrites the user's repository.
+//
+// realpath can fail — a deleted or unreadable entry — and the lexical path is
+// the fallback there, which is exactly the comparison this used to make.
+function resolvedPath(candidate) {
+  const absolute = path.resolve(candidate);
+  try {
+    return realpathSync(absolute);
+  } catch {
+    return absolute;
+  }
+}
+
+if (
+  process.argv[1] &&
+  resolvedPath(process.argv[1]) === resolvedPath(fileURLToPath(import.meta.url))
+) {
   process.exit(main());
 }

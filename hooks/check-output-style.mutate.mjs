@@ -2,7 +2,7 @@
 /**
  * omc-slim — mutation check for the check-output-style harness.
  *
- * Breaks the hook on purpose, twenty-four ways, and asserts the harness notices
+ * Breaks the hook on purpose, twenty-five ways, and asserts the harness notices
  * every time. A SURVIVED line is a hole in the tests, not a bug in the hook.
  *
  * This hook warns the user about a condition it can only infer, so the two
@@ -28,6 +28,14 @@ const MUTANTS = [
    "const rivals = [...found].filter(([key, { root }]) => !isSelf(key, root));",
    "const rivals = [...found];",
    "warns about the plugin that is working, every single session"],
+
+  // Reverting the whole file at the import, because that is the shape the
+  // regression actually takes: someone copies the sibling hook's `lstat`
+  // reasoning across without noticing that this file builds its own paths.
+  ["settings and style files are lstat'd again",
+   'import { readFileSync, readdirSync, statSync, realpathSync } from "node:fs";',
+   'import { readFileSync, readdirSync, lstatSync as statSync, realpathSync } from "node:fs";',
+   "a symlinked ~/.claude/settings.json — the ordinary dotfiles setup — mutes the hook for good"],
 
   // --- C3: who counts as "us" ------------------------------------------------
   ["self-identification falls back to the bare name always",

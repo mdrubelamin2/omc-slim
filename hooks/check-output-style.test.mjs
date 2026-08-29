@@ -2,7 +2,7 @@
 /**
  * omc-slim — check-output-style harness
  *
- * Runs check-output-style.mjs as a child process against twenty-two cases and
+ * Runs check-output-style.mjs as a child process against twenty-four cases and
  * checks only its observable contract (exit code / stdout JSON / stderr):
  *
  *   1. a rival plugin forces a style     -> warns, and names it
@@ -27,6 +27,8 @@
  *  20. self path unresolvable             -> falls back to the bare name, silent
  *  21. deadline expires holding a rival   -> reports it, and says it was cut short
  *  22. per-file deadline inside one plugin -> stops it running the budget out
+ *  23. a symlinked settings.json          -> followed, not read as cannot-tell
+ *  24. a rival's style file is a symlink   -> still found
  *
  * Every case builds a whole fake Claude home — settings, installed_plugins.json
  * and plugin trees — under a temp dir, and points the hook at it with
@@ -42,7 +44,14 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  renameSync,
+  symlinkSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -69,12 +78,16 @@ const ALLOWED_FIELDS = new Set(["systemMessage", "suppressOutput"]);
  * hook searches the default directory before any the manifest declares, so a
  * plugin built this way is scanned in a known order — which is what makes the
  * per-file deadline testable without depending on readdir order.
+ *
+ * `symlinkStyle` puts the style's contents outside the plugin and links to
+ * them, which is what a plugin checked out through a symlinked worktree looks
+ * like. `lstat` calls that link "not a file"; `stat` reads it.
  */
 function plantPlugin(
   root,
   key,
   style,
-  { dir = "output-styles", manifest, alsoDir, alsoStyle } = {},
+  { dir = "output-styles", manifest, alsoDir, alsoStyle, symlinkStyle } = {},
 ) {
   const installPath = join(root, "plugins-store", key);
   mkdirSync(installPath, { recursive: true });
@@ -87,7 +100,14 @@ function plantPlugin(
   }
   if (style !== null) {
     mkdirSync(join(installPath, dir), { recursive: true });
-    writeFileSync(join(installPath, dir, "style.md"), style);
+    const stylePath = join(installPath, dir, "style.md");
+    if (symlinkStyle) {
+      const source = join(root, `${key}-style-source.md`);
+      writeFileSync(source, style);
+      symlinkSync(source, stylePath);
+    } else {
+      writeFileSync(stylePath, style);
+    }
   }
   if (alsoDir !== undefined) {
     mkdirSync(join(installPath, alsoDir), { recursive: true });
@@ -659,6 +679,41 @@ const cases = [
         return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
+  },
+  {
+    // The hook used to `lstat` every file it read, which reports the LINK
+    // rather than its target — so a symlinked ~/.claude/settings.json, which is
+    // what every dotfiles manager produces, failed `isFile()`, the enabled map
+    // came back empty, and the hook decided it could not tell. Silent forever,
+    // in the population most likely to be running several plugins at once.
+    name: "a symlinked settings.json is followed, not read as 'cannot tell'",
+    run: () =>
+      runHook((root) => {
+        const { configDir, project, selfRoot } = buildWorld(root, {
+          extraPlugins: { "loudplugin@market": RIVAL },
+        });
+        const real = join(root, "dotfiles-settings.json");
+        renameSync(join(configDir, "settings.json"), real);
+        symlinkSync(real, join(configDir, "settings.json"));
+        return { stdin: payload(project), configDir, selfRoot };
+      }),
+    check: expectWarningNaming("loudplugin", "Loud"),
+  },
+  {
+    // The same fail-open one level down: a rival's style file reached through a
+    // symlink was unreadable, so the rival was reported as not forcing a style
+    // — the exact collision this hook exists to name, missed in silence.
+    name: "a rival whose style file is a symlink is still found",
+    run: () =>
+      runHook((root) => {
+        const { configDir, project, selfRoot } = buildWorld(root, {
+          extraPlugins: {
+            "loudplugin@market": { ...RIVAL, options: { symlinkStyle: true } },
+          },
+        });
+        return { stdin: payload(project), configDir, selfRoot };
+      }),
+    check: expectWarningNaming("loudplugin", "Loud"),
   },
 ];
 
