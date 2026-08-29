@@ -293,6 +293,37 @@ and high-precision when it hits.
 | "Tests pass, so it works" | They pass on the paths that have tests. Check which those are. |
 | "The author must have had a reason" | Maybe. `git log -S '<symbol>' --reverse` finds the commit that introduced it — `git blame` finds whoever last reflowed it. |
 
+## Briefing the adversarial pass
+
+The one step that cannot be done in the context that produced the change, and the
+one with no component behind it. Every agent this plugin ships is wrong for it by
+construction: `omc-slim:explorer` returns locations and proposes nothing,
+`omc-slim:librarian` researches outside the repository, `omc-slim:fixer` and
+`omc-slim:designer` write, and `omc-slim:oracle` judges a decision rather than a
+diff and says so in its own description. So it is a general-purpose agent with
+the brief below, and the brief lives here rather than in the orchestrator's head
+because an improvised one drifts toward confirming what the lanes already found.
+
+Give it four things and withhold a fifth.
+
+1. **The diff, as a path to a prepared file.** Not the diff inline, not a command
+   to derive one.
+2. **What the lanes already found**, as findings with `file:line` — and nothing
+   else. No severity, no disposition, no aside that something is probably fine. A
+   lane handed the answer reports the answer.
+3. **The question, which is what they missed** — not "review this". The lanes
+   already reviewed it; this pass exists for the gaps between their partitions.
+4. **The seams to aim at**: ten times the load, the first run with no data, the
+   double click, two requests hitting the same row, the rollback that does not
+   exist.
+
+Withhold the checklist. It holds what to look for, and handing it over turns an
+adversarial pass into a second run of the lanes that already ran.
+
+Ask it to quote `file:line` for every finding and to say plainly when it found
+nothing — a silent pass and a clean pass are indistinguishable to you otherwise,
+and only one of them is a result.
+
 ## Do not flag
 
 - Harmless redundancy that aids reading

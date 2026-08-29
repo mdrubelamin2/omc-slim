@@ -70,8 +70,8 @@ adding or cutting scope is the caller's decision.
 
 **Where the request covers a set — every page, all the endpoints, each consumer —
 review the set, not the diff.** A missed member is absent from the diff by
-definition, so the completeness lane is the only one that can reach it. Give it
-the set, and account for every member the change did not touch.
+definition, so the completeness lane is the only one that can reach it. Account
+for every member the change did not touch.
 
 ## 3. Read the tests first
 
@@ -91,8 +91,8 @@ repository has law you have not read.
 
 - **Read the project's own rules first** — `CLAUDE.md`/`AGENTS.md`,
   `.claude/rules/`, the lint, formatter and type config, a design system. They
-  outrank your preferences; a finding that contradicts a deliberate project
-  decision is not a finding.
+  outrank your preferences; a finding contradicting a deliberate project decision
+  is not a finding.
 - **Survey the toolset, in both scopes** — the project's `.claude/` and the user's
   `~/.claude/`, which usually carries more. Other plugins ship security,
   performance and framework reviewers built for this stack, and a documentation
@@ -171,17 +171,18 @@ the four sources, and which one is the cheap win.
 proxy for risk, and a five-line auth change can be the worst thing in the release.
 
 Run it **in a fresh context**: a subagent that did not write this code and holds
-no checklist. It is told what the lanes already found, and asked for what they
-missed. A pass that both wrote a change and blesses it is not a review, however
-carefully it reads — the reasoning that produced the bug is still resident, and
-still finds it reasonable. This is the one step you cannot do to yourself.
+no checklist. **No component here can be it**: explorer returns
+locations, librarian researches outside the repo, the writers write, oracle
+judges decisions. Use a general-purpose agent; `checklists.md` has the brief. A pass that
+both wrote a change and blesses it is not a review, however carefully it reads —
+the reasoning that produced the bug is still resident, and still finds it
+reasonable. This is the one step you cannot do to yourself.
 
-Aim it at the seams: ten times the load, the first run with no data, the double
-click, two requests hitting the same row. Where a checklist
-partitions the work, the gaps between the partitions are where the real bug lives.
-**Ask what is absent, explicitly** — the unhandled case, the untested branch, the
-rollback that does not exist. And **do not stop at the first few findings**:
-surface problems mask structural ones.
+Where a checklist partitions the work, the gaps between the partitions are where
+the real bug lives. **Ask what is absent, explicitly** — the unhandled case, the
+untested branch, the rollback that does not exist. And **do not stop at the first
+few findings**: surface problems mask structural ones. `checklists.md` names the
+seams to aim at.
 
 ## 5. Gates every finding passes
 
