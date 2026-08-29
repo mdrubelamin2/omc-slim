@@ -2,7 +2,7 @@
 
 Run 2026-08-17 against **omc-slim v0.8.1**. **n=3 per arm.**
 
-The harness is committed — `scripts/bench/` — so this is repeatable. The previous
+The harness is committed as `scripts/bench/`, so this is repeatable. The previous
 run was not, which is how its numbers went stale unchallenged for twenty
 releases. That earlier run is kept in the appendix.
 
@@ -20,7 +20,7 @@ Three arms, identical except the layer under test. Same one-shot prompt, same
 | `fable` | seeded with `CLAUDE.md` and `.claude/skills/fable-mode/SKILL.md` |
 
 Isolation was verified before spending, by asking each arm which output style it
-had loaded. `CLAUDE_CONFIG_DIR` does **not** work for this — a fresh config
+had loaded. `CLAUDE_CONFIG_DIR` does **not** work for this: a fresh config
 directory has no credentials, because auth lives in the Keychain.
 
 Prompt, deliberately naming no technology:
@@ -68,30 +68,30 @@ Cost spread, which is the number the previous run could not produce:
 
 ## What this actually shows
 
-**omc-slim costs 18% less than a plain session, and the spreads do not overlap.**
+omc-slim costs 18% less than a plain session, and the spreads do not overlap.
 Plain's cheapest run still costs more than omc-slim's most expensive. At v0.4.1
-the finding was the reverse — 10% *more* expensive — so this is a genuine
-reversal rather than drift inside the noise.
+the finding was the reverse: 10% *more* expensive. So this is a genuine reversal
+rather than drift inside the noise.
 
-**Correctness does not discriminate.** All nine runs find all three duplicate
+Correctness does not discriminate. All nine runs find all three duplicate
 groups, produce no false positives, refuse to count the symlink as a duplicate,
 and survive the hostile tree. On a task this size every arm is correct, so cost
 and shape are the only things left to compare.
 
-**omc-slim produces the smallest, most consistent deliverable.** 251 LOC against
+omc-slim produces the smallest, most consistent deliverable. 251 LOC against
 plain's 434 and fable's 1,077, and a 6-flag CLI against 16 and 22. Its three runs
-landed at 243, 251 and 258 LOC with an identical 6-flag surface every time, while
-plain ranged 351 to 539 LOC and 14 to 19 flags. That consistency is the clearest
-signal in the data.
+landed at 243, 251 and 258 LOC with an identical 6-flag surface every time. Plain
+ranged 351 to 539 LOC and 14 to 19 flags. That consistency is the clearest signal
+in the data.
 
-**More code and more tests did not buy more correctness.** The fable arm wrote
+More code and more tests did not buy more correctness. The fable arm wrote
 137 tests against omc-slim's 21 and 4.3x the code — and produced the only silent
 failure in the entire run, skipping an unreadable directory without a word. For a
 deduplication tool that is not cosmetic: a silently skipped directory means a
 file reported unique may have an unseen twin. Test count did not predict the one
 fault that mattered.
 
-**The heavyweight arm is unstable, and n=1 hid that.** Three runs of one prompt
+The heavyweight arm is unstable, and n=1 hid that. Three runs of one prompt
 cost $4.71, $6.01 and $10.47. One took 30 minutes and produced 68 files; another
 produced 13. The old $4.52 figure was not a typical run, it was the cheapest kind
 of run.
@@ -124,8 +124,8 @@ of run.
   the comment it rested on. Against binary 2.1.251: `--allowedTools "Read Glob"`
   leaves the tool list **unchanged**; `--disallowedTools "Agent"` removes `Task`;
   deny beats allow. Then the behavioural check, in a fresh directory under this
-  script's **exact** allow-list — `--allowedTools "Read Write Edit Bash Glob
-  Grep"` — the model emitted a `Task` tool_use, **the subagent launched, ran and
+  script's **exact** allow-list, `--allowedTools "Read Write Edit Bash Glob
+  Grep"`. The model emitted a `Task` tool_use, **the subagent launched, ran and
   returned**, `is_error: false`, `num_turns: 1`. No prompt, no hang.
 
   `--allowedTools` is an additive permission grant, not a filter. **So delegation
@@ -133,7 +133,7 @@ of run.
   stronger finding than the one it replaced.**
 
   Where the mistake came from, since it is instructive: `run-arm.sh`'s comment
-  records a real and narrow observation — *"Write and Edit are the ones that bit
+  records a real and narrow observation: *"Write and Edit are the ones that bit
   us before"*. Commit `8771909` generalised that to "a tool outside the
   allow-list" and applied it to `Agent`, which is not gated the same way. The
   generalisation was never tested. One caveat kept honest: the published runs
@@ -151,12 +151,12 @@ of run.
   permission prompt with no TTY to answer it. So no arm in this benchmark could
   have delegated, whatever the task shape.
 
-  What survives and what does not. *"Nothing delegated"* survives — the Sonnet
-  detection was sound for a build where specialists were tier-pinned. *"Because a
-  single-file CLI is where delegation cannot pay"* does **not** survive as an
-  explanation: it may well be true, and this run cannot distinguish it from an
-  allow-list that forbade the tool. An experiment that could not observe the
-  outcome either way is not evidence about the outcome.
+  What survives and what does not. *"Nothing delegated"* survives, because the
+  Sonnet detection was sound for a build where specialists were tier-pinned.
+  *"Because a single-file CLI is where delegation cannot pay"* does **not**
+  survive as an explanation. It may well be true, and this run cannot distinguish
+  it from an allow-list that forbade the tool. An experiment that could not
+  observe the outcome either way is not evidence about the outcome.
 
   Found while building the multi-file benchmark, whose runner has to add `Agent`
   and `Task` to the allow-list for delegation to be possible at all. Nothing here
@@ -168,8 +168,8 @@ of run.
   routing work to cheaper tiers beats doing it all on the main model lives or
   dies on a large multi-file task, and this is not one.
 - **The baseline moved, so cross-version comparison is unsafe.** Plain at v0.4.1
-  used 15 turns and 9,781 output tokens; it now averages 19 turns and 22,627 —
-  **2.3x the output**. It also now carries Claude Code's built-in skills,
+  used 15 turns and 9,781 output tokens; it now averages 19 turns and 22,627,
+  which is **2.3x the output**. It also now carries Claude Code's built-in skills,
   including `code-review` and `simplify`. Plain in 2026-08 is a substantially
   stronger baseline, on a different model. Do not read the v0.4.1 numbers and
   these as one series.
@@ -187,8 +187,8 @@ because the same class of error produced three false findings last time.
 2. **Disclosure was binary when reality is three-way.** `1 path(s) could not be
    read` scored as *silent*. It plainly is not. Now `specific` / `generic` /
    `silent`, and only silent fails.
-3. **`files_produced` counted the harness's own output** — `result.json` and
-   `stderr.log` — as arm deliverables, inflating every arm by two.
+3. **`files_produced` counted the harness's own output**, `result.json` and
+   `stderr.log`, as arm deliverables, inflating every arm by two.
 4. **Entry-point discovery picked test files as "the tool".** The fable arm
    builds real Python packages, so "largest executable or source file" selected
    `tests/test_finder.py` for two runs and a 6-line wrapper for a third. All
@@ -207,7 +207,7 @@ leaving a tool wrongly blamed.
 
 ---
 
-# Appendix — the v0.4.1 run, 2026-08-13
+# Appendix: the v0.4.1 run, 2026-08-13
 
 Kept as the historical record. **Superseded by the run above**; the harness that
 produced it was never committed, and its numbers describe a plugin twenty
@@ -231,7 +231,7 @@ n=1 per arm. Ambient tone plugins disabled in all three
 
 Its headline was: omc-slim cost 10% more than plain and produced a structurally
 identical deliverable, buying 2.1x the tests and disclosure of an unreadable
-directory. **Both halves of that have since reversed** — omc-slim is now cheaper,
+directory. **Both halves of that have since reversed**: omc-slim is now cheaper,
 and it writes fewer tests than plain, not more.
 
 ### Corrections to this table
@@ -242,13 +242,13 @@ Found in 2026-08-17 by re-measuring the artefacts, which are still in
 1. **"Tool LOC 197 / 208" is a raw `wc -l`.** Counting non-blank, non-comment
    lines gives 161 and 168. The row is a total line count and never said so.
    The v0.8.1 table above uses the non-blank, non-comment rule, so **do not
-   compare its LOC figures with this one directly** — different rules, and for a
+   compare its LOC figures with this one directly**. The rules differ, and for a
    package-shaped submission the newer number sums every module in the package.
 2. **The flag list omits `-L/--follow-symlinks`.** Six flags are listed; seven
    exist in both tools.
 3. **"the same CLI surface, flag for flag" was an overstatement.** The short
    flags match, but `-a` is `--all` in plain and `--hidden` in omc-slim, and `-q`
-   means different things — plain suppresses unreadable-file warnings, omc-slim
+   means different things: plain suppresses unreadable-file warnings, omc-slim
    suppresses headers and summary.
 
 Correction 3 also sharpens the original disclosure finding. The plain tool owns

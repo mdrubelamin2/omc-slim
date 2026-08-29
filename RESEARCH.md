@@ -1,13 +1,13 @@
-# omc-slim — research notes
+# omc-slim: research notes
 
-> **Status: research current to v0.5.0, written 2026-08-13** —
+> **Status: research current to v0.5.0, written 2026-08-13**.
 > <https://github.com/mdrubelamin2/omc-slim>. The plugin has shipped well past
 > this point; see `README.md` and `MAINTAINERS.md` for the current state. This
 > file is an append-only research log: later sections correct earlier ones and
 > the earlier text is left standing so the reasoning is auditable.
 >
 > **Read sections 16-19 first.** They contain the benchmark, the routing
-> measurements, a regression audit and the delegation-pays question — and they
+> measurements, a regression audit and the delegation-pays question. They
 > overturn several conclusions in sections 2b, 6d and 10, including "delegation
 > is gated" (wrong: most components route automatically). The static-context
 > figures below stop at ~3,660 tokens for v0.6.0 and did not only rise after
@@ -32,16 +32,16 @@ runtime plumbing that has no Claude Code equivalent and should not be ported.
 
 The portable value is small:
 
-- **7 agent prompts** — orchestrator, explorer, oracle, council, librarian,
+- **7 agent prompts**: orchestrator, explorer, oracle, council, librarian,
   designer, fixer (plus observer). Stored as inline TypeScript template literals
   in `src/agents/*.ts`, e.g. `EXPLORER_PROMPT`. Extractable to markdown by hand.
-- **9 skills** — `deepwork`, `reflect`, `simplify`, `codemap`,
+- **9 skills**: `deepwork`, `reflect`, `simplify`, `codemap`,
   `verification-planning`, `worktrees`, `clonedeps`, `loop-engineering`,
   `oh-my-opencode-slim`. Already in `SKILL.md` format, but only 2 copy over
-  verbatim — see section 2c. `codemap` bundles `scripts/codemap.mjs`, which
+  verbatim; see section 2c. `codemap` bundles `scripts/codemap.mjs`, which
   Claude Code skills support.
-- **2 MCP servers** — context7, grep-app.
-- **A handful of hooks** — the two worth keeping are `phase-reminder` and
+- **2 MCP servers**: context7, grep-app.
+- **A handful of hooks**: the two worth keeping are `phase-reminder` and
   `post-file-tool-nudge`.
 
 ### OpenCode plugin surface it uses
@@ -74,19 +74,19 @@ experimental.chat.messages.transform
 | `/preset` runtime model swap | script rewriting the `model:` line in `agents/*.md` | small script; `permissions` and `hooks` hot-reload, agents need `/reload-plugins` |
 | Multiplexer panes, Rust companion window | nothing native | skip |
 
-### Hard gaps — no Claude Code equivalent
+### Hard gaps: no Claude Code equivalent
 
-1. **`experimental.chat.messages.transform`** — message history cannot be
+1. **`experimental.chat.messages.transform`**: message history cannot be
    rewritten before it is sent. This kills omo-slim's cache-safe-injection,
    system-collapse, and rewrite-based JSON error recovery.
-2. **`experimental.chat.system.transform`** — output styles are init-only, not
+2. **`experimental.chat.system.transform`**: output styles are init-only, not
    per-turn.
-3. **`chat.headers`** — no custom HTTP headers on model requests.
-4. **Cross-provider per-agent models** — Claude Code agents choose among
+3. **`chat.headers`**: no custom HTTP headers on model requests.
+4. **Cross-provider per-agent models**: Claude Code agents choose among
    `opus` / `sonnet` / `haiku` / `fable` only.
 
 Gap 4 is less damaging than it first appears. `DEFAULT_MODELS` in
-`src/config/constants.ts` sets **every agent to `undefined`** — omo-slim ships
+`src/config/constants.ts` sets **every agent to `undefined`**. omo-slim ships
 with no per-agent model defaults at all, and every agent inherits the session
 model. Cross-provider mixing is entirely user-configured via
 `oh-my-opencode-slim.json`. So the defaults port cleanly; only a user's own
@@ -94,13 +94,13 @@ Frankenstein config is lost, and Claude Code's opus/sonnet/haiku tiering
 substitutes for it.
 
 A fifth gap, found later and easy to miss: **no `temperature` in Claude Code
-agent frontmatter.** omo-slim tunes it per agent — explorer, oracle, librarian,
+agent frontmatter.** omo-slim tunes it per agent: explorer, oracle, librarian,
 observer, council and orchestrator at `0.1`, fixer at `0.2`, and **designer at
 `0.7`**. The designer's high temperature is deliberate (it is the one agent
 asked to be creative). That knob does not exist in the port; compensate in
 prose inside the prompt body.
 
-Also note `DEFAULT_DISABLED_AGENTS = ['observer']` — observer ships off by
+Also note `DEFAULT_DISABLED_AGENTS = ['observer']`. Observer ships off by
 default and needs a vision-capable model.
 
 > Source note: this mapping came from a docs-research pass that also claimed
@@ -113,7 +113,7 @@ default and needs a vision-capable model.
 
 ## 2b. The orchestrator dispatch protocol (read on 2026-08-13)
 
-`src/agents/orchestrator.ts` — 343 lines. This was previously the one unread
+`src/agents/orchestrator.ts` is 343 lines. This was previously the one unread
 file that the port depends on. It is now read; findings below.
 
 Structure: `AGENT_DESCRIPTIONS` is a record of one block per specialist, each
@@ -122,7 +122,7 @@ with Lane / Role / Permissions / **Stats** / Capabilities / *Delegate when* /
 those blocks by the disabled-agent set and assembles them into a single prompt
 with `<Role>`, `<Agents>`, `<Workflow>` and `<Communication>` sections.
 
-The Stats lines are relative and self-referential — "2x faster than
+The Stats lines are relative and self-referential: "2x faster than
 orchestrator, 1/2 cost of orchestrator", "5x better decision maker", "10x
 better UI/UX", "3x slower and 3x cost". They only mean anything if the models
 actually differ per agent. **In the port these must be rewritten as concrete
@@ -150,8 +150,8 @@ Plan and Parallelize), Todo Continuity, Design Handoff Discipline, step 6
 Verify, and the entire `<Communication>` block (Clarity Over Assumptions,
 Concise Execution, No Flattery, Honest Pushback). That is most of the prompt.
 
-The *Delegation Contract* — "every delegation names a validation owner and
-allowed scope" — is the single best idea in the file and costs one line.
+The *Delegation Contract* asks that "every delegation names a validation owner and
+allowed scope". It is the single best idea in the file and costs one line.
 
 ### Shared rule constants
 
@@ -160,11 +160,11 @@ interpolates: `WRITABLE_FILE_OPERATIONS_RULES`,
 `READONLY_FILE_OPERATIONS_RULES`, and `NO_SHELL_READONLY_FILE_OPERATIONS_RULES`
 (councillor only). They all name OpenCode tools (`glob`/`grep`/`ast_grep_search`
 /`read`/`edit`/`write`/`apply_patch`). Rewrite once into Claude Code tool names
-and paste into each agent body — there is no include mechanism in agent
+and paste into each agent body. There is no include mechanism in agent
 markdown.
 
 Amusing note: the read-only rules say *"Do not use cat/head/tail/sed/awk only to
-read code into context"* — the same instruction Claude Code's own Bash tool
+read code into context"*, the same instruction Claude Code's own Bash tool
 description gives.
 
 ### Council mechanics
@@ -180,11 +180,11 @@ Level: unanimous | majority | split).
 This ports cleanly: N parallel `Agent` calls to a `councillor` agent, then one
 `Agent` call to `council` carrying their outputs. Seat names survive; per-seat
 *models* are limited to the Anthropic tiers, which weakens the point of a
-council somewhat — diversity of model, not just of sample, is what makes
+council somewhat: diversity of model, not just of sample, is what makes
 disagreement informative. Consider varying `effort` per seat as a partial
 substitute.
 
-### grep-app and context7 — resolved
+### grep-app and context7: resolved
 
 Both are **remote HTTP MCP servers**, not in-process OpenCode tools. From
 `src/mcp/`:
@@ -194,7 +194,7 @@ Both are **remote HTTP MCP servers**, not in-process OpenCode tools. From
 
 Verified live on 2026-08-13: both return `200 text/event-stream` to a JSON-RPC
 `initialize` POST. They drop straight into `.mcp.json` as `type: "http"`. This
-is easier than earlier assumed — no Bash-script fallback needed.
+is easier than earlier assumed. No Bash-script fallback is needed.
 
 ### Measured static context budget
 
@@ -211,7 +211,7 @@ real prompt and summing real files (chars ÷ 4):
 
 For contrast: the 9 skill *bodies* total 62,896 chars (~15,700 tokens), but
 Claude Code only loads a skill's frontmatter until it is invoked (confirmed, not
-inferred — see section 4a).
+inferred; see section 4a).
 
 ### ⚠️ Correction: the "9x lighter than OMC" claim was wrong
 
@@ -231,7 +231,7 @@ measured against a real install on 2026-08-13, OMC's startup context is
 supposed to be leaner than.** The whole ~4,525-token orchestrator prompt is the
 cause; the 9 skills are nearly free at ~520 tokens.
 
-This does not mean OMC is cheap — section 4b measures it spending +60% tokens
+This does not mean OMC is cheap. Section 4b measures it spending +60% tokens
 per problem, and section 4a shows why: the waste moved from startup to *runtime*
 injection (uncapped rule bodies, uncapped prompt echo, unthrottled
 post-tool-verifier, no cap on subagent results). OMC is lean at rest and
@@ -240,7 +240,7 @@ expensive in motion.
 The honest reframing: **omc-slim's advantage is not a smaller startup footprint,
 it is the absence of runtime injection.** No Stop hook, no per-tool-call nudges,
 no uncapped rule concatenation. That is a real advantage and it is what design
-rules 2 and 5 already encode — but it has to be argued on runtime behaviour, not
+rules 2 and 5 already encode. But it has to be argued on runtime behaviour, not
 on a static-context number that no longer favours us.
 
 ### Open design decision (now load-bearing)
@@ -248,15 +248,15 @@ on a static-context number that no longer favours us.
 Where the orchestrator prompt lives:
 
 - **Main context** (`CLAUDE.md` or an output style): ~4,525 tokens, orchestrator
-  stays primary and can coordinate the session. Total ~5,400 — heavier than OMC.
+  stays primary and can coordinate the session. Total ~5,400, heavier than OMC.
 - **Subagent**: ~900 tokens total, but it is no longer primary and cannot
   coordinate.
 
 In omo-slim the orchestrator **is** the primary agent, so the first option is
 faithful and the second is a different product.
 
-**A third path, now measured (2026-08-13).** The `<Agents>` block —
-the `AGENT_DESCRIPTIONS` prose — is **7,315 chars / ~1,829 tokens, 40% of the
+A third path was measured on 2026-08-13. The `<Agents>` block, the
+`AGENT_DESCRIPTIONS` prose, is **7,315 chars / ~1,829 tokens, 40% of the
 whole orchestrator prompt.** Claude Code already surfaces each subagent's
 `description` to the model automatically, so most of that block is duplicated
 work. Dropping it entirely:
@@ -267,7 +267,7 @@ work. Dropping it entirely:
 | **Minus the `<Agents>` block** | **2,718 tok** | **~3,600 tok** |
 | Minus `<Agents>`, keeping *Delegate when* lines only | ~3,100 tok (est.) | ~4,000 tok |
 
-Even the aggressive cut lands at ~3,600 versus OMC's ~2,671 — still heavier.
+Even the aggressive cut lands at ~3,600 versus OMC's ~2,671, still heavier.
 Parity requires either the subagent layout or a genuinely rewritten, much
 shorter orchestrator prompt.
 
@@ -275,14 +275,14 @@ The middle row is probably the right target: keep the *Delegate when / Don't
 delegate when* heuristics (they encode real routing judgment that a one-line
 `description` cannot), drop the Lane/Role/Permissions/Stats/Capabilities prose
 (redundant with frontmatter, and the Stats numbers are fabricated relative
-figures that need rewriting anyway — see the top of this section).
+figures that need rewriting anyway; see the top of this section).
 
 ---
 
 ## 2c. The skills do NOT copy over verbatim
 
-**Correction to an earlier claim in this document.** The `SKILL.md` *format* is
-identical between OpenCode and Claude Code, so the files load — but the
+This corrects an earlier claim in this document. The `SKILL.md` *format* is
+identical between OpenCode and Claude Code, so the files load. But the
 *contents* name OpenCode tools, OpenCode itself, and omo-slim's own `@agent`
 handles. Counted on 2026-08-13 by grepping each body for OpenCode-specific
 tokens:
@@ -302,12 +302,12 @@ tokens:
 So: 2 free, 2 nearly free, 4 needing real edits, 1 deleted. The day-long
 estimate in section 7 still holds, but the skills are not the freebie they were
 described as. When rewriting, note that `@agent` mention syntax has no Claude
-Code equivalent — the orchestrator invokes subagents through the `Agent` tool,
+Code equivalent. The orchestrator invokes subagents through the `Agent` tool,
 so those references become prose ("delegate to the librarian agent").
 
 ---
 
-## 3. Existing ports — do not rebuild what exists
+## 3. Existing ports: do not rebuild what exists
 
 | Repo | Stars | Last push | Verdict |
 |---|---|---|---|
@@ -322,19 +322,19 @@ original, not of the slim fork.
 
 OMC does **not** contain omo-slim's pantheon (Explorer / Oracle / Council /
 Librarian / Designer / Fixer) or its `deepwork` / `reflect` /
-`verification-planning` skills. That is the remaining gap worth filling — as a
+`verification-planning` skills. That is the remaining gap worth filling, as a
 small plugin layered on top of OMC, not as a from-scratch orchestrator.
 
 ---
 
 ## 4. OMC's token-consumption problems
 
-**This section is the reason this document exists.** These are the specific
+This section is the reason this document exists. These are the specific
 failure modes to design against.
 
 The advertised "30-50% token savings from smart model routing" is
 **vendor-stated**. Every review blog repeats it verbatim. No published
-benchmark, no methodology — and an independent one now measures the opposite
+benchmark, no methodology. An independent one now measures the opposite
 sign. **Read section 4b before this one.**
 
 Two opposing forces are at work. Per-agent model tiering (explore → Haiku,
@@ -352,10 +352,10 @@ costs.
 | [#1373](https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1373) | Agent results flood the main context until `/compact` itself fails. "Session completely unrecoverable, only escape is `/clear`" |
 | [#3095](https://github.com/Yeachan-Heo/oh-my-claudecode/issues/3095) | The routing doctrine was **text-only and unenforced**. Measured: 0 agents spawned across 35+ tool calls, 100% of work on main-context Opus. The advertised savings mechanism was simply not firing |
 
-All are marked closed. **Section 4a re-verifies each against current source —
+All are marked closed. **Section 4a re-verifies each against current source, and
 two are not actually fixed.**
 
-Real-world datapoint: [sonim1](https://sonim1.com/en/blog/oh-my-claudecode) — 4
+Real-world datapoint: [sonim1](https://sonim1.com/en/blog/oh-my-claudecode), 4
 days of heavy use, `ccusage` reported ~$200 of token consumption, subscription
 limit hit 5 times over one weekend.
 
@@ -367,7 +367,7 @@ Independent assessments:
 - [ShipWithAI](https://shipwithai.io/toolkit/oh-my-claudecode/): "Token cost
   multiplied: parallel agents = multiplied burn rate."
 
-**Net:** routing saves per task; static context, hook overhead, and parallel
+Net: routing saves per task; static context, hook overhead, and parallel
 fan-out cost more. Whether you come out ahead depends entirely on task size. For
 small tasks, OMC is strictly worse than vanilla Claude Code.
 
@@ -408,9 +408,9 @@ never in a hook registration.
 | #1373 agent results flood | **PARTIALLY FIXED** — breaker exists, bypassed on `Agent` |
 | #3095 routing unenforced | **PARTIALLY FIXED** — hook exists, ships inert |
 
-### #2577 — fixed, and the 48K figure is obsolete
+### #2577: fixed, and the 48K figure is obsolete
 
-`src/installer/index.ts:53` — `export const CORE_COMMANDS: string[] = []` with
+`src/installer/index.ts:53`: `export const CORE_COMMANDS: string[] = []` with
 the comment *"Core commands - DISABLED for v3.0+ … The installer no longer
 copies commands to ~/.claude/commands/"*. A live install printed *"Successfully
 installed 19 agents, 0 commands, 38 skills"* and never created
@@ -429,22 +429,22 @@ plus CLAUDE.md, chars ÷ 4):
 | `~/.claude/CLAUDE.md` | 1 | 4,937 |
 | **Total** | | **10,684 B ≈ 2,671 tokens** |
 
-**~2,671 tokens, not ~48,000.** SessionStart injected 0 bytes in a fresh
-project. Note there is still *no stack-detection filter* — the mitigation was a
+The total is **~2,671 tokens, not ~48,000**. SessionStart injected 0 bytes in a
+fresh project. Note there is still *no stack-detection filter*. The mitigation was a
 240-char cap on every skill description (`index.ts:1446-1452`) with full bodies
 archived to `skill-bodies/`. Different fix, same effect.
 
-**The frontmatter-only assumption is confirmed, not inferred.** Claude Code
+The frontmatter-only assumption is confirmed, not inferred. Claude Code
 surfaces skills to the model as name + one-line description; a skill's body
 loads only when it is invoked. This is directly observable in a live session's
-skill listing. That resolves the worst case — the 498,828 B of uncompacted
+skill listing. That resolves the worst case: the 498,828 B of uncompacted
 standalone skill bodies never reaches startup context.
 
-### #2542 — STILL PRESENT (verified by hand)
+### #2542: STILL PRESENT (verified by hand)
 
 The fix was written and never reached the shipped hook. `src/lib/truncate-prompt.ts`
 defines `DEFAULT_PROMPT_ECHO_MAX_CHARS = 150` and its docstring cites the issue
-by URL. Its **only** importer is `src/hooks/persistent-mode/index.ts` — which
+by URL. Its **only** importer is `src/hooks/persistent-mode/index.ts`, which
 compiles to `dist/` and is wired to nothing.
 
 Both executing copies interpolate raw. `scripts/persistent-mode.mjs:1370` and
@@ -458,31 +458,31 @@ ${ralph.state.prompt ? `Task: ${ralph.state.prompt}` : ""}
 5,009-char ralph prompt produced a 5,282-char `reason`, verbatim, re-emitted
 every iteration up to `max_iterations || 100`.
 
-Partial mitigation exists on the *write* side only — `keyword-detector.mjs:408`
-caps stored prompts at 500 chars — so the magic-keyword path is bounded at 500,
+Partial mitigation exists on the *write* side only. `keyword-detector.mjs:408`
+caps stored prompts at 500 chars, so the magic-keyword path is bounded at 500,
 but the Stop hook applies no cap at emit time and other writers are uncapped.
 
-### #959 — detector fixed, no real circuit breaker
+### #959: detector fixed, no real circuit breaker
 
 `isContextLimitStop()` exists and matches 9 patterns; live-tested with
 `stop_reason: "conversation_too_long"`, compaction was correctly allowed.
 
-But the proposed 5-blocks-in-60s breaker does not exist — only unbounded-in-time
-counters. A live hammer test of 40 consecutive Stop events in under 60 seconds
-**blocked 18 times** before permanently allowing, the cap being
+But the proposed 5-blocks-in-60s breaker does not exist. There are only
+unbounded-in-time counters. A live hammer test of 40 consecutive Stop events in
+under 60 seconds **blocked 18 times** before permanently allowing, the cap being
 `if (newCount <= 20)`. Ralph's own cap is `max_iterations || 100`.
 
-Standalone installs are **missing two guards the plugin has** — `stop_hook_active`
+Standalone installs are **missing two guards the plugin has**: `stop_hook_active`
 re-entrancy and a 95% `CRITICAL_CONTEXT_STOP_PERCENT` fallback. A standalone hook
 fed `stop_hook_active: true` still blocked. That is an infinite-loop surface, not
 just token waste.
 
 Per-tool-call injection is throttled but not eliminated: matchers are still `"*"`,
 `pre-tool-enforcer.mjs` gained 5-minute content-hash dedup, but
-`post-tool-verifier.mjs` has none — 188 B on every single Edit, ~7 KB per 100
+`post-tool-verifier.mjs` has none: 188 B on every single Edit, ~7 KB per 100
 edits.
 
-### #1373 — breaker exists and is bypassed on today's CLI
+### #1373: breaker exists and is bypassed on today's CLI
 
 No result truncation exists anywhere; nothing caps a subagent's returned text
 before it lands in the parent transcript.
@@ -495,14 +495,14 @@ const AGENT_HEAVY_TOOLS = new Set(['Task', 'TaskCreate', 'TaskUpdate']);
 ```
 
 The call site at `pre-tool-enforcer.mjs:1592` guards
-`if (toolName === 'Task' || toolName === 'Agent')` — so `Agent` reaches the
+`if (toolName === 'Task' || toolName === 'Agent')`, so `Agent` reaches the
 preflight, which then does not recognise it. Live at 90% context: `Task` →
 blocked; **`Agent` → not blocked**. `Agent` is Claude Code's current fan-out
-tool, so **on today's CLI the breaker is bypassed**. It also fails open —
+tool, so **on today's CLI the breaker is bypassed**. It also fails open:
 `estimateContextPercent` reads only the last 4096 bytes and returns `0` on any
 parse failure.
 
-### #3095 — hook exists, ships inert
+### #3095: hook exists, ships inert
 
 `scripts/lib/force-agent-delegation-preflight.mjs` is wired, but gated on a
 config-file key with no env override:
@@ -531,7 +531,7 @@ rate or consumes it.
 ### Agent Teams gating is documentation-only
 
 `isTeamEnabled()` is defined in two places and returns `false` unless
-`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set — but it has **no non-test
+`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set, but it has **no non-test
 caller**. The gating exists in the README and `skills/team/SKILL.md`, not in
 code. Correct an earlier note in this document: OMC's *code* does not depend on
 the experimental flag, though its documented team workflow does.
@@ -547,9 +547,9 @@ is small.
 
 ---
 
-## 4b. Independent benchmark — the 30-50% savings claim is measurably false
+## 4b. Independent benchmark: the 30-50% savings claim is measurably false
 
-**This is the strongest evidence in this document.** Rob Macrae runs a monthly,
+This is the strongest evidence in this document. Rob Macrae runs a monthly,
 reproducible benchmark of agent skill packs at
 [orcabot.com/benchmarks](https://orcabot.com/benchmarks) (read 2026-08-13, page
 last updated 2026-08-08). Full configs published, pinned commits per run, real
@@ -600,7 +600,7 @@ baseline of roughly +1.75. The author's verdict: *"Git Ship Done (+1.2) and Oh M
 ClaudeCode (+0.5) came in under drift, on both benchmarks. Their July updates
 look net negative: they gave back some of what the model handed them."*
 
-The single most important number on that page is the **baseline's +2.76** — the
+The single most important number on that page is the **baseline's +2.76**. The
 underlying model improved more in one month than any pack's total advantage over
 it. Skill-pack effects are small quantities riding on a much larger moving one.
 
@@ -617,7 +617,7 @@ instead of damping it.
 > around native multi-agent tooling."*
 
 So this measures OMC's **skills and rules as a prompt layer on Codex CLI v0.136.0
-+ gpt-5.5** — *not* OMC's parallel orchestration on Claude Code, and not its
++ gpt-5.5**, and *not* OMC's parallel orchestration on Claude Code, and not its
 model routing, which is the mechanism the savings claim rests on. Treat the
 accuracy numbers as understating OMC and the **cost numbers as a floor**: adding
 sub-agent fan-out on top can only increase token spend, not reduce it.
@@ -629,21 +629,21 @@ the direction is unambiguous and it is the opposite of the marketing.
 
 ## 5. OMC reception
 
-**Correction (2026-08-13): the earlier "near-zero English footprint" claim in
-this document was FALSE.** The first search failed because it looked only for
+Correction (2026-08-13): the earlier "near-zero English footprint" claim in
+this document was FALSE. The first search failed because it looked only for
 the current repo name.
 
-**The project was renamed.** `Yeachan-Heo/oh-my-claude-sisyphus` 301-redirects to
+The project was renamed. `Yeachan-Heo/oh-my-claude-sisyphus` 301-redirects to
 `Yeachan-Heo/oh-my-claudecode` (verified against the GitHub API). Anything
 published under the Sisyphus name is invisible to a search for the current name.
 Separately, `code-yeongyu/oh-my-opencode` was itself renamed to
-`oh-my-openagent` (67.7K stars) — a different, larger project that OMC credits
+`oh-my-openagent` (67.7K stars), a different, larger project that OMC credits
 as its inspiration. The two get conflated constantly; watch for it.
 
 ### The Hacker News thread
 
 [news.ycombinator.com/item?id=46572032](https://news.ycombinator.com/item?id=46572032)
-— *"Sisyphus Now Lives in Oh My Claude"*, 2026-01-11, 52 points, 38 comments.
+carries *"Sisyphus Now Lives in Oh My Claude"*, 2026-01-11, 52 points, 38 comments.
 Verified via the HN API and read in full.
 
 Origin context worth knowing: the thread is largely about **Anthropic blocking
@@ -659,7 +659,7 @@ Sentiment is **skeptical to negative**, unusually so for a launch-adjacent post:
   Code better'… Not a fan of wishfully creating 'expert' agents which amount to
   little more than prompts asking Claude to a good job at the task."*
 - **agluszak**: *"Is there any proof that these multi agent orchestrators with
-  fancy names actually do anything other than consuming more tokens?"* — as of
+  fancy names actually do anything other than consuming more tokens?"* As of
   section 4b, there now is, and the answer is roughly "+1.65pp for +43% cost".
 - **John23832**: *"installing a bunch of prompt from an hackernews/github account
   with no history seems like something you shouldn't do. Especially with 'silent
@@ -676,21 +676,21 @@ lot of tokens."*
 The best pro-orchestration argument in the thread is **lsaferite**'s, and it is
 worth keeping for the port: sub-agent workflows keep the *main* context free of
 task-specific working context, so the main session survives longer before
-compaction. That is a context-management argument, not a quality argument — and
+compaction. That is a context-management argument, not a quality argument, and
 it is exactly what OMC's own issue #1373 shows going wrong.
 
-**Do not attribute** hdra's harsher hands-on complaint (*"It uses up way more
-tokens than the default opencode, for worse results"*) to OMC — the comment
+Do not attribute hdra's harsher hands-on complaint (*"It uses up way more
+tokens than the default opencode, for worse results"*) to OMC. The comment
 carries an explicit edit saying it referred to `code-yeongyu/oh-my-opencode`.
 
 ### Other independent signal
 
-- **1,090 GitHub issues filed by non-owner users** (against 286 by the owner),
+- 1,090 GitHub issues were filed by non-owner users (against 286 by the owner),
   125 contributors with real commit counts. Not a ghost repo.
 - Korean dev blogs are genuine but tutorial-leaning. The critical ones:
   [ice-ice-bear](https://ice-ice-bear.github.io/posts/2026-03-20-oh-my-claudecode/)
   and [roboco.io](https://roboco.io/posts/everything-claude-code-vs-oh-my-claude-code/)
-  (정도현) — the latter flags *"전체 토큰 소모가 크게 늘 수 있다"* (total token
+  (정도현). The latter flags *"전체 토큰 소모가 크게 늘 수 있다"* (total token
   consumption can increase significantly) and *"문제 발생 시 원인 파악이 어렵다"*
   (hard to root-cause when problems arise).
 - Chinese (juejin, v2ex) and Japanese (zenn, qiita): searched, nothing found.
@@ -705,7 +705,7 @@ carries an explicit edit saying it referred to `code-yeongyu/oh-my-opencode`.
 Nine routes tried and failed: reddit JSON API (two hosts, browser UA), the
 reddit MCP server, `r.jina.ai` proxy, three Redlib mirrors, DuckDuckGo HTML, and
 `WebSearch`. The decisive one: `WebSearch` with `allowed_domains: reddit.com`
-returns *"The following domains are not accessible to our user agent"* — a
+returns *"The following domains are not accessible to our user agent"*, a
 standing Reddit/Anthropic crawler block, not a local failure. Exa's independent
 index also returned zero Reddit results.
 
@@ -727,10 +727,10 @@ Measured from the npm registry API on 2026-08-13:
 | 2026-07 | 24,635 |
 | 2026-08 (13 days) | 8,757 (~20,800 run rate) |
 
-**Down 53% from the April peak, declining every month since.** Meanwhile stars
+Downloads are down 53% from the April peak, declining every month since. Meanwhile stars
 kept accruing to 38,528.
 
-Supporting oddity: **38,528 stars against 130 watchers — a 296:1 ratio**, where
+Supporting oddity: **38,528 stars against 130 watchers, a 296:1 ratio**, where
 healthy repos typically run 30-60:1. Verified directly against the GitHub API.
 
 No evidence of purchased or botted stars was found, and the divergence is fully
@@ -746,14 +746,14 @@ build on top of it.
 
 ### Critical, substantive
 
-- **Bus factor of one.** Single maintainer. 248 npm versions in ~7 months.
+- Bus factor of one. Single maintainer. 248 npm versions in ~7 months.
   Breaking changes as a way of life: `swarm` removed in v4.1.7, Codex/Gemini MCP
   servers removed, `autoresearch` hard-deprecated.
 - ~~**Depends on an experimental flag.**~~ **Corrected by section 4a.** The
   documented team workflow points at `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`, but
-  `isTeamEnabled()` has no non-test caller — the gating is documentation-only and
+  `isTeamEnabled()` has no non-test caller: the gating is documentation-only and
   OMC's *code* does not depend on the flag.
-- **[#455](https://github.com/Yeachan-Heo/oh-my-claudecode/issues/455)** — the
+- **[#455](https://github.com/Yeachan-Heo/oh-my-claudecode/issues/455)** is the
   most-reacted issue found (10 reactions): "OMC running 6 agents in parallel
   frequently causes interruptions/crashes. Claude Code Agent Team: 16 agents in
   parallel, no interruptions." A user asking OMC to drop its custom
@@ -761,10 +761,10 @@ build on top of it.
 - Documentation described as massive and overwhelming; the 32 agents' boundaries
   (architect vs planner, critic vs qa-tester) are unverified as meaningfully
   distinct.
-- Orchestration layers reduce traceability — hard to answer "why was this
+- Orchestration layers reduce traceability. It is hard to answer "why was this
   decision made".
 
-**Issue-tracker caveat:** as of 2026-08-13 there are 17 open issues, and nearly
+One issue-tracker caveat: as of 2026-08-13 there are 17 open issues, and nearly
 all were filed on 2026-08-12 by the maintainer's own bot as epic sub-tasks. The
 tracker is maintainer-driven, not community-driven, so a low open-issue count is
 **not** evidence of stability.
@@ -777,29 +777,29 @@ Derived from sections 4, 4a and 4b. Each rule maps to a specific OMC failure
 that was **verified present or verified fixed** in current source, not merely
 reported in an issue.
 
-**Rules 2, 3 and 5 are the ones that still matter.** OMC fixed its startup
+Rules 2, 3 and 5 are the ones that still matter. OMC fixed its startup
 bloat; what it did not fix is runtime injection, and that is where omc-slim's
 actual advantage lives (see the correction in section 2b).
 
 1. **No global rules file and no global CLAUDE.md block.** Project scope only,
    written once. OMC fixed this in v3.0+; do not reintroduce it.
 2. **No Stop hook that forces continuation.** One design choice caused #2652,
-   #2542 and #959. **#2542 is still broken today** — the truncation module was
+   #2542 and #959. **#2542 is still broken today**: the truncation module was
    written, cites the issue by URL, and is imported only by a file wired to
    nothing, while both shipped hooks interpolate the raw prompt. If a persistent
    loop is ever built, it needs a hard iteration cap, a session-ID match, a
    time-windowed circuit breaker, **and a cap at emit time, not only at write
-   time** — OMC has the write-side cap and still bleeds.
-3. **Cap what subagents return — in the prompt, because no hook can do it.**
+   time**. OMC has the write-side cap and still bleeds.
+3. **Cap what subagents return, in the prompt, because no hook can do it.**
    **Verified 2026-08-13 against the hooks reference:** no hook event can shrink
    or rewrite anything already in the context window, and none can modify a
    subagent's output before it reaches the parent. `PostToolUse` is purely
-   additive — *"the tool already ran"*. The only input-modification capability
+   additive: *"the tool already ran"*. The only input-modification capability
    anywhere is `PreToolUse.updatedInput`, which acts before execution.
 
    So this rule is enforced in three places, none of them a post-hoc hook:
    - **Agent prompts**: every specialist gets an explicit output contract and a
-     length budget. omo-slim already does this — explorer, fixer and observer
+     length budget. omo-slim already does this: explorer, fixer and observer
      have `<results>` / `<summary>` / `<changes>` / `<verification>` blocks. Keep
      them and add hard line caps.
    - **Orchestrator dispatch**: "reference paths and lines, don't paste files"
@@ -809,14 +809,14 @@ actual advantage lives (see the correction in section 2b).
 4. **Use the native `Agent` tool for parallelism.** Not tmux, not a custom
    orchestrator. #455: the native path handled 16 concurrent agents where OMC's
    crashed at 6. **Corollary from 4a:** if you ever write a guard keyed on tool
-   names, include `Agent` — OMC's pre-spawn context breaker lists only
+   names, include `Agent`. OMC's pre-spawn context breaker lists only
    `Task`/`TaskCreate`/`TaskUpdate` and is therefore bypassed on today's CLI.
 5. **Do not inject on every tool call, and cap anything you do inject.** OMC's
    `post-tool-verifier` still emits 188 B on every Edit with no dedup, and its
-   rules-injector concatenates *whole rule-file bodies* — measured at 19,394
+   rules-injector concatenates *whole rule-file bodies*, measured at 19,394
    bytes (~4,800 tokens) in a single PostToolUse. Throttle, dedup, and impose a
    byte budget, or ship no hook at all.
-6. **Keep the surface small — but know this is no longer a startup-context
+6. **Keep the surface small, but know this is no longer a startup-context
    argument.** OMC ships 38 skills and 19 agents for ~2,671 tokens of startup
    context; omc-slim as designed would cost ~5,400. Small stays worth it for
    comprehensibility and for rule 5, not for a static-context win we do not have.
@@ -827,7 +827,7 @@ actual advantage lives (see the correction in section 2b).
 8. **A guard that cannot read its signal must be advisory, not blocking.**
    OMC's `estimateContextPercent` reads the last 4096 bytes of the transcript and
    returns `0` on any parse error, so its context guard silently disables itself.
-   "Fail closed" is the wrong fix for a *blocking* guard — blocking every agent
+   "Fail closed" is the wrong fix for a *blocking* guard. Blocking every agent
    spawn whenever the signal is unreadable is worse than the bug. The right shape
    is: make the guard **advisory** (warn, never deny), and then failing open is
    harmless. Reserve blocking for guards whose signal is unambiguous.
@@ -842,7 +842,7 @@ actual advantage lives (see the correction in section 2b).
 
 Three design questions were put to Rubel; his answers are binding for v1.
 
-### D1 — Fidelity: **native-first redesign**
+### D1, Fidelity: **native-first redesign**
 
 *Not* a faithful port. Keep omo-slim's agent roles, prompts and routing
 judgment; delete every mechanic Claude Code provides natively.
@@ -866,10 +866,10 @@ behaviour (section 2b correction), not startup size.
 Also resolves **open question 5**: the orchestrator stays in main context as the
 primary agent, trimmed rather than demoted to a subagent.
 
-### D2 — Council: **vary effort and stance, same provider**
+### D2, Council: **vary effort and stance, same provider**
 
 Cross-provider councillors are impossible (gap 4) and the MCP bridge route was
-rejected as brittle — OMC users report exactly that path as *"rather brittle and
+rejected as brittle. OMC users report exactly that path as *"rather brittle and
 hard to get working out of the box"*.
 
 Three seats, each a distinct agent file, differing on two axes that *do* exist in
@@ -889,25 +889,25 @@ format verbatim.
 not of *model*. It is weaker than omo-slim's multi-provider council and should
 not be marketed as equivalent.
 
-### D3 — Hooks: **judged on merit; two ship**
+### D3, Hooks: **judged on merit; two ship**
 
 Rubel declined the preset options: *"port hooks that are must needed for a top
 quality plugin."* The verification in rule 3 reshaped the answer.
 
 **Decisive constraint:** no hook event can shrink or rewrite context, and none
 can cap a subagent's return. `PostToolUse` is purely additive. That removes the
-main reason to run anything on the tool-call path — and it *raises* the value of
+main reason to run anything on the tool-call path, and it *raises* the value of
 the pre-spawn guard, because refusing to fan out is the only remaining lever on
 subagent flooding.
 
-**Ship two. Both fire on rare events; neither runs per tool call.**
+Ship two. Both fire on rare events; neither runs per tool call.
 
 | Hook | Event | Matcher | Behaviour |
 |---|---|---|---|
 | `verify-deliverables` | `SubagentStop` | `*` | Advisory. Checks the agent actually produced its claimed files. **Emits no `additionalContext`** — on SubagentStop that reinjects into the finishing subagent (OMC #3209/#3233). |
 | `spawn-preflight` | `PreToolUse` | `Agent\|Task` | **Advisory warning, never denies.** At high context, tells the orchestrator to prefer sequential work or compact first. Includes `Agent`, which OMC's equivalent omits — the bug found in section 4a. Per rule 8, advisory means failing open is harmless. |
 
-**Rejected, with reasons:**
+Rejected, with reasons:
 
 | Hook | Why not |
 |---|---|
@@ -957,27 +957,27 @@ Checked its tree: **no `output-styles/`, no `.lsp.json`, no `monitors/`, no
 themes.** It reimplements in hooks and tmux what the platform now provides. Ours
 should reach for these first:
 
-- **`isolation: worktree`** on agents — does natively most of what omo-slim's
+- **`isolation: worktree`** on agents does natively most of what omo-slim's
   173-line `worktrees` skill describes in prose.
-- **`context: fork`** on skills — isolated execution without a separate agent.
-- **`effort`** in agent frontmatter — confirmed in local use; the substitute for
+- **`context: fork`** on skills gives isolated execution without a separate agent.
+- **`effort`** in agent frontmatter, confirmed in local use, is the substitute for
   omo-slim's per-agent `temperature`, and the mechanism behind D2.
-- **`SendMessage`** — replaces the entire Session Reuse protocol.
-- **`TaskList` / `TaskOutput`** — replace the Background Job Board.
-- **`PreToolUse.updatedInput`** — the only hook capability that can change
+- **`SendMessage`** replaces the entire Session Reuse protocol.
+- **`TaskList` / `TaskOutput`** replace the Background Job Board.
+- **`PreToolUse.updatedInput`** is the only hook capability that can change
   anything before it happens. Unused in v1, but it is the one real lever if a
   future need appears.
 
 ---
 
-## 6d. Other packs worth raiding — and the number that should scare us
+## 6d. Other packs worth raiding, and the number that should scare us
 
 Requested: adapt the best of **Karpathy Skills** and **Agent Skills** without
 regressions, and consider **ponytail**/**caveman**-style capabilities in v2. All
 four were read on 2026-08-13; three are installed locally, Karpathy was cloned at
 the benchmark's pinned commit.
 
-### Karpathy Skills — read this before designing anything else
+### Karpathy Skills: read this before designing anything else
 
 The efficiency standout in section 4b — matched baseline token spend and cost
 *exactly* (1.37M, $0.37) while resolving ~1 point more — is
@@ -993,7 +993,7 @@ Its entire payload:
 | `CLAUDE.md` | 2,357 | **~589** |
 | `skills/karpathy-guidelines/SKILL.md` | 2,518 | ~630 (frontmatter only at rest) |
 
-**~589 tokens of CLAUDE.md and one skill.** No agents. No hooks. No MCP. No
+That is ~589 tokens of CLAUDE.md and one skill. No agents. No hooks. No MCP. No
 orchestrator. 65 lines and four headings: Think Before Coding / Simplicity First
 / Surgical Changes / Goal-Driven Execution.
 
@@ -1006,8 +1006,8 @@ Put that against the field:
 | omc-slim as planned (D1) | ~3,600 tok | untested | untested |
 | Agent Skills (24 skills) | 1,826 tok frontmatter alone | **−1.10** | 11.7 (last) |
 
-**The uncomfortable reading: sophistication correlates negatively with results in
-this dataset.** The smallest pack won on efficiency; the largest lost to doing
+The uncomfortable reading: sophistication correlates negatively with results in
+this dataset. The smallest pack won on efficiency; the largest lost to doing
 nothing. omc-slim is currently planned at six times Karpathy's static cost with
 no evidence it buys anything.
 
@@ -1024,10 +1024,10 @@ already contains most of Karpathy's content**, diluted across 4,525 tokens:
 **Action for v1:** treat Karpathy's 65 lines as the *compression target* for the
 trimmed orchestrator prompt. Where D1's cut leaves a section that Karpathy states
 in two lines and omo-slim states in fifteen, take Karpathy's. Section 3, Surgical
-Changes, is the one genuinely absent idea — *"every changed line should trace
-directly to the user's request"* — and it is four lines. Steal it outright.
+Changes, is the one genuinely absent idea: *"every changed line should trace
+directly to the user's request"*. It is four lines. Steal it outright.
 
-### Agent Skills (Addy Osmani) — take the discipline, not the volume
+### Agent Skills (Addy Osmani): take the discipline, not the volume
 
 Installed locally at `~/.claude/plugins/marketplaces/addy-agent-skills`. 24
 skills, 4 agents, and it measured **worst of every arm at −1.10**, with 1,826
@@ -1036,14 +1036,14 @@ not the model.
 
 What is genuinely worth taking:
 
-- **Hook discipline.** It registers **exactly one hook** — `SessionStart`. No
+- **Hook discipline.** It registers **exactly one hook**, `SessionStart`. No
   `PostToolUse`, no `Stop`. Against OMC's 20 registrations across 11 events, this
   is the standard to match. D3's two-hook budget is already tighter; good.
-- **`doubt-driven-development`** and **`context-engineering`** — concepts with no
+- **`doubt-driven-development`** and **`context-engineering`** are concepts with no
   omo-slim equivalent. Read them before finalising the skill list; adopt at most
   one, as content folded into an existing skill rather than a new frontmatter
   entry.
-- **`using-agent-skills`** — a meta-skill for skill discovery. Interesting, but
+- **`using-agent-skills`** is a meta-skill for skill discovery. Interesting, but
   it is exactly the kind of thing that adds frontmatter cost for indirect
   benefit. Note and skip.
 
@@ -1052,12 +1052,12 @@ seriously and it *still* landed last. Adopting its skills wholesale would import
 the exact profile that lost. Cherry-pick prose into existing skills; do not add
 skill entries.
 
-### ponytail — one mechanism is v1-critical, the rest is v2
+### ponytail: one mechanism is v1-critical, the rest is v2
 
 Installed at `~/.claude/plugins/marketplaces/ponytail`. Skills: `ponytail`,
 `ponytail-audit`, `ponytail-review`, `ponytail-debt`, `ponytail-gain`.
 
-Three hooks, and **the scoping is exemplary** — compare D3:
+Three hooks, and **the scoping is exemplary**. Compare D3:
 
 ```
 SessionStart      matcher='startup|resume|clear|compact'
@@ -1065,7 +1065,7 @@ SubagentStart     (all)
 UserPromptSubmit  (mode tracker)
 ```
 
-**The non-obvious platform fact, worth more than the pack itself.** From
+Here is the non-obvious platform fact, worth more than the pack itself. From
 `hooks/ponytail-subagent.js`:
 
 > *"SessionStart context is parent-thread only and never reaches subagents, so
@@ -1073,21 +1073,21 @@ UserPromptSubmit  (mode tracker)
 
 **Anything injected at `SessionStart` does not reach subagents.** Propagating it
 requires a `SubagentStart` hook. This constrains any future omc-slim design that
-assumes session-level context is universal — and it is a good argument for
+assumes session-level context is universal, and it is a good argument for
 keeping instructions in *agent files*, where each subagent gets them by
 construction, rather than in a session hook. **Record this against D3:** it is a
 reason our two hooks are enough, not a reason to add a third.
 
-Ponytail also ships a statusline (`ponytail-statusline.sh`) — the OMC HUD idea
+Ponytail also ships a statusline (`ponytail-statusline.sh`): the OMC HUD idea
 without the 429 spiral, because it reads local state instead of polling an API.
 Better model if a statusline is ever wanted.
 
-**v2 candidate:** the *content* — YAGNI laddering, "does this need to exist at
-all" — overlaps heavily with Karpathy section 2 and omo-slim's `simplify`. Likely
-redundant. The `ponytail-audit` whole-repo over-engineering scan is the
+A v2 candidate is the *content*: YAGNI laddering, "does this need to exist at
+all". It overlaps heavily with Karpathy section 2 and omo-slim's `simplify`, so it
+is likely redundant. The `ponytail-audit` whole-repo over-engineering scan is the
 differentiated piece.
 
-### caveman — one piece may belong in v1, not v2
+### caveman: one piece may belong in v1, not v2
 
 Installed at `~/.claude/plugins/marketplaces/caveman`. **Zero hooks.** 3 agents,
 7 skills.
@@ -1100,13 +1100,13 @@ established we cannot otherwise solve. `agents/cavecrew-investigator.md`:
 
 Recall design rule 3: **no hook can cap what a subagent returns.** The only
 levers are the agent's own output contract and the orchestrator's dispatch
-discipline. Caveman's cavecrew agents are exactly that lever, implemented — a
+discipline. Caveman's cavecrew agents are exactly that lever, implemented: a
 read-only investigator that returns a `file:line` table and refuses to suggest
 fixes, so the parent never absorbs prose it did not need.
 
 **Recommendation, against the stated v2 preference:** evaluate compressed output
 contracts for `explorer` and `observer` in **v1**, not v2. Not caveman's prose
-style — the *discipline* of a specialist returning a fixed dense structure. Both
+style, but the *discipline* of a specialist returning a fixed dense structure. Both
 agents already have `<results>` and structured output blocks; tightening them is
 free and it is the only mechanism available for rule 3.
 
@@ -1118,11 +1118,11 @@ should never be on by default.
 
 1. **~589 tokens is the bar.** Every token in omc-slim's orchestrator prompt now
    has to justify itself against a 65-line file that beat every framework on
-   efficiency. D1's ~2,700 target may still be too generous — re-examine after
+   efficiency. D1's ~2,700 target may still be too generous. Re-examine after
    the first trim.
 2. **Skill count is a measured liability**, not a neutral choice. 24 skills
    scored last. Fold ideas into existing skills; resist new frontmatter entries.
-3. **Instructions belong in agent files, not session hooks** — `SessionStart`
+3. **Instructions belong in agent files, not session hooks**, because `SessionStart`
    does not reach subagents.
 4. **Compressed subagent output contracts move to v1** as the only available
    enforcement of design rule 3.
@@ -1136,17 +1136,17 @@ Zero TypeScript. One plugin repo.
 ```
 omc-slim/
   .claude-plugin/plugin.json
-  agents/orchestrator.md           # trimmed to ~2,700 tok — D1
+  agents/orchestrator.md           # trimmed to ~2,700 tok, D1
   agents/{explorer,oracle,librarian,designer,fixer,observer}.md
-  agents/tracer.md                 # stolen from OMC — see 6c
+  agents/tracer.md                 # stolen from OMC, see 6c
   agents/{councillor-alpha,councillor-beta,councillor-gamma}.md   # D2
   agents/council.md                # no tools, synthesises only
   skills/{loop-engineering,simplify}/SKILL.md          # verbatim
   skills/{verification-planning,worktrees,deepwork,
-          codemap,reflect,clonedeps}/SKILL.md          # edited — see 2c
-  skills/deep-interview/SKILL.md   # stolen from OMC — see 6c
+          codemap,reflect,clonedeps}/SKILL.md          # edited, see 2c
+  skills/deep-interview/SKILL.md   # stolen from OMC, see 6c
   .mcp.json                        # context7 + grep-app, both remote HTTP
-  hooks/hooks.json                 # exactly two — D3
+  hooks/hooks.json                 # exactly two, D3
   hooks/verify-deliverables.mjs
   hooks/spawn-preflight.mjs
 ```
@@ -1212,7 +1212,7 @@ if watching live panes turns out to be something you actually miss.
 
 ---
 
-## 8. Open questions — verify before relying on anything above
+## 8. Open questions: verify before relying on anything above
 
 1. ~~Does `grep-app` have a real stdio MCP server?~~ **CLOSED 2026-08-13.** It is
    a remote HTTP MCP server at `https://mcp.grep.app`; endpoint verified live.
@@ -1255,7 +1255,7 @@ Remaining, newly opened by the section 2b read:
 
 ## 9. Recommendation
 
-**Revised twice on 2026-08-13** — first after the independent benchmark (4b),
+Revised twice on 2026-08-13: first after the independent benchmark (4b),
 then again after re-verifying OMC's source (4a). Both revisions are recorded
 rather than overwritten, because the reasoning matters more than the conclusion.
 
@@ -1305,7 +1305,7 @@ to open issues asking for uninstall instructions, so check what it wrote into
 
 ---
 
-## 10. Build log — v0.1.0 (2026-08-13)
+## 10. Build log: v0.1.0 (2026-08-13)
 
 Built after the decisions in 6b. What follows is what the build **proved,
 disproved, or changed** about the sections above.
@@ -1429,7 +1429,7 @@ test — "did a warning appear?" — because `systemMessage` goes to the *user*,
 the model. The model answered "NONE" whether the hook fired or not. Only a
 wrapper script teeing stdin to a log settled it.
 
-**Section 10's "verified live" was too weak a claim.** It confirmed components
+Section 10's "verified live" was too weak a claim. It confirmed components
 *loaded*. It did not confirm they *worked*. Loading is necessary and nowhere near
 sufficient: every one of defects 1, 2, 3, 5, 6 and 7 was present in a plugin that
 loaded cleanly and passed `claude plugin validate`.
@@ -1467,8 +1467,9 @@ Every claim below was produced by running the thing, not by reading the code.
 | `spawn-preflight` window inference | 6/6, including the 1M-context case |
 | Comments inside prompt bodies | 0 bytes |
 
-**Static context: ~2,658 tokens** (1,296 output style + 1,054 agent frontmatter +
-308 skill frontmatter) — still under OMC's ~2,671, still 4.5× Karpathy's ~589.
+Static context measured ~2,658 tokens (1,296 output style + 1,054 agent
+frontmatter + 308 skill frontmatter), still under OMC's ~2,671, still
+4.5× Karpathy's ~589.
 
 ### Still unresolved
 
@@ -1529,7 +1530,7 @@ has never heard of — `librarian` discovered it via `ToolSearch`, invoked
 `mcp__cfdocs__search_cloudflare_documentation`, and returned correct sourced
 wrangler KV-binding syntax.
 
-**And the safety property survived.** A `librarian` explicitly instructed to
+And the safety property survived. A `librarian` explicitly instructed to
 create a file reported `Write`, `Edit` and `Bash` absent from its schema, tried a
 lateral escape through the `computer-use` skill, and failed. Read-only is
 enforced at schema level, not by refusal.
@@ -1546,8 +1547,8 @@ project-local `.claude/skills/`. Nothing needed doing there — a project-only
 | after, first draft | ~2,865 |
 | after compressing the new orchestrator section | **~2,748** |
 
-**96 tokens above OMC's ~2,671**, and 4.7× Karpathy. That is the honest price of
-adaptivity and it is stated in the README rather than buried.
+The result is 96 tokens above OMC's ~2,671, and 4.7× Karpathy. That is the
+honest price of adaptivity and it is stated in the README rather than buried.
 
 ### Accepted trade-off
 
@@ -1621,7 +1622,7 @@ a capability test, grep the artefact for the test's own subject.
 
 ---
 
-## 14. v0.2.0 — tone baked in (2026-08-13)
+## 14. v0.2.0: tone baked in (2026-08-13)
 
 Requested: a default, non-configurable terse register plus lazy-engineering
 discipline, adapted rather than referenced — no external tone plugin named
@@ -1681,7 +1682,7 @@ restoring a compact version to the output style, explicitly scoped to "work you
 do yourself, not only what you delegate". Re-tested: the check now appears, runs
 and passes.
 
-### Method note — same trap, third time
+### Method note: same trap, third time
 
 Section 12's adaptivity test was contaminated by naming the vendor. Section 13
 fixed that. This section was contaminated by the *environment* already supplying
@@ -1691,7 +1692,7 @@ capability** — not just whether the artefact hints at the answer.
 
 ---
 
-## 15. v0.3.0 — adopting CLAUDE.md and fable-mode (2026-08-13)
+## 15. v0.3.0: adopting CLAUDE.md and fable-mode (2026-08-13)
 
 Requested: fold a personal `~/.claude/CLAUDE.md` and the `fable-mode` skill into
 the plugin so neither is needed, without regressions.
@@ -1765,7 +1766,7 @@ the plugin is a large net saving.
 
 ---
 
-## 16. Benchmark — the open question, answered (2026-08-13)
+## 16. Benchmark: the open question, answered (2026-08-13)
 
 Open questions 7 and 8 asked whether omc-slim beats a plain session and whether
 it justifies its static cost. Measured. Full method in `docs/BENCHMARK.md`.
@@ -1931,12 +1932,12 @@ names into the output style makes them a second source of truth that can drift.
 | **#1373 agent results flood** | **guard removed** — accepted |
 | **#2577 static-context bloat** | **trending wrong: 2,774 → 3,660 tok** |
 
-**#1373:** the pre-spawn guard is gone. It only ever warned, and no hook can
+On #1373, the pre-spawn guard is gone. It only ever warned, and no hook can
 truncate a subagent's return anyway, so the real mitigation was always the output
 contracts — still present in `explorer`, `fixer` and `observer` with hard caps.
 Accepted deliberately, but it is one fewer net.
 
-**#2577 is the honest concern.** Standing context has risen every version since
+The honest concern is #2577. Standing context has risen every version since
 v0.2.0: 2,774 → 2,803 → 3,046 → 3,187 → 3,471 → **3,660**, now 6.2× Karpathy and
 ~1,000 above OMC. Every increase was individually justified — adopted behaviours,
 the anti-anxiety instruction, the skill roster — and they still sum. This is the
@@ -1947,7 +1948,7 @@ time.
 
 ## 19. Gap work: fixer routing, the central bet, and subagent nesting (2026-08-13)
 
-### Gap 1 — `fixer` routing: not a defect
+### Gap 1, `fixer` routing: not a defect
 
 Four fixtures showed `fixer` never delegating. A fifth showed why the first four
 were wrong tests.
@@ -1963,7 +1964,7 @@ were wrong tests.
 concurrently and declines when a bulk edit is cheaper. Gap closed as
 working-as-designed; the earlier "defect" was four badly chosen fixtures.
 
-### Gap 4 — the central bet, finally measured
+### Gap 4: the central bet, finally measured
 
 Identical task and fixture, delegation permitted vs withheld. Output verified
 equivalent: 3 loggers, 3 test files, 12 handlers migrated in both.
@@ -1982,7 +1983,7 @@ What delegation buys is *latency* and *main-context cleanliness*, not spend.
 
 n=1, and 4% is inside noise. The honest claim is cost-neutral, not cheaper.
 
-### Subagent nesting — tested, and kept disabled
+### Subagent nesting: tested, and kept disabled
 
 Every agent denies `Agent`/`Task`, inherited from both upstreams without
 independent testing. Tested:

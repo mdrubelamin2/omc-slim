@@ -5,11 +5,11 @@ claim, the evidence path, and — the part that is usually skipped — **what re
 would falsify the thing we want to be true.** A measurement whose failing outcome
 was not written down in advance is a measurement that will be reinterpreted.
 
-**None of these has been run.** They spend real money and the standing decision
+None of these has been run. They spend real money and the standing decision
 for this run is that nothing paid fires. Every one of them ends with a single
 command and a stated budget, so firing them is a decision and not a project.
 
-Instrument 1 is now **built** — see "The harness, as built" at the end of §1.
+Instrument 1 is now **built**; see "The harness, as built" at the end of §1.
 Built is not run: no arm has fired and no cost has been incurred. Instruments 2,
 3 and 4 remain designs on paper.
 
@@ -20,9 +20,9 @@ beside its verdict.
 
 ---
 
-## 1. The multi-file benchmark task class — exit criterion 1
+## 1. The multi-file benchmark task class: exit criterion 1
 
-**This is the important one.** Criterion 1 says delegation must be shown to pay
+This is the important one. Criterion 1 says delegation must be shown to pay
 on at least one multi-file task class, verified from transcript, beating plain on
 cost or wall-clock at equal correctness, n≥3, non-overlapping spreads.
 
@@ -32,7 +32,7 @@ cost or wall-clock at equal correctness, n≥3, non-overlapping spreads.
 finds duplicate files in a directory tree and reports them."* That is a
 **single-file greenfield task**. It has no independent sub-units, so there is
 nothing to fan out to. All nine committed runs produced **zero subagent
-invocations** — which is not a failure of the plugin, it is a property of the
+invocations**. That is not a failure of the plugin, it is a property of the
 task.
 
 So the current harness cannot satisfy criterion 1 and **cannot falsify it
@@ -56,13 +56,13 @@ Proposed task, and the reasoning for it:
 
 Why this shape:
 
-- **Four independent units** — the adapters do not import each other.
-- **One shared interface** — the ledger. A lane that changes it in isolation
+- **Four independent units.** The adapters do not import each other.
+- **One shared interface**: the ledger. A lane that changes it in isolation
   breaks the other three, so reconciliation is load-bearing rather than
   decorative. This is the part a single-file task cannot exercise at all.
 - **A completeness trap.** Partial refunds behave differently in each mock API.
   An arm that handles it in one adapter and not the others has produced a
-  plausible, compiling, **incomplete** answer — exactly the failure the plugin's
+  plausible, compiling, **incomplete** answer. That is the failure the plugin's
   "account for the full set" rule exists to prevent, and exactly what a grader
   that only checks "does it run" would score as a pass.
 - It is boring, mechanical, and has an unambiguous correct answer. Interesting
@@ -84,7 +84,7 @@ see, run against each arm's output:
 Score is `passed / 20`, printed with the count of cases that actually executed.
 Zero executed reads as unproven, never as passed.
 
-### The delegation detector — read the transcript, never `modelUsage`
+### The delegation detector: read the transcript, never `modelUsage`
 
 This is where the previous benchmark was weakest and where the criterion is
 explicit: *"verified from transcript, not `modelUsage`"*.
@@ -106,7 +106,7 @@ Report three numbers per run, never one:
 | dispatches that returned a result | attempted-minus-this is the gated-tool signal |
 | distinct `subagent_type` values | one lane four times is not fan-out |
 
-**A run with zero attempted dispatches does not count as an omc-slim arm.** It is
+A run with zero attempted dispatches does not count as an omc-slim arm. It is
 a plain arm wearing a plugin, and averaging it in is how the last benchmark ended
 up defending a prompt while claiming to defend an orchestrator. Report those runs
 separately and say how many there were.
@@ -118,9 +118,9 @@ roughly 30 percentage points, and the whole point of this instrument is to
 measure an effect that may be smaller than that. Five is still underpowered and
 the write-up must say so.
 
-- `plain` — empty working directory.
-- `omc-slim` — `--plugin-dir`, delegation available.
-- `omc-slim-nodelegate` — the plugin with `Agent` denied at the top level. **This
+- `plain`: empty working directory.
+- `omc-slim`: `--plugin-dir`, delegation available.
+- `omc-slim-nodelegate`: the plugin with `Agent` denied at the top level. **This
   arm is the one that actually settles the question**, because it isolates the
   prompt from the orchestration. If it matches the full arm, the win is the
   prompt, and the honest product is a discipline layer rather than an
@@ -131,7 +131,7 @@ correctness (within one fixture case): the `omc-slim` arm's cost or wall-clock
 spread does **not overlap** `plain`'s, **and** it does not overlap
 `omc-slim-nodelegate`'s, **and** the median run shows ≥2 distinct subagent types
 with returned results. Overlap with `nodelegate` and separation from `plain`
-means the prompt won and delegation did not — which is a **publishable negative
+means the prompt won and delegation did not, which is a **publishable negative
 result and the honest headline**, not a failed experiment.
 
 Budget: 15 runs. At the previously measured ~$1.01–1.24 per single-file run and a
@@ -149,7 +149,7 @@ what §1 assumed.
 | `grade-refunds.sh` | Runs the held-out suite against one candidate. `--self-test` is the negative control. |
 | `run-delegation.sh` | The arms. Dry run by default; `--execute` required to spend. |
 
-**Start here, and stop early if it answers you.** The cheapest decisive slice is
+Start here, and stop early if it answers you. The cheapest decisive slice is
 one arm, not fifteen runs:
 
 ```bash
@@ -170,16 +170,16 @@ Both figures are printed before anything is spent, derived from
 [BENCHMARK.md](./BENCHMARK.md)'s measured per-run means scaled 3× as budgeted
 above. The full-design estimate lands inside this section's own $45–60.
 
-**The task, as generated.** `repo/` is 16 files: four adapters that provably do
-not import each other (the generator's self-check fails if one ever does), four
-provider mocks that deliberately disagree about units, about whether failure
-raises or is returned in the body, and about whether a refund is synchronous,
-plus one shared `ledger.py` whose docstring states the two invariants — every
-write joins the caller's transaction, and every key is deterministic in the
-operation it records. A `smoke.py` proves the charge path green before the task
-starts, so no arm inherits a broken tree and measures repair.
+The generated task is `repo/`, 16 files. Four adapters provably do not import
+each other, and the generator's self-check fails if one ever does. Four provider
+mocks deliberately disagree about units, about whether failure raises or is
+returned in the body, and about whether a refund is synchronous. One shared
+`ledger.py` docstring states the two invariants: every write joins the caller's
+transaction, and every key is deterministic in the operation it records. A
+`smoke.py` proves the charge path green before the task starts, so no arm
+inherits a broken tree and measures repair.
 
-**The correctness fixture is red before it is green, and that was watched.**
+The correctness fixture is red before it is green, and that was watched.
 `grade-refunds.sh --self-test` grades three trees whose scores are predicted in
 `manifest.json` before they are run:
 
@@ -216,7 +216,7 @@ arm's score means nothing behind a fixture nobody watched fail.
    top-level dispatch count into something that looks like more fan-out than
    happened; and a run killed by the wall-clock guard still leaves a usable
    partial stream, where a whole-file parse leaves nothing. Counts are therefore
-   **top-level dispatches** — a subagent dispatching a further subagent is not
+   **top-level dispatches**. A subagent dispatching a further subagent is not
    counted, and the write-up must say so.
 4. **The `nodelegate` arm denies `Agent` with `--disallowedTools`, not by
    omitting it from the allow-list.** Deny beats allow, so the arm differs from
@@ -226,7 +226,7 @@ arm's score means nothing behind a fixture nobody watched fail.
 
 ---
 
-## 2. The seeded-defect ground-truth set — `review`'s kill criterion
+## 2. The seeded-defect ground-truth set: `review`'s kill criterion
 
 Serves the removal criterion in [NATIVE.md](./NATIVE.md): `review` retires unless
 its false-positive-rate spread separates from free `/code-review`'s at
@@ -234,7 +234,7 @@ equal-or-better true-positive yield.
 
 ### Construction
 
-**Twelve diffs against real repository history, not synthetic files.** Take
+Twelve diffs against real repository history, not synthetic files. Take
 twelve commits from this repository and from two unrelated open-source projects,
 revert each, and seed exactly one known defect into the reverted state. Real
 surrounding code is essential: a synthetic diff has no plausible distractors, and
@@ -266,7 +266,7 @@ made.
 ### Adjudication
 
 The judge model **only matches reported findings to seeds**. It never rules on
-whether an unmatched finding is valid — a haiku judge is too weak for that, and
+whether an unmatched finding is valid. A haiku judge is too weak for that, and
 delegating validity to it would make the criterion measure the judge.
 
 - **True positive**: a reported finding whose `file:line` is within ±3 lines of
@@ -281,7 +281,7 @@ Both tools run n=3 per diff (36 runs each) to get a spread rather than a point.
 ### The falsifier, stated plainly
 
 If `review`'s FP-rate spread overlaps `/code-review`'s after one enlarged re-run,
-**`review` is removed in the next release**. Not softened, not repositioned —
+**`review` is removed in the next release**. Not softened, not repositioned:
 removed, with the numbers published. That is the whole value of pre-registering.
 
 Budget: 72 review runs. `/code-review` is free; `review` runs on the session
@@ -289,7 +289,7 @@ model. Plan **$25–40**.
 
 ---
 
-## 3. Component arms — why the default ablation cannot decide anything
+## 3. Component arms: why the default ablation cannot decide anything
 
 `claude plugin eval --ablation with-without` produces **one plugin-level delta**.
 It answers "is this plugin worth installing" and cannot answer "is this component
@@ -323,7 +323,7 @@ the first surprise.
 
 ---
 
-## 4. The Rule 1 pressure test — the gate R5's cuts run behind
+## 4. The Rule 1 pressure test: the gate R5's cuts run behind
 
 [COMPRESSION-2026-08-28.md](./COMPRESSION-2026-08-28.md) Rule 1 says a
 measured-evidence or counter-rationalization sentence comes out only after
@@ -343,16 +343,16 @@ For a candidate sentence S in component C:
 1. **Find the failure S answers.** `git log -S '<a distinctive phrase from S>' --reverse`
    names the commit that added it; the message, `RESEARCH.md` or `MAINTAINERS.md`
    usually names the observed failure. **No reconstructable failure → S does not
-   come out.** Not "cut it cautiously" — it stays, because an un-reconstructable
+   come out.** Not "cut it cautiously": it stays, because an un-reconstructable
    rationale is one whose test cannot be run, and Rule 1 is a test.
 2. **Write the scenario as an eval case** under `evals/pressure/<rule-slug>/`,
    reusing the existing eval structure so `check-evals.sh` already validates its
    shape. The grader asserts the *behaviour* the sentence produces, never the
-   sentence's presence — a presence assertion would pass on the uncut build for
+   sentence's presence. A presence assertion would pass on the uncut build for
    the wrong reason and is exactly the blindness `51dfbcc` exposed.
 3. **RED first.** Run the case against a build with S **removed**. It must fail.
    A case that passes without S is not testing S, and the correct conclusion is
-   that S was already dead text — which is a finding worth recording and a
+   that S was already dead text, which is a finding worth recording and a
    licence to cut on different grounds.
 4. **GREEN.** Run against the shipping build. It must pass.
 5. Only a RED-then-GREEN pair licenses the cut, and the pair is committed beside
@@ -362,7 +362,7 @@ For a candidate sentence S in component C:
 
 Step 3 needs eval **execution**, which is the thing R0 could not confirm works.
 If execution is server-gated, this harness degrades to `smoke-contracts.sh
---execute` with a hand-written assertion per rule — cheaper per rule, far weaker,
+--execute` with a hand-written assertion per rule: cheaper per rule, far weaker,
 and n=1. **Say which mode ran in the commit that makes the cut.** A Phase 4 cut
 made behind the degraded mode is a weaker claim than one made behind the eval
 mode, and the difference must be visible to whoever reads it later, not buried.
@@ -375,7 +375,7 @@ band, so **~30 runs**; batch them rather than firing one at a time.
 ## What all four have in common
 
 Each ends in a single command and a stated budget. Each names the outcome that
-would falsify the thing this project wants to be true — delegation paying,
+would falsify the thing this project wants to be true: delegation paying,
 `review` earning its place, `explorer` earning its place, a rationale sentence
 being load-bearing. **The negative results are the publishable ones**, and they
 are the only reason a measurement this project runs on itself is worth anything

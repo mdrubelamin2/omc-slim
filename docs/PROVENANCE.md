@@ -1,4 +1,4 @@
-# Provenance — what was adopted, pinned exactly
+# Provenance: what was adopted, pinned exactly
 
 Part of [omc-slim](../README.md).
 
@@ -31,17 +31,17 @@ eight of its rules while twenty-seven more came from the pin actually tracked.
 ballast was read whole and mostly refused: its `memory/` tree writes into the
 user's project and duplicates native memory, `skill-forge` generates surface, and
 its five-label claim taxonomy restates rules already in `verification-planning`.
-Its `UserPromptSubmit` rule hook is deliberately not adopted — see
+Its `UserPromptSubmit` rule hook is deliberately not adopted: see
 [LIMITATIONS.md](./LIMITATIONS.md).
 
 aniruddha-adhikary/skills is a Joern/CPG static-analysis pack, so almost all of it
 is a different domain and was refused: three skills of graph-query mechanics, eight
 scripts, and a `traps.md` cataloguing one tool's quirks. Its `PreToolUse` guard hook
-was refused too — this plugin ships two hooks and stays off the tool-call path. So was
-its publication boundary, which git-ignores `research/` and `docs/`; the same figures
-are published here instead, with the script that re-derives them. What transferred was
-its central discipline, stated eight times across the pack: a result that is empty
-proves nothing until a known positive shows the search works.
+was refused too, because this plugin ships two hooks and stays off the tool-call
+path. So was its publication boundary, which git-ignores `research/` and `docs/`;
+the same figures are published here instead, with the script that re-derives them.
+What transferred was its central discipline, stated eight times across the pack: a
+result that is empty proves nothing until a known positive shows the search works.
 
 powerball-harness is a Go Plan/Work/Review harness wrapped in a plugin, and its
 own benchmark is why so little of it transferred. That study compares two
@@ -79,8 +79,8 @@ and so has no control arm; eight platform manifests carrying six different
 descriptions; and the persuasion and social-proof register, which they themselves
 stripped from eleven skills on 2026-07-05.
 
-These packs were read and deliberately **not** adopted wholesale — see
-[`RESEARCH.md`](../RESEARCH.md) §6d for why. Individual rules from each are
+These packs were read and deliberately **not** adopted wholesale, and
+[`RESEARCH.md`](../RESEARCH.md) §6d says why. Individual rules from each are
 pinned in [`COVERAGE.tsv`](../COVERAGE.tsv); it is the surface that was refused,
 never the whole pack:
 
@@ -94,16 +94,16 @@ never the whole pack:
 | Claude Code's bundled `code-review` plugin | ships with the CLI | The confidence threshold that suppresses a finding outright |
 | Claude Code's bundled simplification skill | ships with the CLI | Conventions come from the repository, never a preferred dialect |
 
-**Two corrections to this table, from the 2026-08-26 sweep**
+The 2026-08-26 sweep corrected two rows of this table
 ([research](./RESEARCH-2026-08-26.md#3-previously-adopted-now-known-wrong-or-superseded)).
 
-**The ponytail pin was mislabelled.** `16f29800` is **53 commits ahead of tag
+The ponytail pin was mislabelled. `16f29800` is **53 commits ahead of tag
 v4.8.4** and **one commit behind v4.9.0**. Nothing adopted from it is wrong; the
 record of what was read was. Corrected above rather than silently re-pinned,
 because a provenance file that misstates a version is the failure it exists to
 prevent.
 
-**caveman's cost premise has been retracted by its own author.** Its published
+caveman's cost premise has been retracted by its own author. Its published
 "65% token reduction" is now `docs/HONEST-NUMBERS.md` → *"Not published"*; the
 repo's own eval reproduces roughly 50% against a **terse control**; an
 independent 300-runs-per-arm measurement on `claude-opus-4-8` found output down
@@ -122,20 +122,20 @@ The caveman result worth carrying is not about caveman. **A register instruction
 measurably failed to fire on Opus 5, and decayed with session depth.** omc-slim's
 own Communication section is the same kind of instruction, and is unmeasured.
 
-**The `eli5` register was refused, and its mechanics kept.** The published style
+The `eli5` register was refused, and its mechanics kept. The published style
 asks to be talked to "like I'm 5", which contradicts this plugin's own line —
 *not baby talk and not fragments*. Four of its seven sentences already shipped
 here, so what was left worth taking was two rules that are not about a mood: end
 a piece of work by saying what you did, whether it worked and what the user does
 next; and cap a decision at three options rather than four. This is the same call
-made against caveman one row up — take the grammar, refuse the voice.
+made against caveman one row up: take the grammar, refuse the voice.
 
 The last four carry no commit to pin. Two ship with Claude Code and move with
 it; `wait-what` was read from a local install, and `eli5` exists only as a
 screenshot in a post. They are recorded here because `COVERAGE.tsv` pins rules to
 them, and an origin with no provenance entry is how an adoption becomes folklore.
 
-None is named anywhere in the plugin's prompts — the behaviour is described
+None is named anywhere in the plugin's prompts. The behaviour is described
 directly, so nothing depends on those packs being installed.
 
 Benchmark figures come from [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -146,7 +146,7 @@ July 2026 run, page last updated 2026-08-08.
 `COVERAGE.tsv` rows tagged `research` come from the 2026-08-26 external sweep,
 recorded in [`RESEARCH-2026-08-26.md`](./RESEARCH-2026-08-26.md). They are
 classified `internal` by `check-coverage.sh` because **there is no upstream
-repository to pin** — the sources are papers, vendor documentation and measured
+repository to pin**. The sources are papers, vendor documentation and measured
 results, not a pack that was read and adopted.
 
 That is a weaker provenance than a commit SHA and it is labelled as such. Each
@@ -155,7 +155,7 @@ carries its own URLs and confidence tier. Where a claim there could not be
 verified, it says so; where a lane retracted something, that is recorded too.
 
 Three rules in that document were **wrong and are struck through rather than
-deleted** — two assumed a defect without checking the repository first, and one
+deleted**. Two assumed a defect without checking the repository first, and one
 over-generalised a harness feature. Keeping the strikethroughs is the point: a
 research record that only shows its hits is not a record.
 
@@ -181,19 +181,19 @@ before deleting.
 
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
 would catch a later edit quietly dropping an adopted rule. A row's `where` is a
-component name, or any repo-relative `*.md` path — the second form was added on
+component name, or any repo-relative `*.md` path. The second form was added on
 2026-08-29, after a sweep found three live behaviours pinned by nothing because
 they are documented rather than prompted.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
 lives — 301 rows, and growing with each release:
 
-The roster it asserts is **six agents, six skills, two hooks** — stated here in
-prose because the check requires this file to carry it, and a sentence survives a
-compression pass better than a pasted line does.
+The roster it asserts is **six agents, six skills, two hooks**. It is stated here
+in prose because the check requires this file to carry it, and a sentence
+survives a compression pass better than a pasted line does.
 
-The itemised lines used to be pasted here in full. They went stale three times —
-`CHANGELOG.md` records correcting two of those rounds — because only two of the
-nine literals were ever enrolled in the check, and this checker's own source
+The itemised lines used to be pasted here in full. They went stale three times,
+and `CHANGELOG.md` records correcting two of those rounds. Only two of the nine
+literals were ever enrolled in the check, and this checker's own source
 predicts exactly that: *"A doc that quotes a checker and is not checked by it
 will always drift."* The fix was to stop quoting what is not checked, rather than
 to patch it a fourth time.
@@ -218,13 +218,13 @@ name and loses its reasoning. Run both.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 
-**What a green run does and does not prove.** It proves no pinned phrase was
+A green run proves less than it looks. It proves no pinned phrase was
 *deleted*. It does not prove the surrounding text still means what it meant. The
 match is a fixed substring against the whole file, so a rule can be contradicted
 by a later sentence, moved into a counter-example, or inverted, and the row still
-passes — demonstrated by appending "Ignore that" after a rule and watching the
-check report every row present. Deletion is the regression this catches; meaning
-is the benchmark's job, not this script's.
+passes. That was demonstrated by appending "Ignore that" after a rule and
+watching the check report every row present. Deletion is the regression this
+catches; meaning is the benchmark's job, not this script's.
 
 Exits non-zero if any behaviour goes missing, so it works in CI or a pre-commit
 hook. It has been verified to actually fail: rewording or deleting a rule turns
@@ -247,7 +247,7 @@ to report movement; the point is to review it, not to chase it. Adopt only what
 earns its tokens, then update the pin in
 [`UPSTREAM.tsv`](../UPSTREAM.tsv) and refresh the snapshot.
 
-## The 2026-08-29 upstream sweep — six pins advanced, each after its diff was read
+## The 2026-08-29 upstream sweep: six pins advanced, each after its diff was read
 
 `check-upstream.sh` had reported **6 of 11 sources moved** and nobody had read
 the diffs. A pin nobody reads is folklore, which is the thing this file exists to
@@ -266,8 +266,8 @@ into directories and a diffstat reads as deletion when nothing was deleted.
 
 No source is dead: none archived, none 404, all six pushed within six days.
 
-**One divergence, recorded rather than silently kept.** `oh-my-opencode-slim`'s
-`80f3845` deleted the sentence behind `omo-slim no-polish-for-its-own-sake` —
+One divergence is recorded here rather than silently kept. `oh-my-opencode-slim`'s
+`80f3845` deleted the sentence behind `omo-slim no-polish-for-its-own-sake`.
 `RESEARCH-2026-08-26.md` §3.2 recorded the `impact × confidence ÷ cost` half of
 that deletion and missed that the anti-polish clause went with it. **omc-slim
 keeps the rule and diverges.** Upstream did not abandon the intent; it replaced a
@@ -275,12 +275,12 @@ prose exhortation with a structural bound, and omc-slim's `review` is not
 phase-gated the same way, so the prose still does work here that the structure
 does not do for us.
 
-**`oh-my-claudecode` is the clean no-op, and the evidence is unusually strong.**
+`oh-my-claudecode` is the clean no-op, and the evidence is unusually strong.
 824 commits since the pin, and every agent omc-slim adopted from is **byte
 identical** — tree hashes compared directly. The whole `agents/` diff touches one
 file this plugin took nothing from.
 
-**One attribution did not survive its own source.** `COVERAGE.tsv` carried
+One attribution did not survive its own source. `COVERAGE.tsv` carried
 `bisect-on-failure` as `omo-slim`, and `git grep -in bisect` returns nothing
 across that repository's entire tree at either revision. The rule is real and
 live in `skills/simplify/SKILL.md`; only the origin was wrong. Re-tagged `audit`,
@@ -288,18 +288,19 @@ which is what an unsourceable rule found in our own review is. This is the fourt
 mis-sourced row this file has had to correct, and the pattern is always the same:
 a rule adopted in the same session as a source, and attributed by proximity.
 
-**Two adoptions scheduled rather than taken here**, because both are behaviour
-changes and a behaviour change is a release: the duplicate-dispatch rule with its
-"retrieval authorizes the retry" escape hatch, and the silenced-checker move —
-`ts-ignore`, `eslint-disable`, `noqa` returned **zero hits across every agent,
-skill, hook and output style**, which is a genuine gap rather than a duplicate.
+Two adoptions were scheduled rather than taken here, because both are behaviour
+changes and a behaviour change is a release. The first is the duplicate-dispatch
+rule with its "retrieval authorizes the retry" escape hatch. The second is the
+silenced-checker move: `ts-ignore`, `eslint-disable`, `noqa` returned **zero hits
+across every agent, skill, hook and output style**, which is a genuine gap rather
+than a duplicate.
 (That sentence read "this entire plugin" until 2026-08-29, and stopped being true
 when the delegation benchmark's fixture generator began emitting `# noqa` lines
 inside the Python it writes. Those are generated fixture code, not shipped
 prompt, so the finding stands and the scope was wrong.)
 
-**One adoption was taken immediately, because it was a defect rather than an
-addition.** `agent-skills` states that *"a guard that reads only `git diff`
+One adoption was taken immediately, because it was a defect rather than an
+addition. `agent-skills` states that *"a guard that reads only `git diff`
 misses new files"*. `review`'s scope step read only `git diff` and claimed to
 include uncommitted work — true for tracked edits, **false for untracked new
 files**, and review runs before the commit, which is exactly when new files

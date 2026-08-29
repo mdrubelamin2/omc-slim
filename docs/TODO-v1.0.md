@@ -1,19 +1,19 @@
-# The road to v1.0 — the complete backlog
+# The road to v1.0: the complete backlog
 
 Rebuilt 2026-08-29 from the full research series and hardened by a
-seven-seat persona review (principal engineer, tech lead, Claude Code
+seven-seat persona review: principal engineer, tech lead, Claude Code
 engineer, harness engineer, AI/ML engineer, prompt engineer, system
-engineer — 34 findings, all remediated below). Sources:
+engineer. It produced 34 findings, all remediated below. Sources:
 [VIABILITY-2026-08-28.md](./VIABILITY-2026-08-28.md) (part I),
 [VIABILITY-2026-08-28-II.md](./VIABILITY-2026-08-28-II.md) (part II),
 [COMPRESSION-2026-08-28.md](./COMPRESSION-2026-08-28.md),
 [RESEARCH-2026-08-26.md](./RESEARCH-2026-08-26.md) §9,
 [LIMITATIONS.md](./LIMITATIONS.md).
 
-**There are no priority tiers in this file. Everything in it ships.** Items
+There are no priority tiers in this file. Everything in it ships. Items
 are ordered by dependency, not importance; a cosmetic item is scheduled,
-not waived. DECIDE items need a ruling before their work can be specified —
-each carries an owner and a slot. The standing refusals are not skipped
+not waived. DECIDE items need a ruling before their work can be specified,
+and each carries an owner and a slot. The standing refusals are not skipped
 work but decided non-features, each with its reopening trigger and the
 mechanism that can observe the trigger firing.
 
@@ -21,24 +21,24 @@ Item tags (work types, not priorities): **FIX** · **DECIDE** (owner +
 slot) · **ADOPT** · **COMPRESS** · **VERIFY** · **MEASURE** · **POSITION**
 / **DOCS** · **DO** (assigned new work, not a defect).
 
-**The M-ruling index** (the oracle rulings of 2026-08-28, labelled here
-because part II states them in prose without labels):
-- **M1** — the default `--ablation with-without` yields one plugin-level
+The M-ruling index, the oracle rulings of 2026-08-28, labelled here
+because part II states them in prose without labels:
+- **M1:** the default `--ablation with-without` yields one plugin-level
   delta and cannot decide component fates; component questions need
   component arms (part II §2 explorer/review positions and §4 item 3).
-- **M2** — no publishable ablation on a build with known contradictions;
+- **M2:** no publishable ablation on a build with known contradictions;
   the sequence is probe → fix → measure (part II §4 preamble).
-- **M3** — review's kill criterion is FP-rate separation at
+- **M3:** review's kill criterion is FP-rate separation at
   equal-or-better true-positive yield, on seeded ground truth (part II
   §2).
-- **M4** — gate ownership: deepwork owns the `Gate N — attempt N of M`
+- **M4:** gate ownership; deepwork owns the `Gate N — attempt N of M`
   marker and the per-gate budget; `review` gates writer phases, `oracle`
   gates decision phases; a mixed phase gets review plus at most one
   oracle escalation (part II §4 item 2).
 
 House law binding every item: a roster or behaviour change is a release;
 no claim without a basis; every prompt change re-runs the contradiction
-sweep; the ratchet — static may not grow two releases running, and **every
+sweep; the ratchet, which means static may not grow two releases running, and **every
 wagon that touches a measured file states that file's token net once, in
 its own release**; compression follows COMPRESSION-2026-08-28.md Rules
 0–5 including Rule 0b (pin retirement).
@@ -47,35 +47,35 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
 
 ## v1.0 exit criteria (part I §8; each names the item that produces its evidence)
 
-1. **Delegation pays, measured** — ≥1 multi-file task class, delegation
+1. **Delegation pays, measured.** ≥1 multi-file task class, delegation
    verified from transcript, beats plain on cost or wall-clock at equal
    correctness, n≥3, non-overlapping spreads. *Producing items: the R3
    benchmark-construction item (the current harness is a single-file task
-   that structurally cannot delegate — a re-run alone cannot satisfy or
+   that structurally cannot delegate, so a re-run alone cannot satisfy or
    falsify this) and the R4 run.*
-2. **Out-of-box liveness** — a fresh default install on the current
+2. **Out-of-box liveness.** A fresh default install on the current
    flagship produces one delegation on a natural prompt, or the README's
    first screen says it will not and shows the unlock. *Producing item:
    R4's fresh-install liveness runs.*
-3. **Inertness is visible** — a stolen style slot or a gated Agent tool
+3. **Inertness is visible.** A stolen style slot or a gated Agent tool
    is learned from the product within one session. *Producing items: hook
    fixes C3/C4 (slot), the style's absent-Agent-tool line (gate), and
    R4's two adversarial-install sessions.*
-4. **Native-parity ledger published** — every overlapping component
+4. **Native-parity ledger published.** Every overlapping component
    carries a measured win or a dated removal criterion. *Producing item:
    R3's NATIVE.md.*
-5. **Contradiction sweep is a release gate** — zero open findings at tag
+5. **Contradiction sweep is a release gate.** Zero open findings at tag
    time. *Producing item: R1 institutes it; every wagon re-runs it.*
-6. **The surface ratchet holds** — static did not grow two releases
+6. **The surface ratchet holds.** Static did not grow two releases
    running; nets re-derived per wagon, never extrapolated. *Producing
    item: the per-wagon net statements plus `measure-context.sh`.*
-7. **Every number re-derivable** — benchmark re-run on the shipping
+7. **Every number re-derivable.** Benchmark re-run on the shipping
    build; the eval suite has executed at least once. *Producing items:
    R4; contingency in R0 if eval is server-gated.*
 
 ## The release train (dependency order; every wagon ships)
 
-- **R0 — instrument probe.** `claude plugin eval` gating probe: one
+- **R0: instrument probe.** `claude plugin eval` gating probe: one
   trivial case, minimal `--max-cost-usd`. Owner: the account holder.
   Blocks only R4's eval-based ablations and R5's harness-gated cuts.
   **Contingency, stated now:** if execution is server-gated, (a) the
@@ -85,29 +85,29 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
   with committed transcripts — and the ablation items convert to
   `scripts/bench/` arms; (c) the conversion is recorded as a criterion
   amendment in this file, not silently absorbed.
-- **R1 — v0.9.2, the correctness release.** In order: (0) commit the
+- **R1: v0.9.2, the correctness release.** In order: (0) commit the
   governance set — this file, both viability reports, the compression
   report, the deepwork logs, the LIMITATIONS edits — which is currently
   **entirely untracked**; one `git clean` today deletes the release
   train (coordinate the uncommitted `check-coverage.sh` change with the
   session that authored it). (1) Re-verify each of the 19 audit findings
-  not already orchestrator-verified against the current files — the
+  not already orchestrator-verified against the current files. The
   audit predates v0.9.1's last commits; a finding whose line or symptom
   no longer reproduces closes as stale, with a note, instead of
-  patching text that moved. (2) All surviving findings fixed — A-tier,
+  patching text that moved. (2) All surviving findings fixed: A-tier,
   B-tier, C-tier alike. (3) The type-prefix fix (cross-cutting 1). (4)
   The review file's complete R1 package (see review section): in-file
   reorder + the ~850-char offload + the A1/M4, B3, B7, B8 changes,
   landed together with one netted margin statement and the one
-  real-tokenizer measurement — this wagon and only this wagon runs it.
+  real-tokenizer measurement. This wagon and only this wagon runs it.
   (5) Contradiction sweep over the full set as the release gate.
-- **R2 — compression, phases 1–2.** The safe band and pin-migration band
+- **R2: compression, phases 1–2.** The safe band and pin-migration band
   (~5k chars), the three pin additions, Rule 0b recorded beside the
   gates. If R1's static net was positive (the type words), R2 nets it
-  back — the ratchet allows one release of growth, not two.
-- **R3 — adoption, position, and R4's instruments.** Gems 1–5; the gem 6
+  back, because the ratchet allows one release of growth, not two.
+- **R3: adoption, position, and R4's instruments.** Gems 1–5; the gem 6
   ruling (cross-cutting 7); NATIVE.md; README legibility pass; the name
-  ruling (cross-cutting 6) — decided at R3 open, before NATIVE.md and
+  ruling (cross-cutting 6), decided at R3 open, before NATIVE.md and
   README print the name; team/CI/Windows docs; verification-planning's
   conditional sibling; **and the R4/R5 instrument designs, built here so
   neither wagon arrives empty-handed**: the seeded-defect ground-truth
@@ -116,22 +116,22 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
   (extends `scripts/bench/`), and the Rule 1 pressure-test harness that
   R5's Phase-4 cuts run behind. Verification-planning owns all four
   designs.
-- **R4 — measurement.** Consumes R3's instruments. The multi-file
+- **R4: measurement.** Consumes R3's instruments. The multi-file
   benchmark run (criterion 1); whole-plugin ablation on the post-R1
   build (per M2, never earlier); component arms for explorer and review
-  per M1 — noting these are forked build variants, one paid eval run
+  per M1, noting these are forked build variants, one paid eval run
   each, comparison math outside the tool, budgeted per run; review
   routing test; `smoke-contracts.sh --execute` cost re-measure;
   criterion 2's fresh-install liveness runs (n=3 natural prompts from
   ROUTING.md's table, default settings); criterion 3's two adversarial
   sessions (a second forced-style plugin installed; a default
   flagship-gated Agent tool session).
-- **R5 — restructuring.** Compression Phase 4 behind the harness; the
-  upstream adopt-or-diverge ruling executed; the §9 residue sweep closed
-  — its check: `grep -c '^- \*\*VERIFY' docs/TODO-v1.0.md` returns
+- **R5: restructuring.** Compression Phase 4 behind the harness; the
+  upstream adopt-or-diverge ruling executed; the §9 residue sweep closed.
+  Its check: `grep -c '^- \*\*VERIFY' docs/TODO-v1.0.md` returns
   zero (the pattern matches item rows only; the tag legend and the
   sweep item itself sit outside it).
-- **R6 — v1.0.** The seven criteria checked against their named
+- **R6: v1.0.** The seven criteria checked against their named
   producing items; distribution (marketplace listing,
   awesome-claude-code, the negative-result write-up); dogfood transcript
   published with the release.
@@ -140,7 +140,7 @@ its own release**; compression follows COMPRESSION-2026-08-28.md Rules
 
 ---
 
-## Execution status — 2026-08-29
+## Execution status: 2026-08-29
 
 Four releases shipped in one session on branch `v1.0-backlog`. **R0 half-answered,
 R1–R3 and R5 complete, R4 built but deliberately unfired, R6 in progress.**
@@ -148,43 +148,43 @@ R1–R3 and R5 complete, R4 built but deliberately unfired, R6 in progress.**
 | Wagon | State |
 |---|---|
 | R0 instrument probe | `claude plugin eval --help` resolves on 2.1.251 with the full option set. **Whether execution is server-gated is unanswered and stays that way**: finding out costs money and the standing decision is no paid runs. |
-| R1 — v0.9.2 | All 24 audit findings fixed. Two release gates ran against the work and found 15 more, six introduced by the fixes; all remediated. |
-| R2 — v0.9.3 | Compression phases 1–2. 285 on-invoke tokens out, 70 static. **The ratchet is not paid back** — net +112 across the run — and that is stated rather than manufactured. |
-| R3 — v0.9.4 | Gems 1–6 (two already present, found by checking), `NATIVE.md`, `INSTRUMENTS-R4.md`, README pass, teams/CI/Windows, the first CI this repository has had, and 650 tokens into a conditional sibling. |
-| R4 — measurement | **Designed, not run.** Four instruments in `INSTRUMENTS-R4.md`, each ending in one command with a stated budget and a pre-registered falsifying outcome. |
-| R5 — restructuring | Upstream adopt-or-diverge executed (six pins advanced, one divergence recorded, one attribution re-sourced). §9 residue closed — zero VERIFY tags. **Compression Phase 4 remains blocked**, because Rule 1 needs eval execution and eval execution costs money. |
-| R6 — v1.0 | Criteria checked below; distribution drafted, not sent. |
+| R1: v0.9.2 | All 24 audit findings fixed. Two release gates ran against the work and found 15 more, six introduced by the fixes; all remediated. |
+| R2: v0.9.3 | Compression phases 1–2. 285 on-invoke tokens out, 70 static. **The ratchet is not paid back** — net +112 across the run — and that is stated rather than manufactured. |
+| R3: v0.9.4 | Gems 1–6 (two already present, found by checking), `NATIVE.md`, `INSTRUMENTS-R4.md`, README pass, teams/CI/Windows, the first CI this repository has had, and 650 tokens into a conditional sibling. |
+| R4: measurement | **Designed, not run.** Four instruments in `INSTRUMENTS-R4.md`, each ending in one command with a stated budget and a pre-registered falsifying outcome. |
+| R5: restructuring | Upstream adopt-or-diverge executed (six pins advanced, one divergence recorded, one attribution re-sourced). §9 residue closed — zero VERIFY tags. **Compression Phase 4 remains blocked**, because Rule 1 needs eval execution and eval execution costs money. |
+| R6: v1.0 | Criteria checked below; distribution drafted, not sent. |
 
-**Exit criteria, honestly:**
+Exit criteria, honestly:
 
-1. **Delegation pays, measured** — **NOT MET, and not meetable without a paid
+1. **Delegation pays, measured** is **NOT MET, and not meetable without a paid
    run.** The instrument now exists; it did not before.
-2. **Out-of-box liveness** — **NOT MET.** Needs three fresh-install sessions.
-3. **Inertness is visible** — **MET in mechanism, unverified in practice.** The
+2. **Out-of-box liveness** is **NOT MET.** Needs three fresh-install sessions.
+3. **Inertness is visible** is **MET in mechanism, unverified in practice.** The
    hook fixes landed and the style now reports an absent Agent tool; the two
    adversarial sessions that would prove it have not run.
-4. **Native-parity ledger published** — **MET.** `docs/NATIVE.md`.
-5. **Contradiction sweep is a release gate** — **MET, and it earned it**: on its
+4. **Native-parity ledger published** is **MET.** `docs/NATIVE.md`.
+5. **Contradiction sweep is a release gate** is **MET, and it earned it**: on its
    first run as a gate it found eleven contradictions in the release being gated,
    six introduced by that release, every one of which passed every presence check.
-6. **The surface ratchet holds** — **NOT MET.** +112 net. Stated, not hidden.
-7. **Every number re-derivable** — **MET for every published figure**; the eval
+6. **The surface ratchet holds** is **NOT MET.** +112 net. Stated, not hidden.
+7. **Every number re-derivable** is **MET for every published figure**; the eval
    clause is unsatisfiable this run, and R6 records that as an amendment rather
    than absorbing it silently.
 
-**Three criteria of seven need a paid run. That is the honest gap, and no amount
-of further prose closes it.**
+Three criteria of seven need a paid run. That is the honest gap, and no amount
+of further prose closes it.
 
 ## Cross-cutting items
 
-1. **FIX — type-mark the component namespace (R1).** Agents and skills
-   both reach the model as bare `omc-slim:<name>` strings — the Agent
+1. **FIX: type-mark the component namespace (R1).** Agents and skills
+   both reach the model as bare `omc-slim:<name>` strings. The Agent
    tool's subagent_type list and the Skill tool's list share the prefix
-   with nothing marking type — and the model misroutes: observed
+   with nothing marking type, and the model misroutes: observed
    failure, `deepwork` read as an agent, Agent-tool error, retry as a
    skill. **No component is renamed; this is deliberately not a roster
    change.** Three layers:
-   - **Frontmatter first — it is where today's violations live.** The
+   - **Frontmatter first, because that is where today's violations live.** The
      type-less cross-references sit in agent `description` fields
      (`agents/explorer.md:3` "use omc-slim:review", `agents/oracle.md:3`
      "that is omc-slim:tracer", `agents/fixer.md:3` "goes to
@@ -204,7 +204,7 @@ of further prose closes it.**
      gets one dispatch rule: *agents go through the Agent tool, skills
      through the Skill tool; a name is not a type — check the roster
      header it sits under.*
-   - **A gate:** a check over the model-facing set only — frontmatter
+   - **A gate:** a check over the model-facing set only: frontmatter
      descriptions, style, SKILL.md bodies, hook messages, README;
      `docs/` reports are frozen history and out of scope. Predicate: a
      type word in the same sentence as the reference, with the
@@ -213,24 +213,24 @@ of further prose closes it.**
      Proved able to fail: seed one violation, watch it fire, remove it.
    Cost: funded by B2's rewrite (which shortens) plus the style's safe
    trims; R1 states the style net, and R2 nets back any growth.
-2. **FIX (A1/M4) — one gate, one owner.** As indexed above. Touches
+2. **FIX (A1/M4): one gate, one owner.** As indexed above. Touches
    deepwork, review, oracle, and the style; each component section
    references this item.
-3. **DOCS — dogfood receipts.** One real session transcript per release.
+3. **DOCS: dogfood receipts.** One real session transcript per release.
    Starts at R1, never stops.
-4. **VERIFY — the §9 residue sweep.** Walk RESEARCH-2026-08-26 §9 Should
+4. **VERIFY: the §9 residue sweep.** Walk RESEARCH-2026-08-26 §9 Should
    8–26 on the current build; convert open ones into component items;
    closes in R5 at zero VERIFY tags.
-5. **DOCS — repository hygiene.** Commit the governance set (R1 step 0);
+5. **DOCS: repository hygiene.** Commit the governance set (R1 step 0);
    refresh `UPSTREAM.tsv` (~90 commits behind) and rule on each
    load-bearing drift; land the GitHub-description gate with its owning
    session; record Rule 0b beside the gates.
-6. **DECIDE — the name (owner: maintainer; slot: R3 open).** "omc-slim"
+6. **DECIDE: the name (owner: maintainer; slot: R3 open).** "omc-slim"
    reads as a diet fork of a project whose philosophy it rejects (part I
    §1.3). Decided before NATIVE.md and the README pass print it; either
    outcome closes the item.
-7. **DECIDE — gem 6, the handoff mechanism (owner: maintainer; slot:
-   R3).** Amp's `/handoff` (shipped twice there — investment evidence):
+7. **DECIDE: gem 6, the handoff mechanism (owner: maintainer; slot:
+   R3).** Amp's `/handoff` (shipped twice there, which is investment evidence):
    write a handover file (objective, decisions, dead ends, next action)
    and start fresh instead of compacting in place. The design question,
    carried from part II §3: extend deepwork's progress-file format, add
@@ -238,7 +238,7 @@ of further prose closes it.**
    outcome, since a seventh skill is a roster release and the
    progress-file extension may capture the value at zero static cost.
    The ruling names which, and the chosen work ships in the same wagon.
-8. **DOCS — the incidents ledger (R1).** The standing refusals' triggers
+8. **DOCS: the incidents ledger (R1).** The standing refusals' triggers
    are countable but nothing counts them. A section in MAINTAINERS.md:
    the four named failure classes (idle abandonment, identical-tool-call
    loops, format drift, missed standing rules), one line per observed
@@ -246,14 +246,16 @@ of further prose closes it.**
    releases. The per-release dogfood transcript scan is a named step in
    the release checklist; the ledger is where its findings land. Without
    this, the refusals stand because nobody is positioned to see their
-   triggers fire — falsifiable in principle must also be observable in
+   triggers fire: falsifiable in principle must also be observable in
    practice.
 
-## Output style — `output-styles/omc-slim.md`
+## Output style: `output-styles/omc-slim.md`
 
+Position: the moat argument (agent teams experimental, off by default) is
+re-checked each minor CC release, and NATIVE.md carries the expiry condition.
 - **FIX (B2):** rewrite the cheap/expensive tiers as escalation-order
-  semantics ("first call" vs "escalation, use sparingly") — no mechanism
-  produces a cost difference today. The mechanism that *would* (per-agent
+  semantics ("first call" vs "escalation, use sparingly"), because no
+  mechanism produces a cost difference today. The mechanism that *would* (per-agent
   `model:` frontmatter) exists and was removed; its non-re-adoption is
   recorded in the standing refusals with a trigger, so this rewrite is a
   documented ruling, not an oversight.
@@ -266,7 +268,7 @@ of further prose closes it.**
 - **FIX (cross-cutting 1):** the dispatch rule and type-marked
   references.
 - **ADOPT (gem 5), recipe form:** "read the last result of a task before
-  dispatching that task again" — stated as the action, not the
+  dispatching that task again", stated as the action, not the
   prohibition, per the repo's own wording evidence (COMPRESSION §2.5:
   prohibitions underperformed no-guidance).
 - **FIX (part I §8.3 + criterion 3):** first-response
@@ -281,21 +283,18 @@ of further prose closes it.**
 - **COMPRESS (R2):** safe rows 14/21 (~310 chars) and the pin-migrated
   fold of row 28; roster bullets and the R27 neighbourhood are
   do-not-touch.
-- **POSITION:** the moat argument (agent teams experimental, off by
-  default) re-checked each minor CC release; NATIVE.md carries the
-  expiry condition.
 
 ## Agents
 
-### explorer — `agents/explorer.md`
+### explorer: `agents/explorer.md`
 
 - **MEASURE (R4, instrument from R3):** component ablation,
-  build-minus-explorer — **with the format target defined
+  build-minus-explorer, **with the format target defined
   build-independently**, or the arm decides nothing: the ablated arm's
   native Explore receives the map contract as a delegation brief (which
   *is* the migration path under test, compaction cost included), and
   both arms are scored on downstream-consumer success (can the
-  orchestrator act on the returned locations?) plus token cost — never
+  orchestrator act on the returned locations?) plus token cost, never
   on explorer's own contract text, which the ablated arm loses by
   construction. Keep or retire executes either way.
 - **FIX:** reach for `ast-grep` when installed, with the two measured
@@ -307,9 +306,9 @@ of further prose closes it.**
   `agents/explorer.md` § *Prove the instrument before you report a negative*, and
   `maxTurns: 100` is in frontmatter. Both were unpinned; both are pinned now.
 
-### librarian — `agents/librarian.md`
+### librarian: `agents/librarian.md`
 
-- **POSITION:** NATIVE.md row — no native equivalent.
+Position: a NATIVE.md row, since there is no native equivalent.
 - **ADOPT (gem 3):** scripts-over-MCP sentence, recipe form ("write the
   ten-line script" as the action).
 - **FIX (cross-cutting 1):** type-marked references.
@@ -319,27 +318,27 @@ of further prose closes it.**
   condition, the four cases that require the pass, and the licence to skip it,
   with the −39.02pp figure that makes it a condition rather than a ritual.
 
-### fixer — `agents/fixer.md`
+### fixer: `agents/fixer.md`
 
 - **FIX (A3 share):** name the write mechanism in the final report.
 - **FIX (C7), recipe form:** "a search-engine or aggregator URL is
   research — hand it back to the orchestrator for the librarian"; states
   the action and the route, not a bare refusal.
-- **FIX (C6, with designer):** one research policy for both writers —
+- **FIX (C6, with designer):** one research policy for both writers;
   see designer for the mechanism question.
 - **ADOPT (gem 3):** as librarian.
 - **FIX (cross-cutting 1):** frontmatter description reference typed.
 - **COMPRESS (R2):** safe rows; pin-migration rows with anchors kept.
   Pin additions FIRST (Rule 0): grep-every-caller (:56–59),
-  both-scopes/ToolSearch, **and the "unsearched tool is invisible" line
-  — the third of the three pin additions, here and in designer.**
+  both-scopes/ToolSearch, **and the "unsearched tool is invisible" line,
+  the third of the three pin additions, here and in designer.**
 - **COMPRESS (R5, behind Rule 1):** the three-examples bullet trims to
   one.
 
-### designer — `agents/designer.md`
+### designer: `agents/designer.md`
 
 - **DECIDE → FIX (B9; owner: maintainer; slot: R1):** Review mode vs
-  frontmatter — keep-and-declare or cut-and-route. Either outcome
+  frontmatter: keep-and-declare or cut-and-route. Either outcome
   executes in R1, and the hook's expectation (currently a pinned false
   positive in `verify-deliverables.test.mjs:371–380`) updates with it.
 - **FIX (C9):** motion numbers as base cap plus named exceptions.
@@ -355,9 +354,9 @@ of further prose closes it.**
   estate) + harness restatements; **pin addition: the "unsearched tool
   is invisible" line (third of three).** The axe-57% rationale waits for
   Rule 1 (R5).
-- **ACCEPTED LIMIT:** no per-agent temperature — documented, closed.
+- **ACCEPTED LIMIT:** no per-agent temperature, documented, closed.
 
-### oracle — `agents/oracle.md`
+### oracle: `agents/oracle.md`
 
 - **FIX (A1/M4 share):** marker caller-supplied; decision-phase charter.
 - **FIX:** the security-slice pointer to native `/security-review`.
@@ -369,27 +368,27 @@ of further prose closes it.**
   other side, as an assignment*, with the 99.2%-against-48.3% measurement and the
   finding that instructing dissent alone is indistinguishable from baseline.
 
-### tracer — `agents/tracer.md`
+### tracer: `agents/tracer.md`
 
+Position: a NATIVE.md row.
 - **FIX (B10):** description boundary rewritten to the work's state, not
   the arrival path.
-- **FIX (cross-cutting 1):** type-marked references — the second-most
+- **FIX (cross-cutting 1):** type-marked references, the second-most
   misroute-prone name.
 - **COMPRESS (R2):** dispatch-list merge (pin-migrated) + the one safe
   row; otherwise pinned wall-to-wall.
 - **CLOSED (§9 Should 11, verified 2026-08-29):** all three present in
-  `agents/tracer.md` — falsifiers written before evidence, hypotheses that must
+  `agents/tracer.md`: falsifiers written before evidence, hypotheses that must
   differ in kind, and `undetermined` distinguished from `ruled out`.
-- **POSITION:** NATIVE.md row.
 
 ## Skills
 
-### review — `skills/review/SKILL.md` (+ checklists.md, performance.md)
+### review: `skills/review/SKILL.md` (+ checklists.md, performance.md)
 
-**The R1 package, landed as one unit with one netted margin statement:**
+The R1 package lands as one unit with one netted margin statement:
 the in-file reorder (every pinned rule before char 20,000), the
 ~850-char checklists-canonical offload, the A1/M4 marker change, B3, B7,
-B8, and **the one real-tokenizer measurement** — which lives in this
+B8, and **the one real-tokenizer measurement**, which lives in this
 wagon only (it was previously double-booked into R4; it is not there).
 Landing additions and cuts in the same wagon is what the recorded pool
 collision (COMPRESSION §5 Phase 3) demanded.
@@ -409,7 +408,7 @@ collision (COMPRESSION §5 Phase 3) demanded.
 - **COMPRESS (R5, behind Rule 1):** the rationale rows.
 - **MEASURE (R4, instrument from R3, decision rule pre-registered):**
   vs free `/code-review` on the seeded-defect set. Adjudication is the
-  seeded ground truth itself — the judge model only matches reported
+  seeded ground truth itself: the judge model only matches reported
   findings to seeds, it does not rule on validity. Decision rule,
   registered before the run: review survives if its FP-rate spread and
   the native tool's do not overlap across the seeded sets AND its
@@ -420,8 +419,10 @@ collision (COMPRESSION §5 Phase 3) demanded.
   failed its own pitch. Plus the routing test: one natural "is this
   ready to ship" prompt, fresh session.
 
-### deepwork — `skills/deepwork/SKILL.md` (+ depth.md)
+### deepwork: `skills/deepwork/SKILL.md` (+ depth.md)
 
+Position: complementary to `/batch`, which earns a NATIVE.md row and one
+README sentence.
 - **FIX (A1/M4, the owner):** writer/decision/mixed-phase gate rules;
   marker + budget stamped into dispatched gate agents.
 - **FIX (B5), recipe form + greppable:** "record each
@@ -433,15 +434,14 @@ collision (COMPRESSION §5 Phase 3) demanded.
 - **DECIDE → executed (owner: maintainer; slot: R5):** upstream
   adopt-or-diverge, ruled by reading the upstream commits, recorded in
   PROVENANCE.md, and executed either way.
-- **FIX (cross-cutting 1):** type-marked references — the observed
+- **FIX (cross-cutting 1):** type-marked references, the observed
   misroute case.
 - **COMPRESS (R2, rows clear of the DECIDE; evidence rows wait for Rule
   1 in R5; the `51dfbcc` paragraph is do-not-touch).**
-- **POSITION:** complementary to `/batch` — NATIVE.md row + one README
-  sentence.
 
-### deep-interview — `skills/deep-interview/SKILL.md`
+### deep-interview: `skills/deep-interview/SKILL.md`
 
+Position: a NATIVE.md row, and the +14.50 measurement stays quotable.
 - **FIX (B1):** description follows the body (two to four questions).
 - **FIX (B6):** scores cite what settled them; Outcome=3 keeps the
   interview open regardless of sum.
@@ -454,12 +454,12 @@ collision (COMPRESSION §5 Phase 3) demanded.
 - **CLOSED (Must 8 + §9 Should 16, verified 2026-08-29):** the approval gate is
   pinned four times across both TSVs; the spec template carries
   `## Files and interfaces` with the named-not-described rule.
-- **POSITION:** NATIVE.md row; the +14.50 measurement stays quotable.
 
-### verification-planning — `skills/verification-planning/SKILL.md`
+### verification-planning: `skills/verification-planning/SKILL.md`
 
-- **DO (R3 — moved from the ambiguous R0/R5 slot so R4 does not consume
-  unbuilt artifacts):** the four instrument designs — the Rule 1
+Position: a NATIVE.md row, checked, with nothing native found.
+- **DO (R3, moved from the ambiguous R0/R5 slot so R4 does not consume
+  unbuilt artifacts):** the four instrument designs: the Rule 1
   pressure-test harness (consumed by R5's Phase-4 cuts), the
   seeded-defect ground-truth set, the component-arm designs, and the
   multi-file benchmark task class (criterion 1's missing instrument: a
@@ -468,20 +468,19 @@ collision (COMPRESSION §5 Phase 3) demanded.
 - **COMPRESS (R3):** the conditional back half (~2,300 chars, zero pins)
   to a conditional sibling; the two abstract-prose merges.
 - **FIX (cross-cutting 1):** frontmatter description reference typed.
-- **POSITION:** NATIVE.md row — checked, found nothing native.
 
-### simplify — `skills/simplify/SKILL.md` (+ principles.md)
+### simplify: `skills/simplify/SKILL.md` (+ principles.md)
 
-- **POSITION:** the native split — NATIVE.md row.
+Position: the native split, which earns a NATIVE.md row.
 - **FIX:** consolidate the does-not-auto-fire disclosure to one place.
 - **FIX (cross-cutting 1):** type-marked references.
 - **COMPRESS (R2):** the two-scopes/explorer-routing duplicate; evidence
   rows wait for Rule 1 (R5).
 - **CLOSED (§9 Should 21–22, verified 2026-08-29):** the declared-public-entrypoint
   check runs first in § *Understand first*, and the introducing-commit rule
-  carries both refusals — shallow clone and move commit.
+  carries both refusals: shallow clone and move commit.
 
-### codemap — `skills/codemap/SKILL.md` (+ scripts/codemap.mjs)
+### codemap: `skills/codemap/SKILL.md` (+ scripts/codemap.mjs)
 
 - **FIX (A2):** the script emits the per-directory file list; test
   extended in the same commit.
@@ -500,12 +499,12 @@ collision (COMPRESSION §5 Phase 3) demanded.
   symbols, never line numbers*, with `omc-slim:review` named as the deliberate
   exception and the reason it is one.
 
-## Hooks — `hooks/`
+## Hooks: `hooks/`
 
 Every change updates the paired test suite and the mutate runner in the
 same commit; "never blocks, always exit 0" stays load-bearing.
 
-- **FIX (A3 + C8 — verify-deliverables.mjs), two messages for two
+- **FIX (A3 + C8, verify-deliverables.mjs), two messages for two
   states:** the current single check conflates them, and one message
   would be false in one state. State 1, no write-family tool use at all:
   "no Edit/Write-family tool use was seen — if the work landed via shell
@@ -513,7 +512,7 @@ same commit; "never blocks, always exit 0" stays load-bearing.
   every path outside the project: "the only writes landed outside the
   project (e.g. /tmp)." Path resolution against the project root decides
   which fires; neither accuses.
-- **FIX (B9 interplay — verify-deliverables.mjs, not hooks.json):** a
+- **FIX (B9 interplay, verify-deliverables.mjs, not hooks.json):** a
   SubagentStop matcher sees only the agent-type string and cannot know a
   designer ran in Review mode. If the B9 ruling is keep-and-declare, the
   suppression is a heuristic scan of the dispatch prompt in the
@@ -521,18 +520,18 @@ same commit; "never blocks, always exit 0" stays load-bearing.
   it) — **heuristic, and documented as such**: this is the one R1 item
   whose false-positive elimination the harness cannot guarantee, and its
   test asserts the heuristic's behaviour, not a guarantee.
-- **FIX (C5 — hooks.json AND verify-deliverables.mjs):** pin the matcher
+- **FIX (C5, hooks.json AND verify-deliverables.mjs):** pin the matcher
   to this plugin's namespace *and* update the `.mjs` last-segment
-  normalization (`:218–221`) that deliberately strips any prefix — two
+  normalization (`:218–221`) that deliberately strips any prefix. Two
   layers must agree on what they cover. The fix first checks which
   agent-type string a `--plugin-dir` dev session presents, so the pin
   does not silence the hook in development.
-- **FIX (C3 — check-output-style.mjs), with self-identification:**
+- **FIX (C3, check-output-style.mjs), with self-identification:**
   replace the bare-name exemption with path-based self-ID (the installed
   plugin's path vs this script's own location), so the running self
-  stays exempt — dropping the exemption alone would make every healthy
-  install warn about itself at startup — while a same-name fork or
-  stale duplicate is reported.
+  stays exempt, while a same-name fork or stale duplicate is reported.
+  Dropping the exemption alone would make every healthy install warn
+  about itself at startup.
 - **FIX (C4):** on deadline expiry, report rivals already found.
 - **FIX (cross-cutting 1):** `systemMessage` texts use type-marked
   references.
@@ -544,25 +543,25 @@ same commit; "never blocks, always exit 0" stays load-bearing.
 
 ## Standing refusals (decided non-features; triggers observed via the incidents ledger, cross-cutting 8)
 
-- **No mega-merge of frameworks** (part I §7) — reopens on independent
+- **No mega-merge of frameworks** (part I §7). It reopens on independent
   benchmark evidence reversing the sophistication-vs-results
   correlation.
-- **No Stop hook / Todo Enforcer** (part II §3, oracle-upheld on spend) —
-  reopens at three ledger-recorded idle-abandonment incidents.
+- **No Stop hook / Todo Enforcer** (part II §3, oracle-upheld on spend).
+  It reopens at three ledger-recorded idle-abandonment incidents.
 - **Nothing on the tool-call path** (tool-loop-guard, format gate, LSP
-  feedback) — reopens on one ledger-recorded occurrence of the failure
+  feedback). It reopens on one ledger-recorded occurrence of the failure
   class, as opt-in only.
 - **No per-agent model pinning** (removed in part I's era; B2's tier
-  rewrite depends on this staying decided) — reopens if R4's ablations
+  rewrite depends on this staying decided). It reopens if R4's ablations
   show a delegation cost win that tier routing would multiply; the
   mechanism (`model:` frontmatter) is native and one line, so the
   refusal is of the policy, not the capability.
-- **No automatic prompt compression** (LLMLingua class) — reopens on a
+- **No automatic prompt compression** (LLMLingua class). It reopens on a
   published application to authored agent prompts with behaviour evals.
 - **Impossibility-class refusals, recorded so they are not re-litigated**
   (part II §3): aider watch mode (no filesystem-change hook exists),
   Cline Memory Bank / beads (covered by CC auto-memory and the progress
-  file — both prior refusals, per part II §3), Cursor glob rules / goose
+  file, both prior refusals, per part II §3), Cursor glob rules / goose
   session-to-recipe (need attachment/transcript machinery a plugin does
   not get). Each reopens only if the platform ships the missing
   capability.
@@ -571,7 +570,7 @@ same commit; "never blocks, always exit 0" stays load-bearing.
   a prompt). Refused on three grounds, in order of weight. It **inverts the one
   thing this project has measured**: the +14.50 result is not "a gate exists", it
   is *a human stops and decides*, and auto-review's entire purpose is to remove
-  the human from that position. It is **on the tool-call path** — not a
+  the human from that position. It is **on the tool-call path**, not a
   borderline case like `Stop`, the definitional one. And it is **unbounded spend
   of the class already refused**, a reviewer model per gated call, forever.
   Reopens if Claude Code ships a first-party approval-delegation surface with a
@@ -579,6 +578,6 @@ same commit; "never blocks, always exit 0" stays load-bearing.
   re-argued on their own merits. The portable residue was taken: a denied action
   is information, so take a different path or stop — never re-issue the same call.
 - **No testimonials, star charts, unverifiable multipliers, or
-  adjectives the evidence does not force** — no trigger; identity.
-- **Standing-rule delivery** — ships only with a measured violation-rate
+  adjectives the evidence does not force**: no trigger; identity.
+- **Standing-rule delivery** ships only with a measured violation-rate
   delta; the trigger is that measurement existing.
