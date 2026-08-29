@@ -5,8 +5,8 @@ shipped file. Commissioned with an explicit instruction not to look only at the
 good parts.
 
 **This section is the orchestrator's own view.** Four research lanes ran
-alongside it — competitive landscape, cross-ecosystem harvest, user-frustration
-corpus, adversarial audit — and their findings are in the sections that follow.
+alongside it (competitive landscape, cross-ecosystem harvest, user-frustration
+corpus, adversarial audit) and their findings are in the sections that follow.
 Where they disagree with this one, they are the evidence and this is an opinion.
 
 ---
@@ -17,7 +17,7 @@ Where they disagree with this one, they are the evidence and this is an opinion.
 biggest risk it carries.**
 
 omc-slim is named, described and architected as an orchestrator. Its own
-benchmark produced its headline win — 18% cheaper at equal correctness — with
+benchmark produced its headline win, 18% cheaper at equal correctness, with
 **zero subagent invocations in any arm**. The plugin's best-evidenced single
 mechanism is a *stop*: `deep-interview`'s approval gate, measured at **+14.50
 points** in a control-armed comparison, the largest published effect for a prompt
@@ -33,7 +33,7 @@ session, and the first session is where retention is decided. A user who install
 "an orchestrator" and watches the main thread do the work itself concludes the
 plugin is broken. A user who installs "a discipline layer that also has
 specialists" and watches the main thread do the work tersely, check itself, and
-stop before building the wrong thing, concludes it is working — because it is.
+stop before building the wrong thing, concludes it is working. Because it is.
 
 ## 2. Five independent sources say the central bet is wrong
 
@@ -49,8 +49,8 @@ This is the part the project has documented honestly and then not acted on.
 
 **Five against, zero for.** No source in this repository's evidence supports
 delegation improving coding outcomes. The honest reading is that the roster is a
-*context-isolation* device — which is a real and different benefit, worth having
-for `explorer` and `librarian` specifically — and not a performance device.
+*context-isolation* device, which is a real and different benefit, worth having
+for `explorer` and `librarian` specifically. It is not a performance device.
 
 The counter-argument the project makes, and it is a fair one: context collapses
 96% → 14.7% from 8K to 256K, and isolation buys that back. That defends
@@ -59,7 +59,7 @@ the pages). It does not defend a six-agent roster.
 
 ## 3. The existential fact nobody in this repository has fully absorbed
 
-**Dynamic Workflows went GA.** Not experimental — GA on all paid plans, Pro by
+**Dynamic Workflows went GA.** Not experimental: GA on all paid plans, Pro by
 opt-in. A JavaScript script orchestrating dozens to hundreds of subagents through
 `agent()`, `pipeline()`, `parallel()` and `phase()`, with resumable runs, a
 progress UI, prompt-cache-aware staggering, and concurrency caps. **Plugins may
@@ -85,8 +85,8 @@ Strip out what the evidence does not support and what the platform now does
 better. What survives:
 
 1. **The register.** Terse, senior, no preamble. Measured, and it addresses the
-   single most saturated user complaint in the corpus — ~20 distinct threads,
-   *"it is physically hurting me to read Opus 5's output"* — where the reported
+   single most saturated user complaint in the corpus, ~20 distinct threads of
+   *"it is physically hurting me to read Opus 5's output"*, where the reported
    fix that *fails* is exactly the prompt layer: *"I have tried editing style
    config, a custom system prompt per project, and global as well as project
    level claude.md edits, to no avail."* An output style is not a CLAUDE.md rule;
@@ -95,7 +95,7 @@ better. What survives:
 2. **The stops.** `deep-interview`'s approval gate is the highest-value mechanism
    in the evidence. Anything else shaped like it is worth more than another agent.
 3. **The self-certification rule.** *"The pass that produced a change cannot be
-   the pass that clears it"* — the best-supported rule in the plugin (clean-context
+   the pass that clears it"* is the best-supported rule in the plugin (clean-context
    reviewer F1 28.6% against 24.6% for same-session self-review), and it answers
    the second-most-cited complaint: *"my problem with Claude wasn't writing code,
    it was that it graded its own homework and gave itself an A."*
@@ -103,10 +103,10 @@ better. What survives:
    a sourced finding instead of filling the caller's window. This is the one place
    delegation is defensible on the evidence.
 5. **The honesty apparatus.** COVERAGE, REINFORCEMENT, the contradiction sweep,
-   the measured figures, the published negative result. This is the actual moat:
-   the external research pass found **no published head-to-head benchmark of any
-   orchestrator plugin against stock Claude Code, anywhere** — including
-   claude-flow at ~70k stars.
+   the measured figures, the published negative result. **This was described as
+   the moat, and the description was false. See §8.** What survives is narrower:
+   a committed re-runnable harness, and a published negative result about the
+   project's own central mechanism.
 
 That is a product. It is a smaller product than the one on the label.
 
@@ -119,7 +119,7 @@ On a subscription the direct cost is not dollars, and that is the wrong frame
 anyway. **The real cost is attention.** This repository's own LIMITATIONS cites
 LongCodeBench: Claude 3.5 Sonnet falls **29% → 3%** from 32K to 256K, and
 Anthropic's own guidance says recall degrades as the window fills. So 4,309
-tokens is not free even when it is free — it is 4,309 tokens of the budget that
+tokens is not free even when it is free. It is 4,309 tokens of the budget that
 decides whether the model can still find the thing it needs at turn forty.
 
 The user-facing question is therefore not "what does this cost" but **"what does
@@ -127,8 +127,8 @@ it have to be worth"**. The bar: it must save more attention than it spends. A
 terse register that halves output length plausibly does. A six-agent roster that
 never fires certainly does not.
 
-**Startup tokens are under active suspicion in the community right now** —
-*"you can remove tens of thousands of startup tokens just by disabling these
+**Startup tokens are under active suspicion in the community right now.**
+*"You can remove tens of thousands of startup tokens just by disabling these
 bloated schemas you don't use"*; *"At one point I made sure to remove all plugins
 and skills"*; *"Is Superpowers still relevant?… do all the improvements in CC
 negate the need for this set of skills?"* A 4,309-token plugin is judged against
@@ -144,10 +144,15 @@ carries a trigger. The result is 144KB of research documentation, a README dense
 with caveats, and prose full of em-dashes, tricolons and bolded lead-ins.
 
 That is *precisely* the surface signature of AI slop — because slop imitates
-thoroughness. A sceptical reader who lands on a repository with eleven markdown
-files in `docs/`, a 144KB research document and a README that opens with three
-paragraphs of statistical caveats does not think *"rigorous"*. They think
-*"generated"*, and they close the tab. The honesty that is the moat is invisible
+thoroughness. A sceptical reader who lands on a repository with thirteen markdown
+files in `docs/`, a 144,673-byte `RESEARCH-2026-08-26.md`, and a README opening on
+three paragraphs of statistical caveats does not think *"rigorous"*. They think
+*"generated"*, and they close the tab.
+
+*(That count said eleven when this paragraph was first written. It was wrong, in
+the paragraph arguing this project's numbers are checkable, and a research lane
+caught it with `ls`. Corrected in place, with the error left visible, because the
+mistake is more useful to a reader than the correction is.)* The honesty that is the moat is invisible
 to the person who has not read it, and it is *actively suspicious* to the person
 who has only skimmed it.
 
@@ -170,9 +175,19 @@ evidence a human can verify in ten seconds.** Concretely:
 
 ## 7. What I would do next, in order
 
+**Revised after the competitive sweep landed.** The original list assumed
+measurement was uncontested ground. It is not, and that changes the order.
+
+0. **Correct the moat claim everywhere it appears, first.** A project whose
+   stated virtue is honest measurement cannot survive being wrong about who else
+   measured. Done in `VIABILITY-2026-08-28.md` and here; anything downstream that
+   repeats it needs the same treatment.
 1. **Reposition before distributing.** The listing, the description and the
    README's first line should say discipline layer, not orchestrator. Cost:
-   words. Value: it stops the first session from disappointing.
+   words. Value: it stops the first session from disappointing — and the n=500
+   study makes the reposition *more* honest, not less, because it measured a
+   discipline layer and found exactly what this project already publishes about
+   itself.
 2. **Run the delegation benchmark, or drop the claim.** `docs/INSTRUMENTS-R4.md`
    §1 specifies it: a four-adapter multi-file task where delegation can actually
    pay, a correctness fixture the arms never see, transcript-based delegation
@@ -184,11 +199,114 @@ evidence a human can verify in ten seconds.** Concretely:
    are wagers. Shipping wagers is fine. Shipping them without saying so is not.
 4. **Fix the surface-signal problem** in §6. It is cheap and it is the difference
    between being read and being closed.
-5. **Decide the name before the listing.** The migration path exists
+5. **Take one of the six unclaimed scopes in §9, or take drift detection.** The
+   field's shape is now clear: one skill with one number is what gets installed,
+   and `caveman` (101,699 stars, one skill) and `ponytail` (115,938, one skill)
+   are the proof. This repository ships twelve components and zero stars. The
+   two scopes nobody has taken — *does the agent still follow the rule forty
+   turns in*, and *onboarding quality* — are both measurable, both unclaimed, and
+   both closer to what this project is actually good at than orchestration is.
+6. **Decide the name before the listing.** The migration path exists
    (marketplace `renames` maps plugin names, verified in the binary) and the cost
    never gets lower than today.
 
-## 8. The assumption nobody has tested
+## 8. The moat was not a moat, and finding that out is the most useful thing here
+
+A competitive sweep on 2026-08-29 falsified the sentence the strategy rested on.
+[VIABILITY-2026-08-28.md](./VIABILITY-2026-08-28.md) §0 claimed **no published
+head-to-head benchmark of any orchestrator plugin against stock Claude Code
+exists anywhere**, and called that the only moat. There are at least five, and
+the two that matter are worse news than the count.
+
+**Laszlo, 2026-06-11 — 500 tasks, with significance testing.** Codex against
+Codex plus Superpowers, across 59 repositories and 8 languages. Pass rate 45.6%
+→ 47.8%: **+2.2pp, not statistically significant**. Tokens 1.56M → 2.18M:
+**+625k, significant**. The author's summary is the finding — the framework
+*"changed the failure surface"* rather than improving correctness, solving 41
+tasks the baseline missed while missing 30 the baseline solved.
+
+That is the study this project's roadmap wanted to run, already run, at n=500, on
+the category leader, with a null result on quality and a significant cost
+increase. It is the strongest evidence in existence about what a discipline layer
+does, and it says: changes what you fail at, costs more, does not make you more
+correct.
+
+**Ahmed, 2026-04-13 — omc-slim's two headline findings, four months earlier, on
+someone else's plugin.** Twelve automated sessions, six per arm, identical
+prompts, zero human intervention: **9% cheaper, ~14% fewer tokens**, and *"token
+usage clustered 2–3× tighter than baseline"*. Cheaper and more consistent — the
+same two results `BENCHMARK.md` reports at n=3 on one task shape, published on a
+279,227-star competitor by someone who ran n=6 across three complexity tiers.
+
+**And `caveman` — one skill, 101,699 stars — publishes a better benchmark than
+this repository does.** 54 runs, 18 paired, six immutable fixtures, an
+exact-semantic oracle, a 10,000-resample bootstrap CI, a publication gate, and a
+regression it found in itself and published anyway (−9.9% on HTML).
+
+**What this costs and what it leaves.** It costs the claim of being alone. It
+leaves something smaller and still true: the harness is committed and
+re-runnable, and the negative result is about the project's own central
+mechanism rather than about an edge case. Two of the five are also reproducible.
+So: one of a handful, not the largest, not the most careful.
+
+**It also validates §1 from an unexpected direction.** The n=500 study measured a
+discipline layer and found the cost significant and the correctness null — which
+is exactly what four independent studies already told this project about rules
+layers, and exactly what its own benchmark showed. Every serious measurement in
+this space now agrees: **the layer moves cost and process, not correctness.** A
+project that says so on its first screen is telling the truth in a category where
+nobody else does. That is a smaller claim than "the only measured one", and it is
+one nobody can falsify next month.
+
+## 9. Six problems the field has and this project does not name
+
+Found by the same sweep, each with a working project behind it and none of them
+mentioned anywhere in these documents.
+
+1. **Crash and compaction survival.** `planning-with-files` keeps plan, findings
+   and progress on disk and re-injects them every turn. This project identifies
+   compaction eviction as a top failure mode and ships no mechanism for it.
+2. **Cost attribution per rule.** `token-warden` charges every rule rent against
+   a frozen benchmark and evicts the ones that do not pay. Thirteen stars, and it
+   has built this project's stated moat more rigorously than this project has —
+   Neyman-optimal allocation, three estimators built, measured and **deleted with
+   the reasons published**, and a stated signal-to-noise ratio of roughly 1:100.
+3. **Session resumption as a first-class artefact.**
+4. **Codebase indexing as a token strategy**, where `codemap` writes markdown and
+   the competition builds a queryable graph.
+5. **Security posture.** There is no security section in this repository.
+6. **Team conventions and multi-repo.** The project that owned this slot is
+   dying, so the slot is open.
+
+Two things the sweep looked for and did not find, which are therefore genuinely
+unclaimed: **drift detection** — does the agent still follow the rule forty turns
+in? — and **onboarding quality**.
+
+## 10. How the dead ones died
+
+Six archived orchestrators, and **none of them died of being unused**.
+
+They died of becoming products. Four of five successor projects are *smaller*
+than the thing they replaced, three by 60–75%. Markdown in a repository is what
+people install; `npm install -g` breaks the curve.
+
+The more common shape is worse: dying without an obituary. `ccpm` has 8,354
+stars, no commit since 2026-03-18, and stranger-filed bug reports from March and
+May still unanswered. `agent-os` has 5,346 stars and one issue in ninety days,
+its top open request being *"support Claude Code skills format"* — the platform
+moved and the framework did not. `SuperClaude` has 23,848 stars and **four**
+people who filed an issue in ninety days. None of the three is archived. All
+three are dead. **The absence of an archive banner is not a life sign.**
+
+The best document in that whole set is the README of a dead project. Overstory's
+`STEELMAN.md` measured its own thesis and refuted it: *"A 20-agent swarm
+completing 15 tasks over 6 hours consumed 8M tokens... A single agent completing
+the same tasks sequentially over 8 hours consumed 1.2M. The 2-hour speedup cost
+$51 in additional coordination overhead."* Its author published eight named
+failure classes for the delegation architecture, then archived the tool. That is
+a complete pre-mortem for the bet this project has still not tested.
+
+## 11. The assumption nobody has tested
 
 Every file in this repository rests on one unexamined premise: **that prompt text
 changes behaviour enough to be worth its context cost, on the current model

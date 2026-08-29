@@ -156,7 +156,7 @@ reports on-invoke cost per component so the next increase is visible while it
 happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md, frontmatter included, is 5,270 tokens on the chars/4 basis, ~4,972 corrected —
+SKILL.md, frontmatter included, is 5,282 tokens on the chars/4 basis, ~4,993 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**.
 
@@ -176,7 +176,7 @@ deletion — a rule still present, still passing every presence check, and no
 longer in context when it matters. It is proved able to fail: padding inserted
 ahead of the rules made it report a pinned rule at token ~6,485.
 
-The file now fits whole, with 29 tokens of margin. Its load-bearing rules are
+The file now fits whole, with 7 tokens of margin — thin, and the next release owes it headroom. Its load-bearing rules are
 front-loaded, its lane mechanics and its report-time suppression list live in
 `checklists.md`, and its base-resolution shell — 207 tokens for 709 chars, 22%
 denser than the file average because shell tokenises badly — moved out to
@@ -190,7 +190,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Twelve components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **35,619 chars/4, ~32,415 corrected**.
+The ceiling if every component fires once is **36,060 chars/4, ~32,816 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging

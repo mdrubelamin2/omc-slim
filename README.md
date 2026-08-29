@@ -1,61 +1,62 @@
 # omc-slim
 
-**A small pantheon of specialist agents for Claude Code.**
-
-Six agents, six skills, two hooks. The main thread stops being the implementer and
-becomes a planner that delegates, verifies and reconciles. It injects **zero
-bytes on the tool-call path**, ships **no MCP servers**, and inherits whatever
-MCP servers and skills your project already has.
+Six agents, six skills, two hooks and an output style. The main thread stops
+being the implementer and becomes a planner that delegates, verifies and
+reconciles. Nothing is injected on the tool-call path, no MCP servers ship with
+it, and it inherits whatever servers and skills your project already has.
 
 ```
 /plugin marketplace add mdrubelamin2/omc-slim
 /plugin install omc-slim@omc-slim
 ```
 
-No configuration, no API keys, no dependencies, no bundled MCP servers.
+Benchmarked against a plain session on 2026-08-22, n=3 per arm: 18% cheaper, all
+nine runs graded equally correct, and **zero subagents ran in any arm**. So the
+measured win came from the prompt, not from the roster this plugin is named for.
+That is the least flattering true sentence available and it is the first one,
+because the alternative is you finding out in week two.
 
 ---
 
 ## The numbers, and what they do not say
 
 This is the only plugin in its category with a committed, re-runnable harness and
-a published negative result about itself. That is the whole pitch, so the numbers
-come with their limits attached rather than in a footnote.
+a published negative result about itself. So the numbers come with their limits
+attached instead of a footnote.
 
 Static context is **~4,309 tokens**, measured with a real tokeniser.
 `./scripts/measure-context.sh` also reports **4,735 on a chars/4 basis**, the
 estimate this project's version series is tracked on, and prints the gap between
 them every run. That gap used to be a hard-coded 13.5% taken as one average
-across the whole repository — and a single average does not hold per file, which
-is how a 298-token overrun in `review` published itself as a 44-token margin.
-`claude plugin details omc-slim` reports a third, smaller number because it does
-not count the output style at all — and it also counts about **42 tokens per
-component of framing that no text measurement can see**, so the figure above is a
-floor rather than the whole charge. Both are in
+across the whole repository. A single average does not hold per file, which is
+how a 298-token overrun in `review` published itself as a 44-token margin.
+`claude plugin details omc-slim` reports a third, smaller number, because it does
+not count the output style at all and it does count about 42 tokens per component
+of framing that no text measurement can see. So the figure above is a floor, not
+the whole charge. Both are in
 [LIMITATIONS.md](./docs/LIMITATIONS.md). Quote a basis or don't quote a number.
 
 On one single-file CLI task, n=3 per arm, it averaged **18% less than a plain
 session** ($1.01 vs $1.24) with non-overlapping spreads, and shipped the smallest
-tool of the three setups tested. All nine runs graded equally correct — so the
-grader could not separate them on quality, and **no subagent ran in any arm**.
+tool of the three setups tested. The grader could not separate the arms on
+quality.
 
-**Treat that as a demonstration, not a measurement.** One task at n=3 cannot
-detect an effect below roughly 30 percentage points, and task-level variance
-dominates, so more repeats would not fix it
+Treat that as a demonstration, not a measurement. One task at n=3 cannot detect
+an effect below roughly 30 percentage points, and task-level variance dominates,
+so more repeats would not fix it
 ([evidence](./docs/RESEARCH-2026-08-26.md#8-measurement--how-to-settle-the-central-bet)).
 The omc-slim arm also ran with two MCP servers no other arm had. It measured the
 prompts as they were **before** the current restructure, so it describes an
 earlier build than the one you install. Read
 [BENCHMARK.md](./docs/BENCHMARK.md) before quoting it.
 
-And the class of claim matters. Four independent studies find a rules layer moves
-**cost, runtime and code size** and does **not** move correctness. This one's
-numbers fit that pattern exactly, which is the honest thing to say about them —
-so nothing here claims omc-slim makes Claude more correct.
+The class of claim matters too. Four independent studies find that a rules layer
+moves cost, runtime and code size, and does not move correctness. These numbers
+fit that pattern exactly. Nothing here claims omc-slim makes Claude more correct.
 
-**Where every component stands against what Claude Code already ships**, with a
+Where every component stands against what Claude Code already ships, with a
 measured win or a dated removal criterion for each:
-**[docs/NATIVE.md](./docs/NATIVE.md)**.
+[docs/NATIVE.md](./docs/NATIVE.md).
 
 Three components write files into your repository, and only when they run:
 `codemap` maps it, `deep-interview` writes a spec, `deepwork` keeps a log.
@@ -162,42 +163,25 @@ roster costs what your session costs.
 
 **Find things**
 
-- **[explorer](./agents/explorer.md)** — *"Where is the retry logic?"* Returns a
-  `file:line` map, not prose. The first call for any where/what/which question.
-- **[librarian](./agents/librarian.md)** — *"Is this still the recommended API?"*
-  Checks current docs and real usage instead of recalling training data, and
-  prefers your MCP servers over the open web.
-
-**Change things**
-
-- **[fixer](./agents/fixer.md)** — *"Rename this across nine files."* Executes a
-  spec you have already decided on. Not for research or architecture.
-- **[designer](./agents/designer.md)** — *"This form looks wrong."* Owns layout,
-  hierarchy, spacing, colour, motion and responsive behaviour.
-
-**Judge things**
-
-- **[oracle](./agents/oracle.md)** — *"Is this design going to hold up?"*
-  Architecture, high-risk refactors, security and data-integrity calls.
-  Escalation, not a default review step.
-- **[tracer](./agents/tracer.md)** — *"I have fixed this twice and it keeps
-  coming back."* Builds competing hypotheses and tries to falsify them.
+| Agent | Ask it | What comes back |
+|---|---|---|
+| [explorer](./agents/explorer.md) | *"Where is the retry logic?"* | A `file:line` map, not prose. The first call for any where/what/which question |
+| [librarian](./agents/librarian.md) | *"Is this still the recommended API?"* | Current docs and real usage, read off disk before anything written about it |
+| [fixer](./agents/fixer.md) | *"Rename this across nine files."* | A spec you already decided on, executed. Not research, not architecture |
+| [designer](./agents/designer.md) | *"This form looks wrong."* | Layout, hierarchy, spacing, colour, motion, responsive behaviour |
+| [oracle](./agents/oracle.md) | *"Is this design going to hold up?"* | A second opinion on an architecture or security call. Escalation, not a default step |
+| [tracer](./agents/tracer.md) | *"I have fixed this twice and it keeps coming back."* | Three competing hypotheses, ranked by what would falsify them |
 
 ## Skills
 
-- **[review](./skills/review/SKILL.md)** — *"Is this ready to ship?"* Every axis
-  at once, behind an evidence gate that keeps false positives out.
-- **[deepwork](./skills/deepwork/SKILL.md)** — *"This is too big to get right in
-  one pass."* Stage plan, parallel lanes, a failable check per stage.
-- **[deep-interview](./skills/deep-interview/SKILL.md)** — *"I want to build
-  something, I am not sure what yet."* Stops for approval before any code.
-- **[verification-planning](./skills/verification-planning/SKILL.md)** — *"How do
-  I prove this did not break anything?"*
-- **[simplify](./skills/simplify/SKILL.md)** — *"This is over-built."* Deletes
-  speculative abstraction, config nobody sets, and hand-rolled standard library.
-- **[codemap](./skills/codemap/SKILL.md)** — *"Nobody here has read this
-  repository."* Writes a codemap per directory plus a root atlas. Expensive, and
-  it says so before starting.
+| Skill | Ask it | What it does |
+|---|---|---|
+| [review](./skills/review/SKILL.md) | *"Is this ready to ship?"* | Every axis at once, behind an evidence gate that keeps false positives out |
+| [deepwork](./skills/deepwork/SKILL.md) | *"This is too big to get right in one pass."* | Stage plan, parallel lanes, a failable check per stage |
+| [deep-interview](./skills/deep-interview/SKILL.md) | *"I want to build something, I am not sure what yet."* | Interviews you, writes a spec, and stops for approval before any code |
+| [verification-planning](./skills/verification-planning/SKILL.md) | *"How do I prove this did not break anything?"* | Designs the evidence path. Does not write the tests |
+| [simplify](./skills/simplify/SKILL.md) | *"This is over-built."* | Deletes speculative abstraction, config nobody sets, hand-rolled standard library |
+| [codemap](./skills/codemap/SKILL.md) | *"Nobody here has read this repository."* | A codemap per directory plus a root atlas. Expensive, and it says so first |
 
 ## The hooks
 

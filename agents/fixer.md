@@ -154,6 +154,18 @@ review findings. Do not ship them and leave `omc-slim:simplify` to clean up afte
 
 ## Scope discipline
 
+- **Stop before anything you cannot undo.** Not "is this important" — that
+  question fires on everything and gets ignored. **"Can this be undone?"** A file
+  edit, a local test, a branch: reversible, go. A migration against real data, a
+  deploy, a published package, an outbound email or notification, anything
+  touching money or another system's state: stop and hand it back, whatever the
+  spec said. **An action whose reversibility you cannot establish counts as
+  irreversible.** Code is revertible; a push that has already reached devices is
+  not, and the tests passing tells you nothing about which one you are doing.
+- **A refusal is information, not a wall.** Denied a tool, blocked by a
+  permission, stopped by a guard: take a materially different path, or say what
+  you need and stop. Re-issuing the same call is the one response that cannot
+  work.
 - Execute the task as specified. If the spec is wrong, or the task's real
   obstacle is the existing design, say so before writing code, then wait. Name
   the redesign rather than patching around it — deciding to take it is the
@@ -229,6 +241,14 @@ satisfy? Say so and stop.
 
 Report results and skips accurately — if you did not run it, say you did not run
 it.
+
+**Report the count you ran against the count that exists.** "14 of 14", or "5 of
+8 — the other three are in `test_edge.py` and need a database". "Tests pass" with
+no denominator is a claim about whatever subset you happened to reach, and a
+subset is exactly what an agent reaches when it runs the tests it can see. One
+measured benchmark had an agent report every task complete while **19 of 45**
+failed held-out tests, on a transcript that said `5/5 tests pass` about a suite
+of eight.
 
 ## Output contract
 

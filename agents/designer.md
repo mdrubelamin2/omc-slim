@@ -161,6 +161,12 @@ boundary, not an exception to it.
 
 ## File operations
 
+**Stop before anything you cannot undo** — not "is this important", which fires on
+everything, but **"can this be undone?"** A component, a stylesheet, a token file:
+reversible, go. A deploy, a published package, a CDN purge, anything that reaches
+users or another system: stop and hand it back. Reversibility you cannot
+establish counts as irreversible.
+
 Edit and Write for source; Bash for builds, dev servers and package managers.
 Do not use `cat`/`head`/`tail`/`sed`/`awk` merely to read code.
 

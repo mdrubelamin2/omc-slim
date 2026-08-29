@@ -2093,7 +2093,7 @@ Ordered, because two of these are only correct in this order.
    the one published figure no other check can see, and v0.9.2 shipped a Critical
    defect that survived precisely because a reviewer was told to set it.
 2. `./scripts/check-reinforcement.sh`, `./scripts/check-shell.sh`,
-   `./scripts/check-evals.sh`.
+   `./scripts/check-evals.sh`, `./scripts/check-prose.sh`.
 3. Both hook suites and both mutation runners; `skills/codemap/scripts/codemap.test.mjs`;
    `skills/review/scripts/base.test.sh`.
 4. **The contradiction sweep**, over the shipped prompt surface. It is a release

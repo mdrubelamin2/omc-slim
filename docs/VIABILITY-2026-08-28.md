@@ -18,6 +18,44 @@ problem, and the contradiction between this plugin's evidence and its identity.
 
 ## Corrections, 2026-08-29
 
+**The moat sentence in §0 is false, and it is the sentence the rest of this
+report was built on.** §0 says: *"the external research pass found no published
+head-to-head benchmark of any orchestrator plugin against stock Claude Code,
+anywhere"*, and calls that *"the moat. It is also currently the only moat."* A
+second sweep on 2026-08-29 found at least five, two of them more rigorous than
+`docs/BENCHMARK.md`:
+
+| Study | Design | Result |
+|---|---|---|
+| Laszlo, AgentStackBench, 2026-06-11 | Codex vs Codex + Superpowers, `gpt-5.4` high reasoning, **500 tasks** across SWE-bench Verified/Pro, SWE-PolyBench, Multi-SWE-Bench — 59 repos, 8 languages, with significance testing | pass rate 45.6% → 47.8%, **+2.2pp not significant**; tokens 1.56M → 2.18M, **+625k significant**. *"It changed the failure surface"* rather than improving correctness |
+| Ahmed, 2026-04-13 | 12 automated sessions, 6 with Superpowers and 6 without, identical prompts, zero human intervention | **9% cheaper, ~14% fewer tokens**, and *"token usage clustered 2–3x tighter than baseline"*. Simple tasks cost **more** with the framework |
+| `caveman`, `docs/WRAP-BENCHMARK.md`, 2026-08-06 | 54 runs, 18 paired, six immutable fixtures, exact-semantic oracle, 10,000-resample bootstrap CI | **33.2% fewer input tokens**, 95% CI 14.6–48.5%, 18/18 exact-answer checks held, **and one published regression** (−9.9% on HTML) |
+| `planning-with-files`, `docs/evals.md` | Anthropic `skill-creator` framework, 30 objective assertions, 5 with / 5 without, 3 blind A/B comparators | 96.7% pass |
+| Chen, 2026-05-11 | Five orchestrators on one ~300-line feature | author's own timings; quality by judgement, not scored |
+
+Two consequences, and neither is comfortable.
+
+**The Ahmed study reports omc-slim's two headline findings — cheaper, and 2–3×
+tighter variance — four months earlier, on a competitor with 279,227 stars.**
+`BENCHMARK.md` is n=3 per arm on one task shape. That is n=6 per arm across three
+complexity tiers.
+
+**The honest remaining claim is narrower and still worth something:** the harness
+is committed and re-runnable, and the project publishes a negative result about
+its own central mechanism. Two of the five above are also reproducible from
+published fixtures. So it is *one of a handful*, not the only one, and it is
+neither the largest nor the most statistically careful.
+
+**§1's market table also missed the two largest projects in the category** —
+obra/superpowers (279,227 stars, the direct pitch-competitor) and garrytan/gstack
+(130,278) — and misattributed `caveman`, which is JuliusBrussee's standalone
+repository, not part of mattpocock/skills. The "attribution correction for the
+record" in §1 is itself wrong.
+
+---
+
+## Corrections, 2026-08-29
+
 Three claims in this report did not survive a read of the diffs they rest on.
 Recorded here rather than edited away, because §1b's own caveat says its
 upstream-drift claims are commit-message-level, and this is what that caveat

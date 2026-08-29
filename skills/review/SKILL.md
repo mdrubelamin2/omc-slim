@@ -84,7 +84,7 @@ behaviour change**, whatever the message says.
 
 **First, predict.** Before reading closely, name the three to five places this
 change is most likely to be wrong, then check each. The gap between prediction
-and finding shows where you were blind.
+and finding is where you were blind.
 
 **Then find what judges this better than you can.** You have a cutoff; this
 repository has law you have not read.
@@ -141,9 +141,9 @@ never enters your context, every lane reads the same bytes, and a lane needs
 **one Read instead of the 40–67 tool calls** measured when reviewers rebuild the
 range themselves.
 
-**Ask a lane only for what its agent can return**, and remember none of them can
-dispatch — an external claim comes back unresolved and you are the one who sends
-it on. `checklists.md` holds what each agent returns and how to brief it.
+**Ask a lane only for what its agent can return.** None of them can dispatch, so
+an external claim comes back unresolved and you send it on. `checklists.md` holds
+what each returns and how to brief it.
 
 **Brief a lane with evidence, never with a verdict.** Findings and `file:line`
 locate the work, and that is the whole of what travels. A severity, a disposition,
@@ -307,8 +307,8 @@ discussion. An import or variable *this diff* orphaned, a stale comment, a magic
 number, a version mismatch.
 
 Two things are deliberately not on that list. **Pre-existing dead code** is
-reported, never deleted — the `omc-slim:simplify` skill treats "dead" as an
-unproven claim about your search, not a property of the code. And **a performance fix is
+reported, never deleted — the `omc-slim:simplify` skill treats "dead" as a claim
+about your search, not a property of the code. And **a performance fix is
 never mechanical**: `performance.md` requires a before-and-after measurement,
 which a review pass has no baseline to produce. **Ask** where reasonable
 engineers could disagree, or where it changes user-visible behaviour, removes
@@ -323,8 +323,8 @@ interpolated query. Name the judgement that remains — "added the branch; confi
 the wording". A Critical with two defensible fixes gets asked about, however
 small the diff.
 
-Batch every ask into **one** question with a recommendation across the set. No
-asks, no question.
+Batch every ask into **one** question with a recommendation. No asks, no
+question.
 
 More than a line or two of simplicity work, **hand it to `omc-slim:simplify`**,
 the deletion skill — it has the pin-down check for untested code and this does
@@ -341,7 +341,9 @@ Report what they said, failures included; a skipped check is named with its reas
 **Evidence has a shelf life** — output from before the last edit describes a tree
 that no longer exists. A green build **says the code compiles, not that it does
 what was asked**. "All tests pass" with no output, or a conclusion carried by
-*should*, *seems to* or *probably*, is a claim, not a result.
+*should*, *seems to* or *probably*, is a claim, not a result. **And a pass needs
+its denominator**: "14 of 14" is a result; "tests pass" is a
+claim about whatever subset ran.
 
 Then stop. **This budget covers one invocation of this skill.** One review and **at most two
 re-reviews — three while a Critical is still open**, each stating where it is

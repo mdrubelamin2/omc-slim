@@ -75,6 +75,7 @@ jobs:
           ./scripts/check-reinforcement.sh
           ./scripts/check-shell.sh
           ./scripts/check-evals.sh
+          ./scripts/check-prose.sh
 
       - name: Upstream pin drift
         # Reports, never fails: a moved upstream is a decision to make, not a
