@@ -35,7 +35,7 @@ plugin is broken. A user who installs "a discipline layer that also has
 specialists" and watches the main thread do the work tersely, check itself, and
 stop before building the wrong thing, concludes it is working. Because it is.
 
-## 2. Five independent sources say the central bet is wrong
+## 2. Four independent sources say the central bet is wrong, and the fifth proved nothing
 
 This is the part the project has documented honestly and then not acted on.
 
@@ -47,8 +47,9 @@ This is the part the project has documented honestly and then not acted on.
 | Nature MI | every multi-agent arm lost on SWE-bench Verified |
 | **This repository's own benchmark** | zero subagents ran in any arm; the measured win came from the prompt |
 
-Five against, zero for. No source in this repository's evidence supports
-delegation improving coding outcomes. The honest reading is that the roster is a
+Four against, zero for, and one that turned out to prove nothing. No source in
+this repository's evidence supports delegation improving coding outcomes — and
+the one it has been citing hardest is the one that cannot. The honest reading is that the roster is a
 *context-isolation* device, which is a real and different benefit, worth having
 for `explorer` and `librarian` specifically. It is not a performance device.
 
