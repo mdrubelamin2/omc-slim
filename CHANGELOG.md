@@ -3,6 +3,72 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.5
+
+A hook that catches the model certifying work it never ran, a gate against this
+project's own prose, and a correction to the sentence the strategy rested on.
+
+The `SubagentStop` hook gained a third advisory state: the agent asserted a
+verification outcome, and no test, build or typecheck command appears in its
+transcript. It costs nothing, because the harness added `last_assistant_message`
+to the payload in 2.1.251 and the Bash commands were already being walked.
+
+That state exists because of a measured failure. On one 45-task benchmark an
+agent reported every task complete; against held-out tests, 26 passed. Nineteen
+false positives, 42%, on a transcript reading `5/5 tests pass` about a suite of
+eight. The same 19 tasks failed identically on two vendors' models, so this is
+the shape of the agent loop rather than a defect in one model. This plugin
+already policed whether a check exists and whether it can fail. It never policed
+whether the check covered the change, and that is the gap the 42% lives in. Two
+prose rules close the other half: report the denominator, and a pass without one
+is a claim about whatever subset ran.
+
+The hook still never accuses. It names the state, offers the escape hatch, and
+stays silent on every path it cannot resolve — a check that did run, a reported
+failure, a delegated dispatch, a missing final message. 38 cases, 56 mutants.
+
+The reversibility stop moved out of `deepwork` and into both writers. Not "is
+this important", which fires on everything and gets ignored, but "can this be
+undone?" — a criterion swap taken from an incident report where an agent asked to
+tidy up ad settings published a config flag to devices that had already received
+it. The tests had passed; the problem lived outside the tests, in whether the
+action could be undone at all. Reversibility you cannot establish counts as
+irreversible.
+
+The published descriptions no longer lead with "delegation over accumulation".
+The benchmark ran zero subagents, so leading with the one claim the evidence
+contradicts fails this project's own house law. They now lead with what was
+measured: a terse register, evidence gates, and a stop before the model builds
+the wrong thing.
+
+`scripts/check-prose.sh` measures this repository's own writing against the
+signals readers actually react to. AI-origin detectors do not work here — none of
+fourteen tested reached 80% accuracy, and seven flagged 61% of supervised TOEFL
+essays as machine-written — so there is no scanner to pass and the defence is
+craft. The gate fails on the two signals visible in a ten-second scroll and
+reports five more. README went from 15.6 em-dashes per 1,000 words to 9.9,
+inside the measured human band; the CHANGELOG from 5.2 bolded lead-ins per
+section to 0.6, with burstiness rising rather than falling. Six documents now
+pass, and the distribution draft failed the gate its own project ships before it
+was fixed.
+
+Two gate defects were found by using them. The type gate split on newlines, so a
+wrapped sentence became two and a line reading "for a plugin agent is
+`omc-slim:fixer`" was reported as untyped — the predicate had removed the word
+"agent" itself. The prose gate flagged this project's own vocabulary, and flagged
+the distribution draft for naming the words it forbids. Both fixed, both proved
+still able to fail.
+
+`VIABILITY-2026-08-28.md` §0 claimed no published head-to-head benchmark of any
+orchestrator plugin against stock Claude Code existed anywhere, and called it the
+only moat. There are at least five. One ran 500 tasks with significance testing
+and found the correctness gain not significant and the token cost increase
+significant. One reported this project's two headline findings four months
+earlier, on a 279,227-star competitor, at n=6 per arm against our n=3. Corrected
+in place. The honest remaining claim is that the harness is committed and
+re-runnable and the negative result is about the central mechanism, not an edge
+case.
+
 ## v0.9.4
 
 Adoption, position, and the first CI this repository has ever had.
