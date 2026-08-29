@@ -118,6 +118,28 @@ survives wherever you already have it, and the plugin no longer decides on your
 behalf which hosts your queries reach. See
 [the audit](./AUDIT-2026-08-25.md) for how it was found.
 
+**The output style cannot prove it ran, and that is structural.** Skills and
+agents emit a `skill_activated` telemetry event per invocation, carrying name,
+trigger and source. An output style is applied rather than invoked, so it emits
+nothing, appears in no transcript as a thing that fired, and cannot be attributed
+by any tooling the user has.
+
+This is not cosmetic, on the retention evidence. Plugins are not removed when
+they fail; they are removed months later in an audit, and the criterion is
+whether the owner can name what a component did. One documented inventory went
+from 235 components to 87 on exactly that basis. **The largest, most expensive,
+always-on component in this plugin is the only one that can never appear in the
+data used to decide whether to keep it** — and it carries the highest prune
+pressure in the repository, because prune pressure tracks how often something
+loads rather than how useful it is.
+
+Two partial answers ship, and neither is complete. The style names itself in the
+first reply that plans or delegates, which reaches a human and not a tool. And
+`scripts/optional/statusline.sh` reads `output_style.name` from the status-line
+payload and reports which style actually won — the one surface that settles it,
+and one a plugin cannot ship, because `statusLine` is a settings key rather than
+a manifest component. It is documented and opt-in for that reason.
+
 **The published static figure is a floor, not the whole charge.** It counts the
 output style body plus the text of twelve descriptions. The harness charges more:
 measured 2026-08-29 against the installed v0.9.1, `claude plugin details` reports

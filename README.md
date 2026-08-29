@@ -149,6 +149,28 @@ if `git` works. Where it does not, the skill states the five-step resolution
 chain in prose beside the command and says to run it by hand. The `scripts/`
 directory is maintainer tooling and never runs on a user's machine.
 
+## Proving it is actually on
+
+An output style is *applied*, never *invoked*, so it emits no telemetry and shows
+up in no transcript as a thing that fired. That matters more than it sounds,
+because of how plugins actually get deleted: not when one fails, but months later
+during an audit, when their owner removes everything they cannot point at.
+
+There is one surface that carries the answer, and a plugin cannot ship it —
+`statusLine` is a settings key, not a plugin component. So the script is here and
+you install it, or you do not:
+
+```json
+{ "statusLine": { "type": "command",
+                  "command": "/path/to/omc-slim/scripts/optional/statusline.sh" } }
+```
+
+It prints `omc-slim ●` when this style is in force, and
+`omc-slim ✗ (Concise won)` when something else took the slot — which is the
+question the `SessionStart` hook can raise and cannot settle, because the payload
+it receives does not carry the active style. Zero model tokens: a status line is
+UI, and nothing it prints enters the context.
+
 ## Two settings worth knowing
 
 Neither is a plugin change — both are yours, and both cost more than anything in
