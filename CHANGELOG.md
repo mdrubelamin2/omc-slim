@@ -88,7 +88,14 @@ that finished at the deadline as a timeout, which turns a fresh base into a
 stale one and sends the reviewer after phantom findings. CI had no
 `timeout-minutes` while spawning 81 mutants.
 
-Static: 4,413 real tokens, up 70. On-invoke ceiling: 35,559, of which 997 was
+Static: 4,413 real tokens. Up 70 on v0.9.6 and up 216 on 4,197, which is the
+lowest this surface has measured on the real-tokeniser basis and therefore the
+ratchet floor under criterion 6 as amended today. That 216 is not accepted
+silently. It buys the catch-all precedence rule (+70), the register rule in all
+six agents (+45 to +75 each, on-invoke only), and the v0.9.5 additions criterion
+3 requires. The floor is quoted on the real-tokeniser basis only: comparing it
+against the 4,075 published for v0.9.4 would compare two bases, which is the
+error this release removed. On-invoke ceiling: 35,559, of which 997 was
 always there and unreported.
 
 ## v0.9.6

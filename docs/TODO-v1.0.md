@@ -82,8 +82,12 @@ COMPRESSION-2026-08-28.md Rules 0–5 including Rule 0b (pin retirement).
    satisfies perfectly, and did, for v0.9.5 and v0.9.6. *Producing item: R1
    institutes it; every wagon re-runs it.*
 6. **The surface ratchet holds.** Static does not exceed the lowest figure any
-   release has reached, unless the increase is named, costed and accepted in the
-   release notes with what it buys; nets re-derived per wagon, never
+   release has reached **on the real-tokeniser basis**, unless the increase is
+   named, costed and accepted in the release notes with what it buys. The basis
+   is part of the rule: figures published before 2026-08-29 rest on a chars/4
+   estimate divided by a constant, and comparing across the two bases is the
+   error that made a 298-token cap overrun read as a 44-token margin. Floor is
+   4,197; nets re-derived per wagon, never
    extrapolated. This read "did not grow two releases running" until 2026-08-29,
    which alternating growth and shrinkage passes while the surface climbs. A
    ratchet that resets on any single decrease is a sawtooth. *Producing item: the
