@@ -372,6 +372,19 @@ sites = [
     # Left-anchored on "against": a bare "{total} today" is a suffix of the very
     # figure it guards, so a total that lost its leading digits would still match.
     ('docs/LIMITATIONS.md', f'against {total} today'),
+
+    # The three sites below went stale in this release and no gate said so. The
+    # seven pins above were the seven someone thought to enrol; every OTHER
+    # present-tense use of the same number was unwatched, so a static figure
+    # moved and six sentences kept quoting 4,309 as current. Same asymmetry the
+    # mechanism gate closed for components: a list of things that must be right
+    # is not a check that everything right is on the list.
+    #
+    # ASSESSMENT argues the adoption case FROM the figure, so a stale one makes
+    # the argument about a plugin that no longer exists.
+    ('docs/ASSESSMENT-2026-08-29.md', f'A {corrected}-token plugin'),
+    ('docs/ASSESSMENT-2026-08-29.md', f'It is {corrected} tokens'),
+    ('docs/LIMITATIONS.md',           f'the ~{corrected} this repository publishes'),
 ]
 
 bad = 0
@@ -863,7 +876,8 @@ NSPY
 # because those counts are published; these two are enrolled for the exit code.
 for suite in "bash $ROOT/skills/review/scripts/base.test.sh" \
              "node $ROOT/skills/codemap/scripts/codemap.test.mjs" \
-             "bash $ROOT/scripts/check-adversarial.sh"; do
+             "bash $ROOT/scripts/check-adversarial.sh" \
+             "bash $ROOT/scripts/optional/statusline.test.sh"; do
   name=$(basename "${suite##* }")
   if suite_out=$($suite 2>&1); then
     echo "$suite_out" | tail -1 | sed "s|^|${name}: |"

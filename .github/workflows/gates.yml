@@ -74,6 +74,7 @@ jobs:
           node skills/codemap/scripts/codemap.test.mjs
           bash skills/review/scripts/base.test.sh
           ./scripts/check-adversarial.sh
+          bash scripts/optional/statusline.test.sh
 
       - name: Coverage, reinforcement, shell, evals
         run: |

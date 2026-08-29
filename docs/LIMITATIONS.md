@@ -136,9 +136,18 @@ loads rather than how useful it is.
 Two partial answers ship, and neither is complete. The style names itself in the
 first reply that plans or delegates, which reaches a human and not a tool. And
 `scripts/optional/statusline.sh` reads `output_style.name` from the status-line
-payload and reports which style actually won — the one surface that settles it,
-and one a plugin cannot ship, because `statusLine` is a settings key rather than
-a manifest component. It is documented and opt-in for that reason.
+payload, the only surface that carries it, and one a plugin cannot ship because
+`statusLine` is a settings key rather than a manifest component. It is documented
+and opt-in for that reason.
+
+It settles two states of three, and the gap is worth naming because the script
+used to hide it. A named rival is decisive. `default` is not: `force-for-plugin`
+applies a style without writing the settings key, so a working session reports
+`default` too — observed here on 2026-08-29, with the style in force and
+`settings.local.json` reading `outputStyle: "default"` throughout. The badge
+asserted `✗ (default won)` on that value until v0.9.7, which is a confident false
+negative in exactly the audit this script exists to survive. It reports the state
+as open now, and `statusline.test.sh` fails if that regresses.
 
 **The published static figure is a floor, not the whole charge.** It counts the
 output style body plus the text of twelve descriptions. The harness charges more:
@@ -146,7 +155,7 @@ measured 2026-08-29 against the installed v0.9.1, `claude plugin details` report
 **1,461 always-on tokens** for the twelve components where our own basis measures
 **962** — roughly **42 tokens per component** of framing (name, type, list
 structure) that no measurement of the text can see. Across the roster that is
-about **500 tokens**, so the true always-on cost is nearer 4,800 than the ~4,309
+about **500 tokens**, so the true always-on cost is nearer 4,900 than the ~4,413
 this repository publishes.
 
 It is not folded into the headline, and the reason is a scar: 42 rests on a

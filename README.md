@@ -173,10 +173,13 @@ you install it, or you do not:
                   "command": "/path/to/omc-slim/scripts/optional/statusline.sh" } }
 ```
 
-It prints `omc-slim ●` when this style is in force, and
-`omc-slim ✗ (Concise won)` when something else took the slot — which is the
-question the `SessionStart` hook can raise and cannot settle, because the payload
-it receives does not carry the active style. Zero model tokens: a status line is
+It prints `omc-slim ●` when this style is in force and `omc-slim ✗ (Concise
+won)` when a named style took the slot. It reports `default` as open rather than
+lost, because `force-for-plugin` applies a style without writing the settings
+key: observed here on 2026-08-29, the style was in force while
+`settings.local.json` read `outputStyle: "default"`. Two of the three states
+settled, and the `SessionStart` hook settles none of them, because its payload
+does not carry the active style. Zero model tokens: a status line is
 UI, and nothing it prints enters the context.
 
 ## Two settings worth knowing
