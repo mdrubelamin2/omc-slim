@@ -8,13 +8,14 @@ straight into the code, and it stops the model claiming a test it never ran.
 /plugin install omc-slim@omc-slim
 ```
 
-That is the whole setup. Six agents, six skills, two hooks and an output style
-turn on together, and the style applies while the plugin is enabled.
+That is the whole setup: six agents, six skills, two hooks and an output style
+turn on together.
 
-Try it first without installing:
+Or try it without installing:
 
 ```
-claude --plugin-dir /path/to/omc-slim
+git clone https://github.com/mdrubelamin2/omc-slim
+claude --plugin-dir ./omc-slim
 ```
 
 ## What changes
@@ -25,15 +26,16 @@ claude --plugin-dir /path/to/omc-slim
   agents that do one thing, so your main thread keeps its context for the problem.
 - **It will not claim a check it did not run.** A hook reads the transcript and
   tells you when an agent reported a passing test with no test in it.
-- **It says what it cannot do.** Unproven is written as unproven, here and in the
-  docs.
 
-It ships no MCP servers, writes no files unless you run one of the three that do,
-and changes no settings.
+No MCP servers, no files written unless you run one of the three that do. It
+does override your `outputStyle` while enabled, and only `/plugin disable
+omc-slim` gives that back.
 
 ## What you can ask for
 
-Ask in plain language. You do not need to name any of these.
+Ask in plain language. Most start on their own, though that is observed rather
+than measured, and some builds gate delegation until you ask for it
+([ROUTING.md](./docs/ROUTING.md) has the one-paragraph fix).
 
 | Agent | Ask it | What comes back |
 |---|---|---|
@@ -62,12 +64,22 @@ Two do not start on their own. Type `/omc-slim:deepwork` or
 The first reply that plans or delegates names the style. If the `Agent` tool is
 missing from your session, that first reply says so too.
 
-Their **absence** is the signal. A session that plans work and never mentions the
-style means another plugin took the output-style slot, and Claude Code picks the
-winner by load order without telling you. Check with:
+Those two lines are the only evidence that reaches you, so their **absence** is
+the signal. A session that plans work and never mentions the style means another
+plugin took the output-style slot, and Claude Code picks the winner by load order
+without telling you. Check with:
 
 ```
 claude -p "One line: which output style is active?"
+```
+
+For a permanent badge in your status line, showing `omc-slim ●` when the style is
+in force and `omc-slim ✗ (Concise won)` when it is not, add this. It costs no
+model tokens:
+
+```json
+{ "statusLine": { "type": "command",
+                  "command": "/path/to/omc-slim/scripts/optional/statusline.sh" } }
 ```
 
 To turn it off: `/plugin disable omc-slim`. The style is part of the system
@@ -86,10 +98,11 @@ disables it in `.claude/settings.local.json` wins, so nobody is trapped.
 
 ## What it costs
 
-**~4,413 tokens** of always-on context, measured with a real tokeniser.
-`./scripts/measure-context.sh` re-derives it and also prints **4,842 on a chars/4
-basis**, the estimate this project's version series is tracked on. Nothing is
-injected per tool call.
+**~4,413 tokens** of always-on context, and nothing injected per tool call. Treat
+it as a floor: the harness adds framing no text measurement sees, so the real
+figure is nearer 4,900 ([LIMITATIONS.md](./docs/LIMITATIONS.md)).
+`./scripts/measure-context.sh` re-derives it, and also prints **4,842 on a
+chars/4 basis**, the estimate this project's version series is tracked on.
 
 Two settings of yours will save you more than this plugin costs, and neither is a
 plugin change:
@@ -104,41 +117,31 @@ plugin change:
 
 ## What it does not do
 
-It does not make Claude more correct, and nothing here claims it does.
+It does not make Claude more correct.
 
 The one benchmark, on a single-file task at n=3 per arm, came out 18% cheaper at
 equal graded quality. **Zero subagents ran in any arm, with delegation available
 the whole time.** That is a finding against this plugin's own thesis and it is on
-the front page on purpose. One task at n=3 proves very little, and the build it
-measured is older than the one you install.
+the front page on purpose. One task at n=3 proves very little, the winning arm
+also ran with two MCP servers the others did not, and the build it measured is
+older than the one you install.
 
-Two more, stated once:
+And `deepwork` and `simplify` do not start on their own. Invoke them by name.
 
-- `deepwork` and `simplify` do not auto-fire. Invoke them by name.
-- No agent may spawn another agent. That is enforced by the harness, not asked
-  for in a prompt.
-
-Everything known to be weak or unproven: **[LIMITATIONS.md](./docs/LIMITATIONS.md)**.
-The numbers and how they were taken: **[BENCHMARK.md](./docs/BENCHMARK.md)**.
+The full list, with evidence for each: **[LIMITATIONS.md](./docs/LIMITATIONS.md)**.
+How the numbers were taken: **[BENCHMARK.md](./docs/BENCHMARK.md)**.
 
 ## How it works
 
-The main thread plans and reconciles; specialists do the work. Everything Claude
-Code already provides was deleted from the prompt rather than described.
-
-Only a thin layer is enforced. `disallowedTools`, the output-style flag and the
-hook matcher are harness-enforced with no model cooperation, which is why
-one-level delegation is a guarantee rather than a request. The two hooks are
-code, and they have tests. Every agent body, every skill and the output style
-itself is prose, and prose holds exactly as well as a prompt holds.
+The main thread plans and reconciles; specialists do the work. One level deep,
+and that is enforced by the harness rather than asked for in a prompt, so an
+agent cannot quietly spawn a tree of its own.
 
 Neither hook can block anything. Both emit a message, always exit 0, and stay
-quiet when they cannot tell. One watches the `fixer` agent and the `designer`
-agent for a verification claim with no verification behind it. The other warns
-when a second plugin is fighting for the output-style slot.
+quiet when they cannot tell.
 
-Agents are scoped by what they must not do, never by a fixed tool list, so each
-one picks up whatever your project already provides:
+Agents are scoped by what they must **not** do, never by a fixed tool list, so
+each one picks up whatever your project already provides:
 
 | Your project has | What happens |
 |---|---|
@@ -149,15 +152,14 @@ one picks up whatever your project already provides:
 
 ## How it is checked
 
-Every claim on this page has a script behind it, and CI runs all seven
-`check-*.sh` scripts on every push along with both hook suites and both mutation
-runners.
+CI runs all seven `check-*.sh` scripts on every push, along with both hook suites
+and both mutation runners.
 
-The hook suites run 38 and 24 cases. The mutation runners then break those hooks
-56 and 25 ways to prove the suites would notice. `COVERAGE.tsv` pins every rule
-to the file that must carry it; `REINFORCEMENT.tsv` pins the *reasoning* too,
-because one compression pass kept every pinned phrase and broke the behaviour
-anyway.
+The hook suites run 38 and 24 cases, and the mutation runners then break those
+hooks 56 and 25 ways to prove the suites would notice. `COVERAGE.tsv` pins every
+rule to the file that must carry it, and `REINFORCEMENT.tsv` pins the *reasoning*
+too, because one compression pass kept every pinned phrase and broke the
+behaviour anyway.
 
 ```
 ./scripts/check-coverage.sh && ./scripts/check-reinforcement.sh
@@ -175,13 +177,11 @@ are waiting on exactly that: [RELEASE-READINESS.md](./docs/RELEASE-READINESS.md)
 | [LIMITATIONS.md](./docs/LIMITATIONS.md) | Everything known to be weak or unproven |
 | [BENCHMARK.md](./docs/BENCHMARK.md) | Three arms, n=3, committed harness, and the four measurement bugs found first |
 | [NATIVE.md](./docs/NATIVE.md) | Every component against what Claude Code already ships |
-| [COMPETITORS-2026-08-29.md](./docs/COMPETITORS-2026-08-29.md) | The field, and the four places a competitor beats us |
-| [ASSESSMENT-2026-08-29.md](./docs/ASSESSMENT-2026-08-29.md) | What this plugin actually is, written under an instruction not to look only at the good parts |
-| [DOGFOOD-2026-08-29.md](./docs/DOGFOOD-2026-08-29.md) | One real session, including the nine of twelve components that never fired |
 | [CHANGELOG.md](./CHANGELOG.md) | Notable releases |
-| [PROVENANCE.md](./docs/PROVENANCE.md) | What was adopted from where, pinned exactly |
-| [MAINTAINERS.md](./MAINTAINERS.md) | Undocumented Claude Code behaviour found along the way |
-| [RESEARCH.md](./RESEARCH.md) | Every decision, what was measured, and three tests that proved nothing |
+
+The full record, including the competitive field, a brutal self-assessment and a
+session log naming the nine of twelve components that never fired, is in
+[`docs/`](./docs/) and [MAINTAINERS.md](./MAINTAINERS.md).
 
 **Windows.** Everything runs on Node except the `review` skill's diff-base
 script, which needs the POSIX shell that Git for Windows already gives you. Where

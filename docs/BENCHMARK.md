@@ -99,7 +99,15 @@ of run.
 ## What this does not show
 
 - **n=3 is small.** Better than n=1, enough to separate plain from omc-slim
-  because those spreads do not overlap, not enough to settle anything finer.
+  because those spreads do not overlap, not enough to settle anything finer. One
+  task at this n cannot detect an effect below roughly 30 percentage points, and
+  task-level variance dominates, so more repeats of *this* task would not fix it.
+- **The winning arm had two MCP servers the other arms did not.** The omc-slim
+  arm ran with servers no plain or nodelegate run had available. That is a
+  confound on the headline 18%, and `AUDIT-2026-08-25.md` calls the figure
+  "MISLEADING as a headline" partly because of it. Recorded here on 2026-08-30
+  after a README review found the caveat lived only in two audit files that
+  nothing linked, while the number it qualifies was on the front page.
 - **Nothing delegated, so the central claim is still untested.** A single-file
   CLI is exactly where "smallest thing that works" wins and delegation cannot
   pay. This is not an assumption: at the time of this run every specialist that
