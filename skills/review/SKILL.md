@@ -128,8 +128,7 @@ changed lines, run the triggered lanes yourself rather than paying for a
 dispatch — **unless this session wrote the diff.** Then the shortcut is off at any
 size: the author clearing their own lanes is the same defect the adversarial pass
 below already refuses, one level down. Above 50 lines either way, dispatch them
-**in parallel, in one message**, one subagent
-each: give each **a path to a prepared diff file**, not the diff and not a
+**in parallel, in one message**, one subagent each: give each **a path to a prepared diff file**, not the diff and not a
 command to derive one, plus its lane text and the evidence gates in section 5.
 Either way, a lane the table triggers gets run and reported. **A dispatched lane
 returns its findings in its final message**. One that signs off with "done" has
@@ -251,8 +250,8 @@ needs confirming; **3 to 5 goes to Open questions, not to the findings list**,
 phrased as the question you could not settle and what would settle it. Below 3
 you have a hunch, not a finding, and hunches are noise. A Critical **survives at
 any confidence** as an open question, never a blocker, because the cost of
-missing it is asymmetric. Suppressing a low-confidence **Critical** entirely is
-how a real one gets deleted before anyone sees it. That is the one carve-out, not
+missing it is asymmetric. Suppressing one is how a real Critical gets deleted
+before anyone sees it. That is the one carve-out, not
 a licence to keep hunches. **The verdict is set by the worst finding you
 are confident about**, not the worst you can imagine — **counting only what this
 diff introduced.** A Pre-existing Critical is reported at full severity and does
@@ -281,8 +280,8 @@ remedy that **removes moving pieces** over one that spreads the same complexity
 around. Correct is only the floor: where a meaningfully better approach existed,
 that is a finding too — *Optional*, unless the chosen one carries real risk.
 
-**Report at most five nits, then a count.** "…and 6 further minor points, say the
-word" is a complete disposition. List every small thing and the reader skims all
+**Report at most five nits, then a count**, in the `NITS` block. "…and 6 further
+minor points, say the word" is a complete disposition. List every small thing and the reader skims all
 of it, the structural finding included.
 
 **One structural problem beats ten nits.** With both, the structural problem *is*
@@ -369,6 +368,9 @@ DROPPED
 FIXED
 - file:line  problem, then what you did
 
+NITS
+- file:line  the small thing. "…and N more, say the word" closes it
+
 NEEDS A DECISION
 - [CRITICAL] (8/10) file:line  problem
   Fix: the specific change
@@ -378,7 +380,7 @@ OPEN QUESTIONS
 - file:line  what you could not confirm, and the check that would settle it
 ```
 
-Clean is `Review: ship — no findings.` in one line — plus the DROPPED block if any
+Clean is `Review: ship — no findings.` plus the `Lanes:` line, and DROPPED if any
 candidates were filtered — then stop. A review that dropped everything it
 considered is not one that found nothing, and that difference is the reader's to
 judge.

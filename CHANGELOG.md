@@ -3,6 +3,94 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.7
+
+A release gate that had stopped running was run, and it found eleven
+contradictions in the shipped prompt surface. Plus a published number wrong by
+997 tokens, and a status line that reported the plugin as dead in the exact
+session where it was working.
+
+The contradiction sweep is criterion 5, and criterion 5 said it had lapsed. It
+did not run on v0.9.5 or v0.9.6, and RELEASE-READINESS recorded that in the
+words "a release gate that the author stops running between releases is not a
+gate". It ran here, over all eighteen prompt files in two independent lanes.
+Eleven findings, every one reproduced against the file before it was touched.
+
+Four of them are the same defect class this repository keeps finding: a rule that
+demands something the file's own output contract has nowhere to put. `fixer` was
+told to report "5 of 8" while `result:` was a closed enum of
+`passed | failed | not run`; `designer` had the identical hole and no mechanism
+field either; `review` mandated at most five nits and gave them no block; the
+`verification-planning` procedure said every step closes on a **Complete when**
+and step 4 had none, so the only way past it was by feel.
+
+Three were one word carrying two meanings. `fixer`'s ladder is numbered 1 to 7 by
+rising code volume under the heading "stop at the first rung that holds", then
+said "take the higher one" — which points at rung 3 or rung 5 depending on
+whether higher means up the page or up the numbers.
+
+Two were wiring claims that the harness contradicts. `tracer` said it is
+"dispatched by ... the `omc-slim:fixer` agent", and `fixer` denies `Agent` and
+`Task`, so the one path that actually exists is a relay through the
+orchestrator — and tracer's take-the-work trigger never fired on it. `codemap`
+said "run update LAST", and update re-stamps every provenance header including
+the root, while Step 4 writes the root map afterwards: update certified a map
+nobody had written, which is the exact failure its own sentence names.
+
+Two were a skill and its sibling disagreeing, with both live in the same pass.
+`review/SKILL.md` says a lane the table triggers is run and reported and that
+size is never a reason to skip; `checklists.md`, which the reader is ordered to
+open before judging anything, said "skip for test-only CI changes". And
+`simplify`'s table said extract any five duplicated lines while `principles.md`,
+opened at that exact decision, says duplicated *characters* are coincidence and
+to leave them.
+
+The on-invoke ceiling was scaled rather than measured, and understated by 997
+tokens. It took the chars/4 ceiling and multiplied by the *static* set's
+real-to-estimate ratio, on the stated grounds of keeping both published figures
+on one basis. One basis, wrong set. Twelve descriptions and twelve full prompt
+bodies do not tokenise alike. This is the same defect as the 1.135 constant that
+v0.9.3 removed, committed again three lines under the comment that explains why
+it was removed.
+
+The figures gate pinned seven sites and nothing watched the rest, so the static
+total moved and three present-tense sentences kept quoting a superseded
+number, one of them in the document that argues the adoption case from it.
+Twelve sites pinned now, including the count of `check-*.sh` scripts CI runs,
+which README put at four while the workflow ran seven.
+
+`statusline.sh` printed `omc-slim ✗ (default won)` when the plugin was working.
+`force-for-plugin` applies a style without writing the settings key,
+so `output_style.name` reports `default` in a session where the style is in
+force — observed here, with the style loaded and `settings.local.json` reading
+`outputStyle: "default"` throughout. That badge is the only evidence a user has
+that the largest always-on component is applied, and it is consulted during the
+audit that decides whether to delete the plugin. `default` reports as open now.
+A named rival still reports a loss. `statusline.test.sh` covers it in 10 cases
+and drops to 7 if the fix is removed.
+
+Every subagent carries the register rule now. Skills run in the main thread
+and inherit the output style; agents do not. So the punctuation and
+sentence-variance rule added in v0.9.6 reached the main thread and none of the
+six agents, two of which write the code a user reads. All six carry it, and a
+gate reports `NO REGISTER` if one loses it.
+
+Routing had no precedence rule. The roster said other plugins' components are
+"equally available and often better" and never said a generic catch-all is not
+one of them. +70 tokens on every request, taken because a router that sends
+explorer work to `general-purpose` wastes the whole 4,413 rather than saving 70.
+
+Also: `Task` in every `disallowedTools` rested on "the alias path has not been
+traced"; it is traced now against 2.1.251, where `toolAliases` is applied before
+name resolution. Two portable-timeout defects, both proved before and after — a
+watcher subshell orphaned one `sleep` per run, and `base.sh` reported a fetch
+that finished at the deadline as a timeout, which turns a fresh base into a
+stale one and sends the reviewer after phantom findings. CI had no
+`timeout-minutes` while spawning 81 mutants.
+
+Static: 4,413 real tokens, up 70. On-invoke ceiling: 35,559, of which 997 was
+always there and unreported.
+
 ## v0.9.6
 
 An adversarial audit found one structural defect wearing six hats, and four

@@ -58,6 +58,9 @@ deletion, where the cheapest check that could have caught it is the one you
 skipped. Broaden or repeat verification when a stated condition
 justifies it.
 
+**Complete when:** every distinct claim has one named owner and one piece of
+non-duplicative evidence, sized to what being wrong about it would cost.
+
 ## 5. Create a verification affordance when needed
 
 When the existing system leaves the decisive truth too indirect or ambiguous,

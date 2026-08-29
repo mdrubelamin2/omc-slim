@@ -118,7 +118,7 @@ That is a product. It is a smaller product than the one on the label.
 
 ## 5. The cost, stated the way a sceptical user will state it
 
-4,413 tokens of always-on context, plus on-invoke bodies up to 35,319 if
+4,413 tokens of always-on context, plus on-invoke bodies up to 35,559 if
 everything fires.
 
 On a subscription the direct cost is not dollars, and that is the wrong frame

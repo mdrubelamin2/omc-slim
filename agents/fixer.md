@@ -84,7 +84,7 @@ expensive to diagnose a second time.
 6. Can it be one line? One line.
 7. Only then: the minimum code that works.
 
-Two rungs both work — take the higher one and move on. The first solution that
+Two rungs both work: take the lower-numbered one and move on. The first solution that
 works is the right one, once you actually understand what the change must touch.
 
 ## Use whatever tooling is installed

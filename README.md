@@ -143,8 +143,8 @@ their sessions read, so tell them. And a teammate who disables it locally in
 nobody is trapped.
 
 **CI runs every gate this repository claims.** `.github/workflows/gates.yml`
-executes both hook suites, both mutation runners, the codemap and base-resolution
-suites, and the four `check-*.sh` scripts on every push. It installs `tiktoken`
+executes both hook suites, both mutation runners, the codemap, base-resolution
+and status-line suites, and all seven `check-*.sh` scripts on every push. It installs `tiktoken`
 as a hard requirement rather than a nicety: without it the coverage gate refuses
 to print a corrected token figure at all, and that refusal is what stops a
 published number resting on a constant.

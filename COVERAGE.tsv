@@ -36,7 +36,7 @@ CLAUDE.md	research-before-edit	output-styles	Read the artefact first
 CLAUDE.md	no-shallow-reasoning	output-styles	Brevity applies to solutions, never to reading
 fable-mode	stage-map-first	deepwork	Write the stage map before touching anything
 fable-mode	one-artefact-per-stage	deepwork	Every stage produces one verifiable artefact
-fable-mode	merge-uncheckable-stages	deepwork	produces nothing checkable, merge it
+fable-mode	merge-uncheckable-stages	deepwork	producing no artefact at all merges into the next
 fable-mode	delegate-independent-work	deepwork	dispatch them in one message
 fable-mode	one-level-delegation	deepwork	Keep delegation one level deep
 fable-mode	failable-check-per-stage	deepwork	check that can fail

@@ -262,7 +262,9 @@ project blessed is not a finding.
 - A build matrix covering the platforms actually shipped
 - A new artefact type with no release path
 
-Skip for test-only CI changes and services with an existing auto-deploy.
+Test-only CI changes and services with an existing auto-deploy usually clear
+this lane in a line. Clear it and say so — the lane table triggers it, and a
+triggered lane is run and reported rather than skipped.
 
 ## Decorrelating lanes by evidence source
 

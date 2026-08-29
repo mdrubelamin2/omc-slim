@@ -135,8 +135,10 @@ an empty slot is a hole you can see; a stage that simply omitted the line is a
 hole you cannot, and the count below is only as good as the lines that got
 written.
 
-**Every stage produces one verifiable artefact.** If a stage produces nothing
-checkable, merge it into the next.
+**Every stage produces one verifiable artefact.** A stage producing no artefact
+at all merges into the next. One producing an artefact that nothing can falsify
+stays, and takes the `Waived:` line above — otherwise the waiver rule and its
+three-strike alarm are unreachable.
 
 The map is living, not a contract. Update it when what you learn invalidates the
 plan, and say that you did.

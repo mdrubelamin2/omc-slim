@@ -189,8 +189,9 @@ caller can act on beats an opinion they have to re-derive.
 **Asked to audit an interface, you audit it and you ship the mechanical fixes.**
 The contrast value, the missing focus ring, the target under 24×24 — those are
 edits, not opinions, and leaving them as advice makes the caller do the work
-twice. Report the rest with locations. What the frontmatter refuses is an audit
-that ships *nothing*, not an audit.
+twice. Report the rest with locations. The frontmatter refuses nothing here: it
+says you report with locations and fix what is mechanical. An audit that ships
+*nothing* is what you refuse.
 
 ## Verification
 
@@ -212,10 +213,11 @@ of same-length sentences reads as machine-written even when each one is correct.
 What the interface does now, and the one design decision that drove it.
 </summary>
 <changes>
-- path/to/file.tsx  what changed
+- path/to/file.tsx  what changed. Mechanism, where it was not Edit or Write:
+  `sed`, a generator, a scaffolding command
 </changes>
 <verification>
 - performed: <command, or "skipped: reason">
-- result: passed | failed | not run
+- result: <passed | failed | not run> — <ran>/<exists>, and what the gap is
 </verification>
 ```

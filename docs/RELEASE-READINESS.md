@@ -7,7 +7,7 @@ produce its evidence, not against how much was done near it.
 **Verdict: not v1.0. Four criteria met, three need a run that spends money, and
 one of the four was met by discovering the criterion rested on a false premise.**
 
-The version stands at **v0.9.6**. Calling it v1.0 would require either running
+The version stands at **v0.9.7**. Calling it v1.0 would require either running
 the measurements or quietly weakening the criteria, and the second is the failure
 this project's whole apparatus exists to prevent.
 
@@ -18,8 +18,8 @@ this project's whole apparatus exists to prevent.
 | 3 | Inertness is visible | **Half MET and verified, half unrun** | `scripts/check-adversarial.sh` installs a real rival plugin — real manifest, real `installed_plugins.json`, real hook binary, nothing stubbed — and passes 9/9 including CRLF frontmatter, a style declared outside `output-styles/`, `force-for-plugin: yes` rather than `true`, and a **stale duplicate of omc-slim itself**, which the hook exempted by name until v0.9.2. The other half, a session whose `Agent` tool is gated, needs a live run. |
 | 4 | Native-parity ledger published | **MET** | [NATIVE.md](./NATIVE.md), verified against binary 2.1.251, with a dated removal criterion and a pre-registered falsifying outcome for each crowded slot. |
 | 5 | Contradiction sweep is a release gate | **The mechanism is MET. The discipline was not.** | On its first run it found eleven contradictions in the release being gated, six introduced by it. Then it **did not run on v0.9.5 or v0.9.6** — and that is exactly where a gate-policy contradiction, a false pin count and a stale scope claim landed, all three found later by a seven-seat review rather than by the sweep. A release gate that the author stops running between releases is not a gate. |
-| 6 | The surface ratchet holds | **NOT MET** | Static went 4,197 → 4,405 → 4,309. Net +112 across the run, stated rather than re-baselined. Three of the four additions are required by criterion 3. |
-| 7 | Every number re-derivable | **MET for every published figure**; the eval clause is amended below | Six figures pinned to a real tokeniser, and the gate refuses to print a corrected number without one. |
+| 6 | The surface ratchet holds | **NOT MET** | Static went 4,197 → 4,405 → 4,309 → 4,413. Net +216 across the run, stated rather than re-baselined. Three of the four earlier additions are required by criterion 3; the v0.9.7 addition of +70 is the catch-all precedence rule, taken because a router that sends explorer work to `general-purpose` wastes the whole 4,413 rather than saving 70. |
+| 7 | Every number re-derivable | **MET for every published figure**; the eval clause is amended below | Ten sites pinned to a real tokeniser, and the gate refuses to print a corrected number without one. v0.9.7 found the pin LIST was the weak part rather than the measurement: seven sites were enrolled and every other present-tense use of the same number was not, so three sentences kept quoting a superseded total. Also corrected the on-invoke ceiling, which was scaled from the static set's ratio and understated by 997 tokens. |
 
 ## The criterion-7 amendment, recorded rather than absorbed
 

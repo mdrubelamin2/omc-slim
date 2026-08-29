@@ -238,7 +238,7 @@ meant.
 
 | Redundancy | Fix |
 |---|---|
-| Same 5+ lines in several places | Extract a shared function |
+| Same 5+ lines that must change together, in 3+ places | Extract a shared function |
 | Dead code, unreachable branches, commented-out blocks | Orphaned by your own change: remove. Pre-existing: "dead" is a claim about your search, so say what you searched and what it cannot reach — dynamic dispatch, string-keyed lookup, callers outside the repo |
 | A wrapper that adds nothing | Inline it |
 | Factory for one product, strategy with one strategy | Call it directly |

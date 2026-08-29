@@ -187,7 +187,7 @@ reports on-invoke cost per component so the next increase is visible while it
 happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md, frontmatter included, is 5,246 tokens on the chars/4 basis, ~4,971 corrected —
+SKILL.md, frontmatter included, is 5,262 tokens on the chars/4 basis, ~4,998 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**.
 
@@ -228,7 +228,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Twelve components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **37,667 chars/4, ~35,319 corrected**.
+The ceiling if every component fires once is **37,906 chars/4, ~35,559 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging

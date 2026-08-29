@@ -352,7 +352,18 @@ if shared > SHARED_CAP:
     print('                  past it, whole skills are dropped rather than truncated')
     bad_cap = 1
 
+# README says how many `check-*.sh` scripts CI runs. It said "four" while the
+# workflow ran seven — a claim that undersells the thing it describes, which is
+# the direction nobody proofreads for. Derived from the workflow, not counted by
+# hand, because hand-counting is how it got to four.
+import yaml as _yaml
+_wf = _yaml.safe_load(open(os.path.join(root, '.github/workflows/gates.yml')))
+_runs = '\n'.join(s.get('run', '') or '' for s in _wf['jobs']['gates']['steps'])
+_n = len(set(re.findall(r'check-[a-z-]+\.sh', _runs)))
+_words = {4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten'}
+
 sites = [
+    ('README.md', f'all {_words.get(_n, _n)} `check-*.sh` scripts'),
     ('docs/LIMITATIONS.md', f'**{ceiling} chars/4, ~{ceiling_corr} corrected**'),
     ('docs/LIMITATIONS.md', f'is {review_c4} tokens on the chars/4 basis, ~{review_corr} corrected'),
     # CHANGELOG is deliberately NOT enrolled. It is version-scoped history, and
@@ -385,6 +396,7 @@ sites = [
     ('docs/ASSESSMENT-2026-08-29.md', f'A {corrected}-token plugin'),
     ('docs/ASSESSMENT-2026-08-29.md', f'It is {corrected} tokens'),
     ('docs/LIMITATIONS.md',           f'the ~{corrected} this repository publishes'),
+    ('docs/ASSESSMENT-2026-08-29.md', f'on-invoke bodies up to {ceiling_corr}'),
 ]
 
 bad = 0

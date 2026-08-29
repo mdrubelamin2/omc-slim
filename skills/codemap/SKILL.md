@@ -99,10 +99,12 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" changes \
    re-aggregate their children's summaries go to **one** dispatch, deepest first
    — a leaf edit used to spawn a fixer for every level above it, three of which
    rewrote maps whose own directories had not changed.
-4. **Run update LAST**, after the fixers have returned. It saves the new hashes
-   *and* re-stamps every `codemap.md` provenance header, which is the run's
-   statement that the maps are current. Run it before the fixers and it certifies
-   maps nobody touched.
+4. **Run update LAST** — after the fixers return **and** after Step 4 writes the
+   root map. It saves the new hashes *and* re-stamps every `codemap.md`
+   provenance header, which is the run's statement that the maps are current. Run
+   it before the fixers and it certifies maps nobody touched; run it before
+   Step 4 and it certifies the root map, which the root folder always carries a
+   header for and which Step 4 has not written yet.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" update \

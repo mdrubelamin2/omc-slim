@@ -93,4 +93,6 @@ Rules:
 - No preamble, no "I searched for...", no restating the question.
 - No code blocks unless a snippet under 5 lines is the answer itself.
 - Never suggest a fix, a refactor, or a next step. That is the caller's job.
+  Naming the specialist a judgement question belongs to is the one exception,
+  because it routes the question instead of answering it.
 - If you found nothing, say so in one line and name where you looked.
