@@ -178,7 +178,7 @@ reports on-invoke cost per component so the next increase is visible while it
 happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md, frontmatter included, is 5,289 tokens on the chars/4 basis, ~4,995 corrected —
+SKILL.md, frontmatter included, is 5,271 tokens on the chars/4 basis, ~4,981 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**.
 
@@ -198,13 +198,14 @@ deletion — a rule still present, still passing every presence check, and no
 longer in context when it matters. It is proved able to fail: padding inserted
 ahead of the rules made it report a pinned rule at token ~6,485.
 
-The file now fits whole, with **5 tokens of margin, and that is the finding**.
-A 44-token addition on 2026-08-29 — the brief for the adversarial pass, which had
-none — pushed it 37 tokens over and had to be paid for by trimming five other
-paragraphs in the same file. `review` has no headroom left: every future addition
-displaces something, and the next one that cannot find 40 tokens to displace has
-to go to `checklists.md` or not ship. That is a structural constraint on the
-heaviest component, not a number to watch — thin, and the next release owes it headroom. Its load-bearing rules are
+The file now fits whole, with **19 tokens of margin, and the way that number was
+reached is the finding**. A 44-token addition on 2026-08-29 — the brief for the
+adversarial pass, which had none — pushed it 37 tokens over. Trimming five other
+paragraphs to pay for it broke two pinned rules in two attempts, and the gate
+caught both. The addition ended up in `checklists.md` with a pointer left behind,
+which is what the constraint actually forces: **`review` has no room, so the next
+addition either displaces something or goes to the sibling.** That is a
+structural fact about the heaviest component, not a number to watch — thin, and the next release owes it headroom. Its load-bearing rules are
 front-loaded, its lane mechanics and its report-time suppression list live in
 `checklists.md`, and its base-resolution shell — 207 tokens for 709 chars, 22%
 denser than the file average because shell tokenises badly — moved out to
@@ -218,7 +219,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Twelve components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **37,253 chars/4, ~33,901 corrected**.
+The ceiling if every component fires once is **37,234 chars/4, ~33,885 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging

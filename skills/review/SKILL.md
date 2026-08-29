@@ -61,8 +61,7 @@ Was this what was asked for — nothing more, nothing less?
   The enum handled in one place of three, the error path skipped.
 
 Intent comes from this session's request, the plan, the issue, the commit
-messages — whatever exists. **Code that handles a deliverable is not the
-deliverable.**
+messages. **Code that handles a deliverable is not the deliverable.**
 
 **An intent gap is a finding, not a note.** It does not block on its own, and it
 outranks every style finding below it. Section 6 turns it into an ask, because
@@ -171,9 +170,8 @@ the four sources, and which one is the cheap win.
 proxy for risk, and a five-line auth change can be the worst thing in the release.
 
 Run it **in a fresh context**: a subagent that did not write this code and holds
-no checklist. **No component here can be it**: explorer returns
-locations, librarian researches outside the repo, the writers write, oracle
-judges decisions. Use a general-purpose agent; `checklists.md` has the brief. A pass that
+no checklist, told what the lanes already found and asked for what they missed.
+**No component here can be it** — `checklists.md` says why, and carries the brief. A pass that
 both wrote a change and blesses it is not a review, however carefully it reads —
 the reasoning that produced the bug is still resident, and still finds it
 reasonable. This is the one step you cannot do to yourself.
