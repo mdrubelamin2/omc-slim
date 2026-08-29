@@ -2,7 +2,7 @@
 /**
  * omc-slim — check-output-style harness
  *
- * Runs check-output-style.mjs as a child process against eighteen cases and
+ * Runs check-output-style.mjs as a child process against twenty-two cases and
  * checks only its observable contract (exit code / stdout JSON / stderr):
  *
  *   1. a rival plugin forces a style     -> warns, and names it
@@ -14,7 +14,7 @@
  *   7. style file without the flag       -> silent
  *   8. the flag appears in the BODY only -> silent; frontmatter is the contract
  *   9. the flag is indented under a key   -> silent; only a top-level key counts
- *  10. budget forced to 0                -> abstains, silent; never guesses
+ *  10. budget expires before any rival    -> silent; nothing was established
  *  11. blank OMC_SLIM_STYLE_BUDGET_MS    -> reads as unset, still warns
  *  12. non-numeric budget                -> falls back to the default, warns
  *  13. OMC_SLIM_DEBUG=1                  -> traces on stderr, stdout stays JSON
@@ -23,11 +23,18 @@
  *  16. the style dir is missing entirely  -> silent, no crash
  *  17. SessionStart source is "compact"   -> silent; one warning per session
  *  18. two rivals                         -> both named
+ *  19. a same-name plugin at another path -> reported; self-ID is by path
+ *  20. self path unresolvable             -> falls back to the bare name, silent
+ *  21. deadline expires holding a rival   -> reports it, and says it was cut short
+ *  22. per-file deadline inside one plugin -> stops it running the budget out
  *
  * Every case builds a whole fake Claude home — settings, installed_plugins.json
  * and plugin trees — under a temp dir, and points the hook at it with
- * CLAUDE_CONFIG_DIR. Nothing reads the developer's real configuration, so the
- * result does not depend on which plugins happen to be installed here.
+ * CLAUDE_CONFIG_DIR. `OMC_SLIM_SELF_ROOT` points at the fake omc-slim's install
+ * path — the hook identifies itself by install path now, and in a real session
+ * derives that from its own file location. Nothing reads the developer's real
+ * configuration, so the result does not depend on which plugins happen to be
+ * installed here.
  *
  * Self-contained: no dependencies beyond node built-ins.
  *
@@ -57,8 +64,18 @@ const ALLOWED_FIELDS = new Set(["systemMessage", "suppressOutput"]);
  * `style` is the frontmatter body of output-styles/style.md, written verbatim so
  * a case can plant a malformed or misplaced key. Passing null ships no style
  * directory at all.
+ *
+ * `alsoDir` / `alsoStyle` plant a SECOND style file in another directory. The
+ * hook searches the default directory before any the manifest declares, so a
+ * plugin built this way is scanned in a known order — which is what makes the
+ * per-file deadline testable without depending on readdir order.
  */
-function plantPlugin(root, key, style, { dir = "output-styles", manifest } = {}) {
+function plantPlugin(
+  root,
+  key,
+  style,
+  { dir = "output-styles", manifest, alsoDir, alsoStyle } = {},
+) {
   const installPath = join(root, "plugins-store", key);
   mkdirSync(installPath, { recursive: true });
   if (manifest !== undefined) {
@@ -71,6 +88,10 @@ function plantPlugin(root, key, style, { dir = "output-styles", manifest } = {})
   if (style !== null) {
     mkdirSync(join(installPath, dir), { recursive: true });
     writeFileSync(join(installPath, dir, "style.md"), style);
+  }
+  if (alsoDir !== undefined) {
+    mkdirSync(join(installPath, alsoDir), { recursive: true });
+    writeFileSync(join(installPath, alsoDir, "style.md"), alsoStyle);
   }
   return installPath;
 }
@@ -108,17 +129,19 @@ function writeInstalled(configDir, paths) {
 /**
  * The common world: omc-slim forcing its style, plus whatever else a case wants.
  *
- * Returns the config dir and the project cwd, so a case can add project-level
- * settings on top.
+ * Returns the config dir, the project cwd, and where the fake omc-slim is
+ * installed — `selfRoot`, which the runner hands the hook as
+ * CLAUDE_PLUGIN_ROOT. The hook identifies itself by install path now, so
+ * without that it would see the planted omc-slim as a same-name rival and warn
+ * about it in every case.
  */
 function buildWorld(root, { extraPlugins = {}, enabled, projectEnabled } = {}) {
   const configDir = join(root, "config");
   const project = join(root, "project");
   mkdirSync(project, { recursive: true });
 
-  const paths = {
-    "omc-slim@omc-slim": plantPlugin(root, "omc-slim", forcedStyle("omc-slim")),
-  };
+  const selfRoot = plantPlugin(root, "omc-slim", forcedStyle("omc-slim"));
+  const paths = { "omc-slim@omc-slim": selfRoot };
   for (const [key, spec] of Object.entries(extraPlugins)) {
     paths[key] = plantPlugin(root, key.replace(/[@/]/g, "_"), spec.style, spec.options);
   }
@@ -140,7 +163,7 @@ function buildWorld(root, { extraPlugins = {}, enabled, projectEnabled } = {}) {
       JSON.stringify({ enabledPlugins: projectEnabled }),
     );
   }
-  return { configDir, project };
+  return { configDir, project, selfRoot };
 }
 
 function payload(cwd) {
@@ -182,7 +205,7 @@ function runHookWithJunkBudget(build) {
 function spawnHook(build, debugFlag, extraEnv = {}) {
   const root = mkdtempSync(join(tmpdir(), "omc-slim-style-"));
   try {
-    const { stdin, configDir } = build(root);
+    const { stdin, configDir, selfRoot } = build(root);
     const res = spawnSync(process.execPath, [HOOK], {
       input: stdin,
       encoding: "utf8",
@@ -192,6 +215,10 @@ function spawnHook(build, debugFlag, extraEnv = {}) {
         ...process.env,
         OMC_SLIM_DEBUG: debugFlag,
         CLAUDE_CONFIG_DIR: configDir,
+        // Where THIS plugin is installed. Without it the hook falls back to
+        // its own file location, which under the mutation runner is a temp
+        // sandbox — so the fake omc-slim would look like a same-name rival.
+        OMC_SLIM_SELF_ROOT: selfRoot,
         ...extraEnv,
       },
     });
@@ -266,6 +293,31 @@ function expectWarningNaming(...names) {
   };
 }
 
+/**
+ * The same, without the never-name-omc-slim guard.
+ *
+ * Exactly one case needs that guard lifted: a second plugin ALSO called
+ * omc-slim, installed somewhere else. Naming it is the whole point there, so the
+ * guard would reject the correct output.
+ */
+function expectWarningNamingAnyOf(...phrases) {
+  return (res) => {
+    const violation = contractViolation(res);
+    if (violation) return violation;
+    const { systemMessage } = parseStdout(res.stdout);
+    if (typeof systemMessage !== "string")
+      return "expected a systemMessage, got none";
+    for (const phrase of phrases) {
+      if (!systemMessage.includes(phrase))
+        return `systemMessage did not say "${phrase}": ${systemMessage}`;
+    }
+    return null;
+  };
+}
+
+/** The sentence the hook adds when the deadline stopped the scan early. */
+const CUT_SHORT_PHRASE = "cut short by its time budget";
+
 // --- cases --------------------------------------------------------------------
 
 const RIVAL = { style: forcedStyle("Loud") };
@@ -275,10 +327,10 @@ const cases = [
     name: "a rival plugin forcing a style is reported by name",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectWarningNaming("loudplugin", "Loud"),
   },
@@ -286,8 +338,8 @@ const cases = [
     name: "omc-slim alone forcing a style stays silent",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root);
-        return { stdin: payload(project), configDir };
+        const { configDir, project, selfRoot } = buildWorld(root);
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -295,11 +347,11 @@ const cases = [
     name: "a rival that is installed but not enabled stays silent",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
           enabled: { "omc-slim@omc-slim": true, "loudplugin@market": false },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -307,10 +359,10 @@ const cases = [
     name: "a rival enabled with no install path stays silent",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "ghost@market": { ...RIVAL, uninstalled: true } },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -318,14 +370,14 @@ const cases = [
     name: "no enabledPlugins anywhere reads as cannot-tell, not as none",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
         });
         // Remove the settings file the world just wrote. A hook that treats a
         // missing map as "nothing enabled" is silent here for the wrong reason,
         // so this case only proves the contract alongside case 1.
         rmSync(join(configDir, "settings.json"), { force: true });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -333,10 +385,10 @@ const cases = [
     name: "malformed stdin does not crash the session",
     run: () =>
       runHook((root) => {
-        const { configDir } = buildWorld(root, {
+        const { configDir, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
         });
-        return { stdin: "{not json", configDir };
+        return { stdin: "{not json", configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -344,10 +396,10 @@ const cases = [
     name: "a style without the flag is not a rival",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "quietplugin@market": { style: plainStyle("Quiet") } },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -355,7 +407,7 @@ const cases = [
     name: "the flag in the body rather than the frontmatter is not a rival",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: {
             "docsplugin@market": {
               // The line must be a valid top-level key ON ITS OWN LINE, below
@@ -369,7 +421,7 @@ const cases = [
             },
           },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -377,25 +429,29 @@ const cases = [
     name: "the flag indented under another key is not a top-level key",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: {
             "nestedplugin@market": {
               style: "---\nname: Nested\nmeta:\n  force-for-plugin: true\n---\n\n# Body\n",
             },
           },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
   {
-    name: "a scan over its deadline abstains rather than guessing",
+    // The deadline fires after the first plugin, which here is omc-slim itself,
+    // so the rival is never reached. Nothing found, nothing established, nothing
+    // said. Its opposite number — a deadline that fires holding a rival — is the
+    // last case in this file.
+    name: "a scan whose deadline expires before any rival stays silent",
     run: () =>
       runHookWithNoBudget((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -403,10 +459,10 @@ const cases = [
     name: "a blank style budget reads as unset, not as zero",
     run: () =>
       runHookWithBlankBudget((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectWarningNaming("loudplugin"),
   },
@@ -414,10 +470,10 @@ const cases = [
     name: "a non-numeric style budget falls back to the default",
     run: () =>
       runHookWithJunkBudget((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectWarningNaming("loudplugin"),
   },
@@ -425,10 +481,10 @@ const cases = [
     name: "OMC_SLIM_DEBUG traces on stderr and leaves stdout valid JSON",
     run: () =>
       runHookWithDebug((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: (res) => {
       const violation = outputViolation(res);
@@ -442,11 +498,11 @@ const cases = [
     name: "project settings disabling a rival win over the user settings",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
           projectEnabled: { "loudplugin@market": false },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -454,7 +510,7 @@ const cases = [
     name: "a rival declaring a custom style directory is still found",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: {
             "customplugin@market": {
               style: forcedStyle("Custom"),
@@ -465,7 +521,7 @@ const cases = [
             },
           },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectWarningNaming("customplugin", "Custom"),
   },
@@ -473,10 +529,10 @@ const cases = [
     name: "a plugin with no style directory at all does not crash the scan",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "bareplugin@market": { style: null } },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectSilence,
   },
@@ -484,7 +540,7 @@ const cases = [
     name: "a compaction restart does not repeat the warning",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: { "loudplugin@market": RIVAL },
         });
         return {
@@ -495,6 +551,7 @@ const cases = [
             source: "compact",
           }),
           configDir,
+          selfRoot,
         };
       }),
     check: expectSilence,
@@ -503,15 +560,105 @@ const cases = [
     name: "two rivals are both named",
     run: () =>
       runHook((root) => {
-        const { configDir, project } = buildWorld(root, {
+        const { configDir, project, selfRoot } = buildWorld(root, {
           extraPlugins: {
             "loudplugin@market": RIVAL,
             "brashplugin@market": { style: forcedStyle("Brash") },
           },
         });
-        return { stdin: payload(project), configDir };
+        return { stdin: payload(project), configDir, selfRoot };
       }),
     check: expectWarningNaming("loudplugin", "brashplugin"),
+  },
+  {
+    // C3. A stale duplicate install, or a same-name fork from another
+    // marketplace, is a real competitor for the one forced-style slot. The
+    // bare-name exemption let it take that slot in silence — the plugin that
+    // stopped working and the plugin blamed for it were the same name, so
+    // nothing was ever reported. Self-identification is by install path now, and
+    // CLAUDE_PLUGIN_ROOT points at the OTHER one.
+    name: "a same-name plugin installed elsewhere is still a rival",
+    run: () =>
+      runHook((root) => {
+        const { configDir, project, selfRoot } = buildWorld(root, {
+          extraPlugins: { "omc-slim@othermarket": { style: forcedStyle("Fork") } },
+        });
+        return { stdin: payload(project), configDir, selfRoot };
+      }),
+    check: expectWarningNamingAnyOf("omc-slim (Fork)"),
+  },
+  {
+    // Where the running plugin's own path cannot be resolved there is nothing to
+    // compare against, and the bare name is the fallback. Dropping the exemption
+    // instead would make every healthy install warn about itself at startup,
+    // which is a worse failure than the over-exemption being fixed. The rival
+    // must still be named, so this cannot pass by going silent.
+    name: "an unresolvable self path falls back to the bare-name exemption",
+    run: () =>
+      runHook((root) => {
+        const { configDir, project } = buildWorld(root, {
+          extraPlugins: { "loudplugin@market": RIVAL },
+        });
+        return {
+          stdin: payload(project),
+          configDir,
+          selfRoot: join(root, "no-such-install-path"),
+        };
+      }),
+    check: expectWarningNaming("loudplugin"),
+  },
+  {
+    // C4. The scan used to throw away everything it had found the moment the
+    // budget ran out — the debug line even printed the size of what it was
+    // discarding. Silence with the evidence in hand.
+    //
+    // The rival is listed FIRST so it is the plugin scanned before the deadline
+    // fires, and the budget is 0 so the deadline fires after exactly one plugin.
+    // Deterministic, not timing-dependent. Two assertions, because the case has
+    // to fail in both directions: the rival must be named (or the partial result
+    // was discarded) AND the message must admit the scan was cut short (or the
+    // deadline was never wired at all).
+    name: "a deadline that expires holding a rival still reports it",
+    run: () =>
+      runHookWithNoBudget((root) => {
+        const { configDir, project, selfRoot } = buildWorld(root, {
+          extraPlugins: { "loudplugin@market": RIVAL },
+          enabled: { "loudplugin@market": true, "omc-slim@omc-slim": true },
+        });
+        return { stdin: payload(project), configDir, selfRoot };
+      }),
+    check: expectWarningNaming("loudplugin", "Loud", CUT_SHORT_PHRASE),
+  },
+  {
+    // The budget is checked in two places — per plugin and per style file — and
+    // the outer one alone leaves a single plugin shipping many styles free to
+    // run past the whole budget on its own. Only the inner check stops that, and
+    // until this case existed nothing could tell whether it was wired.
+    //
+    // The plugin's forcing style sits in a manifest-declared directory, which
+    // the hook searches AFTER the default one, so the plain style is always read
+    // first. That ordering is the fixture's whole mechanism: with the inner
+    // check in place the deadline fires between the two files and the plugin
+    // yields nothing; without it, the second file is read and the rival is found.
+    name: "the per-style-file deadline stops one plugin running the budget out",
+    run: () =>
+      runHookWithNoBudget((root) => {
+        const { configDir, project, selfRoot } = buildWorld(root, {
+          extraPlugins: {
+            "slowplugin@market": {
+              style: plainStyle("Quiet"),
+              options: {
+                manifest: { name: "slowplugin", outputStyles: "./styles" },
+                alsoDir: "styles",
+                alsoStyle: forcedStyle("Slow"),
+              },
+            },
+          },
+          enabled: { "slowplugin@market": true, "omc-slim@omc-slim": true },
+        });
+        return { stdin: payload(project), configDir, selfRoot };
+      }),
+    check: expectSilence,
   },
 ];
 

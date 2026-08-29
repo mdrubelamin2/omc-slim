@@ -20,13 +20,83 @@
 #   - agent and skill BODIES, loaded only when that specialist runs
 #   - hooks/*, which run out of process and inject nothing
 #
-#   ./scripts/measure-context.sh          # table
-#   ./scripts/measure-context.sh --terse  # one number, for scripting
+#   ./scripts/measure-context.sh              # table
+#   ./scripts/measure-context.sh --terse      # chars/4 static total, for scripting
+#   ./scripts/measure-context.sh --terse-real # real-tokeniser static total
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TERSE=""
+REAL=""
 [ "${1:-}" = "--terse" ] && TERSE=1
+[ "${1:-}" = "--terse-real" ] && REAL=1
+
+# Count real BPE tokens over the concatenation of whatever is piped in.
+#
+# The chars/4 basis is kept because the version series is measured on it, but it
+# is an estimate and it was believed with a hard-coded correction: chars/4 ÷ 1.135,
+# a whole-estate average taken once in the 2026-08-25 audit. That average does not
+# hold per file. Measured 2026-08-29, it read `review/SKILL.md` as 4,956 tokens
+# against a 5,000 cap — 44 under — while the real count was 5,298, nearly 300 OVER.
+# A gate that guards a cap must not estimate the thing it guards.
+#
+# Prints an integer, or nothing when no tokeniser is installed. Callers that need
+# the number treat empty as "cannot tell" and say so; they never fall back to the
+# estimate and call it measured.
+real_tokens() {
+  python3 - "$@" 2>/dev/null <<'RTPY'
+import sys
+try:
+    import tiktoken
+except ImportError:
+    raise SystemExit(1)
+enc = tiktoken.get_encoding("cl100k_base")
+print(sum(len(enc.encode(open(p, encoding="utf-8").read())) for p in sys.argv[1:]))
+RTPY
+}
+
+# The static surface as one string, so it is tokenised the way the model sees it
+# rather than summed per fragment — BPE is not additive across concatenation.
+static_real() {
+  python3 - "$ROOT" 2>/dev/null <<'SRPY'
+import glob, os, re, sys
+try:
+    import tiktoken
+except ImportError:
+    raise SystemExit(1)
+root = sys.argv[1]
+
+def body(p):
+    t = open(p, encoding="utf-8").read()
+    if t.startswith("---"):
+        i = t.find("\n---", 3)
+        if i != -1:
+            return t[i + 4:].lstrip("\n")
+    return t
+
+def descs(p):
+    out, inblock = [], False
+    for ln in open(p, encoding="utf-8").read().split("\n"):
+        if re.match(r'^(description|when_to_use):\s*[>|]\s*$', ln):
+            inblock = True; continue
+        m = re.match(r'^(description|when_to_use):\s*(.*)$', ln)
+        if m and not inblock:
+            out.append(m.group(2)); continue
+        if inblock and re.match(r'^\s+\S', ln):
+            out.append(ln.strip()); continue
+        inblock = False
+    return "\n".join(out)
+
+parts = [body(os.path.join(root, 'output-styles/omc-slim.md'))]
+parts += [descs(f) for f in sorted(glob.glob(os.path.join(root, 'agents/*.md')))]
+for f in sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md'))):
+    if re.search(r'^disable-model-invocation:\s*(true|yes|on|1)\s*$',
+                 open(f, encoding="utf-8").read(), re.M):
+        continue
+    parts.append(descs(f))
+print(len(tiktoken.get_encoding("cl100k_base").encode("\n".join(parts))))
+SRPY
+}
 
 # Body = everything after the closing --- of YAML frontmatter. A file with no
 # frontmatter is counted WHOLE rather than skipped, so a malformed header
@@ -98,6 +168,13 @@ if [ -n "$TERSE" ]; then
   exit 0
 fi
 
+if [ -n "$REAL" ]; then
+  measured=$(static_real)
+  [ -n "$measured" ] || exit 1
+  echo "$measured"
+  exit 0
+fi
+
 version=$(awk -F'"' '/"version"/{print $4; exit}' "$ROOT/.claude-plugin/plugin.json" 2>/dev/null)
 
 printf 'omc-slim static context — v%s\n\n' "${version:-unknown}"
@@ -164,11 +241,22 @@ for sib in "$ROOT"/skills/review/performance.md \
 done
 printf '\n'
 printf 'Accuracy: chars/4 is the original hand method (RESEARCH.md:200), kept so\n'
-printf 'the version series stays comparable. It runs roughly 5-15%% high on dense\n'
-printf 'English prose against a real BPE tokeniser, and docs/AUDIT-2026-08-25.md\n'
-printf 'measured this repository at +13.5%% against tiktoken. So the honest read of\n'
-printf 'the STATIC total is ~%d tokens, not %d.\n\n' "$(( total_c * 250 / 1135 ))" "$(tok $total_c)"
-printf 'Use it to track change between versions, not as an absolute budget.\n\n'
+printf 'the version series stays comparable. It is an estimate and it runs high.\n'
+static_measured=$(static_real)
+if [ -n "$static_measured" ]; then
+  printf 'Measured against cl100k on THIS build: the static surface is %d real\n' "$static_measured"
+  printf 'tokens against %d on the chars/4 basis — the estimate runs %d%% high.\n' \
+    "$(tok $total_c)" "$(( ( (total_c / 4) - static_measured ) * 100 / static_measured ))"
+  printf 'That percentage is re-derived here every run. It was a hard-coded 13.5%%\n'
+  printf 'until 2026-08-29, taken as one whole-estate average in the 2026-08-25\n'
+  printf 'audit — and a single average does not hold per file. Applied to\n'
+  printf 'review/SKILL.md it under-read a 298-token cap overrun as a 44-token\n'
+  printf 'margin. Estimate to track versions; measure before trusting a cap.\n\n'
+else
+  printf 'No tokeniser installed, so the corrected figure is UNAVAILABLE — not\n'
+  printf 'estimated. `pip install tiktoken` to get it. Publishing a corrected\n'
+  printf 'number derived from a constant is how the last one went wrong.\n\n'
+fi
 printf 'It will not match `claude plugin details omc-slim`, and neither number is\n'
 printf 'wrong. That command counts agent and skill descriptions and states that it\n'
 printf 'excludes hooks and MCP; it does not count the output style at all, which is\n'

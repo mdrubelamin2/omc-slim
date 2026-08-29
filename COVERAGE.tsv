@@ -76,7 +76,7 @@ addy	rule-of-500	simplify	stop hand-editing
 addy	separate-refactor-commits	simplify	separate from feature and bug-fix commits
 addy	red-flags	simplify/principles.md	Red flags
 addy	refuse-rationalizations	simplify/principles.md	Rationalizations to refuse
-omo-slim	bisect-on-failure	simplify	bisect them rather than guessing
+audit	bisect-on-failure	simplify	bisect them rather than guessing
 audit	honour-do-not-simplify-marker	simplify	do-not-touch marker
 ponytail	ladder-applied-retroactively	simplify	the ladder, applied after the fact
 ponytail	stdlib-and-native-first	simplify	Does the standard library do it?
@@ -126,7 +126,7 @@ gstack	fix-first-mechanical	review	Fix directly
 gstack	critical-asks-mechanical-fixes	review	Critical findings lean towards asking
 gstack	batch-asks-into-one-question	review	Batch every ask into **one** question
 gstack	review-never-publishes	review	Never commit, push or open a PR
-gstack	suppression-list	review	Do not flag
+gstack	suppression-list	review/checklists.md	Do not flag
 # RETIRED 2026-08-25 — same reversal as confidence-controls-display above.
 # code-review-official	confidence-threshold-suppresses	review	do not report at all
 addy	approve-on-net-improvement	review	definitely improves the health
@@ -321,3 +321,10 @@ research	codemap-cite-symbols	codemap	Cite symbols, never line numbers
 research	deep-interview-files-and-interfaces	deep-interview	## Files and interfaces
 research	deep-interview-gate-is-measured	deep-interview	That is now measured
 research	deep-interview-score-is-not-the-gate	deep-interview	It does not decide whether to build
+research	explorer-turn-budget	explorer	maxTurns: 100
+research	explorer-open-wide-then-narrow	explorer	`rg -n` only once you know which files matter
+research	explorer-ast-grep-when-present	explorer	ast-grep` answers those and `Grep` cannot
+research	compaction-eviction-risk	docs/LIMITATIONS.md	30% on average after compaction
+research	env-tool-search	README.md	ENABLE_TOOL_SEARCH
+research	env-subagent-cache-ttl	README.md	subagentPromptCacheTtl
+research	keep-cut-audit-applied	docs/RESEARCH-2026-08-26.md	The keep/cut audit, applied

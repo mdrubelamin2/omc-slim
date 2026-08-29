@@ -23,10 +23,21 @@ FILTER="${1:-}"
 resolve() {
   case "$1" in
     output-styles) echo "$ROOT/output-styles/omc-slim.md" ;;
-    # "skill/file.md" — a skill's reference file, read on demand rather than
-    # loaded with SKILL.md. Pinnable like anything else; a rule that lives in a
-    # reference file is no less droppable by a later edit.
-    */*)           [ -f "$ROOT/skills/$1" ] && echo "$ROOT/skills/$1" || echo "" ;;
+    # Any *.md path. Three forms, tried in this order:
+    #   "skill/file.md"     a skill's reference file, read on demand rather than
+    #                       loaded with SKILL.md — a rule living in a reference
+    #                       file is no less droppable by a later edit;
+    #   "docs/THING.md"     a repo-relative path;
+    #   "README.md"         likewise, at the root.
+    # The last two are new. A residue sweep on 2026-08-29 found seven live
+    # behaviours pinned by nothing, three of them documented rather than
+    # prompted — the compaction-eviction measurement, the two environment
+    # settings the README recommends, and the keep/cut audit. A behaviour is no
+    # less real for living in a document, and nothing else would notice it going.
+    *.md)
+      if   [ -f "$ROOT/skills/$1" ]; then echo "$ROOT/skills/$1"
+      elif [ -f "$ROOT/$1" ];        then echo "$ROOT/$1"
+      else echo ""; fi ;;
     *)
       if   [ -f "$ROOT/skills/$1/SKILL.md" ]; then echo "$ROOT/skills/$1/SKILL.md"
       elif [ -f "$ROOT/agents/$1.md" ];       then echo "$ROOT/agents/$1.md"
@@ -79,15 +90,30 @@ root = sys.argv[1]
 style = open(os.path.join(root, 'output-styles/omc-slim.md')).read()
 
 def section(start, end):
-    # Anchors must stay unique and in this order; style.index raises otherwise.
-    a = style.index(start)
-    b = style.index(end, a)
+    # Anchors must stay unique and in this order. A missing one used to raise
+    # ValueError and print a traceback — a gate that crashes tells the reader
+    # nothing about what it was guarding, and reads like a broken script rather
+    # than a failed check. Name the anchor instead.
+    a = style.find(start)
+    if a == -1:
+        print(f'  LOST ANCHOR   output-styles/omc-slim.md no longer contains {start!r}')
+        print('                  the roster gate cannot find the block it checks')
+        raise SystemExit(1)
+    b = style.find(end, a)
+    if b == -1:
+        print(f'  LOST ANCHOR   output-styles/omc-slim.md has {start!r} but no {end!r} after it')
+        raise SystemExit(1)
     return style[a:b]
 
+# Anchored on the bare bold labels, not on the punctuation that followed them.
+# `**Skills:**` was the anchor until the dispatch rule ("agents go through the
+# Agent tool, skills through the Skill tool") turned the heading into
+# `**Skills** — invoked with the **Skill** tool:`, and the gate crashed rather
+# than reporting anything. The label is the stable part; what trails it is prose.
 rosters = {
-    'agent': (section('**Agents**', '**Skills:**'),
+    'agent': (section('**Agents**', '**Skills**'),
               {os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'agents/*.md'))}),
-    'skill': (section('**Skills:**', 'roster is a floor'),
+    'skill': (section('**Skills**', 'roster is a floor'),
               {os.path.basename(os.path.dirname(f))
                for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))}),
 }
@@ -121,7 +147,7 @@ PY
 # in CHANGELOG.md and RESEARCH.md can never fire. The cost of that is a new site
 # added later without enrolling it here, which is the cheaper failure.
 python3 - "$ROOT" <<'PY' || exit 1
-import os, re, subprocess, sys
+import glob, os, re, subprocess, sys
 root = sys.argv[1]
 
 try:
@@ -140,11 +166,31 @@ if terse.returncode != 0 or not measured.isdigit():
     raise SystemExit(1)
 
 total = f'{int(measured):,}'
-# The chars/4 method runs +13.5% high against a real tokeniser
-# (docs/AUDIT-2026-08-25.md). Both figures are published, so both are pinned —
-# a README that quotes one basis without the other is the ambiguity that made
-# `claude plugin details` look like it contradicted us.
-corrected = f'{round(int(measured) / 1.135):,}'
+
+# The corrected figure is MEASURED, not derived from a constant.
+#
+# It used to be chars/4 ÷ 1.135, a whole-estate average taken once in the
+# 2026-08-25 audit. A single average does not hold per file, and the cost of
+# believing it was concrete: applied to skills/review/SKILL.md it reported 4,956
+# tokens against a 5,000 cap — 44 under — while the real count was 5,298, nearly
+# 300 OVER. The gate that existed to guard the cap was the thing hiding the
+# breach.
+#
+# No tokeniser, no corrected figure. This block exits 1 rather than printing a
+# number it cannot stand behind, the same way check-evals.sh refuses without
+# PyYAML. Both figures are published, so both are pinned — a README that quotes
+# one basis without the other is the ambiguity that made `claude plugin details`
+# look like it contradicted us.
+real = subprocess.run([os.path.join(root, 'scripts/measure-context.sh'), '--terse-real'],
+                      capture_output=True, text=True)
+real_measured = real.stdout.strip()
+if real.returncode != 0 or not real_measured.isdigit():
+    print('  UNMEASURED    no tokeniser, so the corrected figure cannot be derived')
+    print('                  pip install tiktoken')
+    print('                  the alternative is a published number resting on a')
+    print('                  constant, which is exactly how the last one went wrong')
+    raise SystemExit(1)
+corrected = f'{int(real_measured):,}'
 
 # The static total is not the only published figure, and it is not the one that
 # rots. The on-invoke figures were re-derived by hand three times in one release
@@ -158,20 +204,97 @@ if not ceil_m:
     raise SystemExit(1)
 ceil_chars = int(ceil_m.group(1))
 ceiling = f'{ceil_chars // 4:,}'
-ceiling_corr = f'{round(ceil_chars / 4 / 1.135):,}'
 
-# review/SKILL.md is measured WHOLE, frontmatter included, because that is what
-# the harness re-attaches after compaction. Measuring the body alone flattered
-# the figure by 124 tokens and turned a 28-token overrun into an 81-token margin.
-review_bytes = os.path.getsize(os.path.join(root, 'skills/review/SKILL.md'))
-review_c4 = f'{review_bytes // 4:,}'
-review_corr = f'{round(review_bytes / 4 / 1.135):,}'
-if round(review_bytes / 4 / 1.135) >= 5000:
-    print(f'  OVER THE CAP  skills/review/SKILL.md is {review_corr} corrected tokens')
-    print('                  the post-compaction re-injection limit keeps the first 5,000')
+import tiktoken
+enc = tiktoken.get_encoding('cl100k_base')
+
+def real_of(path):
+    return len(enc.encode(open(path, encoding='utf-8').read()))
+
+# The ceiling's correction uses the same measured ratio as the static figure, so
+# the two published numbers rest on one basis rather than two constants.
+ceiling_corr = f'{round(ceil_chars / 4 * int(real_measured) / int(measured)):,}'
+
+# Every skill is measured WHOLE, frontmatter included, because that is what the
+# harness re-attaches after compaction. Measuring the body alone flattered review
+# by 124 tokens and turned a 28-token overrun into an 81-token margin.
+#
+# And the cap is checked against what actually has to survive, not against a round
+# number: after compaction the first 5,000 tokens of a skill come back and the
+# rest does not, so a PINNED rule past that point is a rule that stops firing with
+# nothing to say it did. That is 51dfbcc's failure mode reached by position rather
+# than by deletion, and no presence check can see it.
+RE_CAP = 5000
+# The per-skill cap is not the binding one. Re-attached skills share a COMBINED
+# 25,000-token budget, filled from the most recently invoked, so past it older
+# skills are dropped ENTIRELY rather than truncated — and the budget is shared
+# with every other plugin's skills, so a crowded machine evicts ours whole. This
+# release built a gate for the cap it calls non-binding and none for the one it
+# calls binding; that asymmetry is the gap this closes.
+SHARED_CAP = 25000
+skill_tokens = {}
+pin_rows = []
+for tsv, wcol, pcol in (('COVERAGE.tsv', 2, 3), ('REINFORCEMENT.tsv', 1, 2)):
+    for line in open(os.path.join(root, tsv), encoding='utf-8'):
+        if line.startswith('#') or not line.strip():
+            continue
+        cols = line.rstrip('\n').split('\t')
+        if len(cols) > max(wcol, pcol):
+            pin_rows.append((cols[wcol], cols[pcol]))
+
+bad_cap = 0
+review_c4 = review_corr = None
+for skill in sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md'))):
+    name = os.path.basename(os.path.dirname(skill))
+    text = open(skill, encoding='utf-8').read()
+    tokens = real_of(skill)
+    if name == 'review':
+        review_c4 = f'{os.path.getsize(skill) // 4:,}'
+        review_corr = f'{tokens:,}'
+    hay = re.sub(' +', ' ', text.replace('\n', ' ')).lower()
+    worst = 0
+    worst_pat = None
+    for where, pat in pin_rows:
+        if where != name:
+            continue
+        needle = re.sub(' +', ' ', pat.replace('\n', ' ')).lower()
+        at = hay.find(needle)
+        if at == -1:
+            continue  # the presence loops above already own a missing pattern
+        # hay is whitespace-normalised, so map back by ratio. The ratio does
+        # NOT only over-state: collapsed whitespace lying BEFORE the match lands
+        # the estimate early, which is the unsafe direction — a rule past the cap
+        # reported as under it. Measured across all pin rows on 2026-08-29 the
+        # error was within ±4 tokens, but the bound is len(text)-len(hay) and it
+        # grows with any indented block added ahead of a pinned rule. So take the
+        # whole slack as a margin rather than trusting the average.
+        slack = len(text) - len(hay)
+        approx = min(len(text), int(at * len(text) / max(len(hay), 1)) + slack)
+        pos = len(enc.encode(text[:approx]))
+        if pos > worst:
+            worst, worst_pat = pos, pat
+    if worst > RE_CAP:
+        print(f'  PAST THE CAP  skills/{name}/SKILL.md carries a pinned rule at token '
+              f'~{worst:,}, past the {RE_CAP:,} that re-attach after a compaction')
+        print(f'                  rule: {worst_pat[:60]!r}')
+        print('                  move it earlier, or cut ahead of it — it stops firing')
+        bad_cap = 1
+    elif tokens > RE_CAP:
+        # Reported, not failed, and that is a decision rather than an oversight:
+        # what has to survive a compaction is the PINNED rules, and none is in
+        # this tail. It stays visible because unpinned prose can otherwise fall
+        # off the end release after release with nothing saying so.
+        print(f'  TAIL DROPPED  skills/{name}/SKILL.md is {tokens:,} real tokens; the '
+              f'{tokens - RE_CAP:,} past {RE_CAP:,} do not survive a compaction')
+        print(f'                  no pinned rule is in that tail (worst sits at ~{worst:,})')
+    skill_tokens[name] = min(tokens, RE_CAP)
+
+shared = sum(skill_tokens.values())
+if shared > SHARED_CAP:
+    print(f'  SHARED BUDGET the {len(skill_tokens)} skills re-attach {shared:,} tokens '
+          f'against a shared {SHARED_CAP:,}')
+    print('                  past it, whole skills are dropped rather than truncated')
     bad_cap = 1
-else:
-    bad_cap = 0
 
 sites = [
     ('docs/LIMITATIONS.md', f'**{ceiling} chars/4, ~{ceiling_corr} corrected**'),
@@ -327,7 +450,14 @@ for label, script, pattern in SUITES:
         # OMC_SLIM_SCAN_BUDGET_MS is stripped for the same reason: an ambient
         # value changes what the suite measures, and a blank one used to mute
         # the hook outright.
-        leaky = {'OMC_SLIM_HOOK_PATH', 'OMC_SLIM_SCAN_BUDGET_MS'}
+        # OMC_SLIM_STYLE_BUDGET_MS and OMC_SLIM_SELF_ROOT are stripped for the
+        # same reason and were missed when each was introduced: the first
+        # expires the style scan's deadline, the second overrides which install
+        # path the hook calls itself. Neither can change a result today, because
+        # the suites set both explicitly per spawn — which is exactly how the
+        # first two got here, and why the set is a set rather than two names.
+        leaky = {'OMC_SLIM_HOOK_PATH', 'OMC_SLIM_SCAN_BUDGET_MS',
+                 'OMC_SLIM_STYLE_BUDGET_MS', 'OMC_SLIM_SELF_ROOT'}
         env = {k: v for k, v in os.environ.items() if k not in leaky}
         # The guard has to clear the runner's own worst case, not a typical run:
         # 23 mutants x its 120s per-mutant ceiling is 46 min. 60 min is a hang
@@ -654,6 +784,118 @@ if bad:
 print(f'{len(files)}/{len(files)} prompt files name no third-party component.')
 NSPY
 
+# --- the review skill's base-resolution script still resolves -------------
+# B3: the base-resolution logic used to be a snippet inside review/SKILL.md, and
+# it implemented two of the five steps the prose beside it described — so every
+# `master`-default repository died on `fatal: ambiguous argument`. Prose and code
+# do not stay in step by intention. The code is a script now, and this runs its
+# suite, which builds a master-default repository as its first case and carries a
+# negative control so a match means something.
+#
+# Not enrolled in the README hook counts above: those describe the two hooks, and
+# folding a third suite into that sentence would make it wrong in a different way.
+if base_out=$(bash "$ROOT/skills/review/scripts/base.test.sh" 2>&1); then
+  echo "$base_out" | tail -1 | sed 's/^/review base resolution: /'
+else
+  echo "  SUITE FAILED  skills/review/scripts/base.test.sh"
+  echo "$base_out" | sed 's/^/                  /'
+  exit 1
+fi
+
+# --- every component reference carries its type ---------------------------
+# Agents and skills both reach the model as bare `omc-slim:<name>` strings. The
+# Agent tool's subagent_type list and the Skill tool's list share the prefix, and
+# nothing in the name says which list a name belongs to — so the model picks the
+# wrong tool. Observed: `deepwork` dispatched as an agent, Agent-tool error, retry
+# as a skill. The cost is an error, a retry and a slower answer, every time.
+#
+# Predicate: a type word — agent, agents, skill, skills — in the same sentence as
+# the reference. The dispatch-shaped forms `Agent(omc-slim:x)`, `Skill(omc-slim:x)`
+# and `/omc-slim:x` say it structurally and satisfy it on their own.
+#
+# SCOPE, and its limit stated rather than implied. Covered: agent and skill
+# frontmatter descriptions (the most model-facing strings on a crowded machine),
+# the output style, SKILL.md bodies, the hooks' user-facing messages, README.
+# NOT covered: agent bodies and skill siblings. A subagent cannot dispatch
+# (`disallowedTools: [Agent, Task]`), so marking a name it can only report buys
+# nothing — but an agent's HANDOFF sentence does travel back to a caller who
+# dispatches, and those are marked by hand. They are not gated, because a
+# predicate for "a line that instructs onward routing" needs a keyword list, and
+# a keyword list that misses one returns GREEN over an unmarked handoff. A
+# narrower gate that is honest beats a wider one that lies.
+# docs/ are frozen history and out of scope everywhere.
+python3 - "$ROOT" <<'TYPEPY' || exit 1
+import glob, os, re, sys
+root = sys.argv[1]
+
+COMPONENTS = set([os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'agents/*.md'))] +
+                 [os.path.basename(os.path.dirname(f))
+                  for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))])
+TYPE = re.compile(r'\b(agent|agents|skill|skills)\b', re.I)
+REF = re.compile(r'(?<![\w/])omc-slim:([a-z][a-z0-9-]*)')
+DISPATCH = re.compile(r'(?:Agent|Skill)\(omc-slim:[a-z-]+\)|/omc-slim:[a-z-]+')
+
+def frontmatter_desc(p):
+    out, inblock = [], False
+    for ln in open(p, encoding='utf-8').read().split('\n'):
+        if re.match(r'^(description|when_to_use):\s*[>|]\s*$', ln):
+            inblock = True; continue
+        m = re.match(r'^(description|when_to_use):\s*(.*)$', ln)
+        if m and not inblock:
+            out.append(m.group(2)); continue
+        if inblock and re.match(r'^\s+\S', ln):
+            out.append(ln.strip()); continue
+        inblock = False
+    return '\n'.join(out)
+
+def body(p):
+    t = open(p, encoding='utf-8').read()
+    if t.startswith('---'):
+        i = t.find('\n---', 3)
+        if i != -1:
+            return t[i + 4:]
+    return t
+
+scope = []
+for f in sorted(glob.glob(os.path.join(root, 'agents/*.md'))) + \
+         sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md'))):
+    scope.append((os.path.relpath(f, root) + ' frontmatter', frontmatter_desc(f)))
+for f in sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md'))) + \
+         sorted(glob.glob(os.path.join(root, 'output-styles/*.md'))):
+    scope.append((os.path.relpath(f, root), body(f)))
+for f in sorted(glob.glob(os.path.join(root, 'hooks/*.mjs'))):
+    if f.endswith(('.test.mjs', '.mutate.mjs')):
+        continue
+    src = open(f, encoding='utf-8').read()
+    scope.append((os.path.relpath(f, root) + ' messages',
+                  '\n'.join(re.findall(r'`omc-slim:[^`]*`|"omc-slim:[^"]*"', src))))
+scope.append(('README.md', open(os.path.join(root, 'README.md'), encoding='utf-8').read()))
+
+bad = 0
+checked = 0
+for label, text in scope:
+    flat = re.sub(r'\s+', ' ', text)
+    for sent in re.split(r'(?<=[.!?:])\s+(?=[A-Z*`\-])|\n', flat):
+        for m in REF.finditer(sent):
+            if m.group(1) not in COMPONENTS:
+                continue          # the namespace block above owns a bad name
+            checked += 1
+            if DISPATCH.search(sent) or TYPE.search(sent):
+                continue
+            bad += 1
+            print(f'  UNTYPED REF   {label} names {m.group(0)!r} with no type word')
+            print(f'                  {sent.strip()[:110]}')
+if not checked:
+    print('  NO REFERENCES the type-marking scope matched nothing — check the globs')
+    raise SystemExit(1)
+if bad:
+    print('\nA name is not a type. Say "the `omc-slim:x` agent" or "the `omc-slim:x`')
+    print('skill" in the same sentence, or write the dispatch form Agent(omc-slim:x).')
+    print('Without it the model picks the wrong tool, errors, and retries.')
+    raise SystemExit(1)
+print(f'{checked}/{checked} component references carry their type.')
+TYPEPY
+
 # --- adoption provenance --------------------------------------------------
 # COVERAGE.tsv records what this plugin took and from where. Two things must stay
 # true of that record: every origin is classified, and every external one is
@@ -768,6 +1010,87 @@ if bad:
 external = sum(1 for o in seen if ORIGINS[o][0] != 'internal')
 print(f'{len(seen)}/{len(seen)} adopted origins classified, {external} external and all documented.')
 PY
+
+# --- the published figure that lives outside the repository ---------------
+# The GitHub repository description is the fifth site quoting the roster and the
+# static total, and the only one no other check can see. It drifted twice: it
+# claimed one advisory hook after the second shipped, and carried v0.9.0's token
+# figure into v0.9.1.
+#
+# Skipped rather than failed whenever it cannot be read — no `gh`, not logged in,
+# no network, no GitHub remote. A gate that fails on an aeroplane is a gate people
+# learn to bypass, and this one guards prose, not behaviour. Set
+# OMC_SLIM_SKIP_REMOTE=1 to skip it deliberately.
+if [ "${OMC_SLIM_SKIP_REMOTE:-}" = "1" ]; then
+  echo "  SKIPPED       GitHub description unchecked (OMC_SLIM_SKIP_REMOTE=1)"
+elif ! command -v gh >/dev/null 2>&1; then
+  echo "  SKIPPED       GitHub description unchecked (gh not installed)"
+else
+  # -q on the server side, so a repo with no description yields an empty string
+  # rather than the literal "null" that would then fail every assertion below.
+  REMOTE_DESC="$(cd "$ROOT" && gh repo view --json description -q '.description // ""' 2>/dev/null)" || REMOTE_DESC=""
+  if [ -z "$REMOTE_DESC" ]; then
+    echo "  SKIPPED       GitHub description unchecked (not readable from here)"
+  else
+    REMOTE_DESC="$REMOTE_DESC" python3 - "$ROOT" <<'GHPY' || exit 1
+import glob, json, os, subprocess, sys
+
+root = sys.argv[1]
+desc = os.environ['REMOTE_DESC']
+
+WORDS = {1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six',
+         7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten'}
+
+agents = len(glob.glob(os.path.join(root, 'agents/*.md')))
+skills = len(glob.glob(os.path.join(root, 'skills/*/SKILL.md')))
+cfg = json.load(open(os.path.join(root, 'hooks/hooks.json')))
+hooks = sum(len(g.get('hooks', [])) for ev in cfg['hooks'].values() for g in ev)
+
+def word(n):
+    return WORDS.get(n, str(n))
+
+# The description quotes the CORRECTED figure, not the chars/4 one — publishing
+# the raw basis to strangers overstates the cost.
+#
+# This block derived it as chars/4 ÷ 1.135 until 2026-08-29, which is the exact
+# constant the rest of this release exists to delete, and it survived here
+# because this is the block a reviewer is told to skip with OMC_SLIM_SKIP_REMOTE.
+# Two figures then disagreed: the README said 4,388 while this told the
+# maintainer to publish 4,254 on the repository's front page — the two
+# most-read surfaces contradicting each other, which is the failure the README's
+# own "quote a basis or don't quote a number" exists to stop.
+#
+# It reads the same measured figure every other site reads. A skipped check is a
+# check that has stopped being read, and this one was skipped for a whole release.
+measured = subprocess.run([os.path.join(root, 'scripts/measure-context.sh'), '--terse-real'],
+                          capture_output=True, text=True).stdout.strip()
+if not measured.isdigit():
+    print('  UNMEASURED    measure-context.sh --terse-real printed no integer')
+    print('                  no tokeniser, so the published figure cannot be checked')
+    raise SystemExit(1)
+corrected = f'{int(measured):,}'
+
+hookword = 'hook' if hooks == 1 else 'hooks'
+expected = [
+    f'{word(agents)} agents, {word(skills)} skills, {word(hooks)} advisory {hookword}',
+    f'{corrected} tokens',
+]
+
+stale = [e for e in expected if e.lower() not in desc.lower()]
+if stale:
+    for e in stale:
+        print(f'  STALE REMOTE  the GitHub description does not carry "{e}"')
+    print('                  it currently reads:')
+    print(f'                  {desc}')
+    print('                  fix it with:')
+    print(f'                  gh repo edit --description "... {expected[0]} '
+          f'\u2014 ~{expected[1]} of static context ..."')
+    raise SystemExit(1)
+
+print(f'GitHub description carries the roster and ~{corrected} tokens.')
+GHPY
+  fi
+fi
 
 echo
 if [ "$missing" -eq 0 ]; then

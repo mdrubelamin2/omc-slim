@@ -118,6 +118,21 @@ survives wherever you already have it, and the plugin no longer decides on your
 behalf which hosts your queries reach. See
 [the audit](./AUDIT-2026-08-25.md) for how it was found.
 
+**No agent pins a model or an effort level, and both keys exist.** `model:` and
+`effort:` are documented agent frontmatter. Until v0.9.2 the output style priced
+the roster as "cheap" and "expensive" anyway, which was a cost claim no mechanism
+could make true — every agent runs on the caller's model. v0.9.2 replaced that
+with escalation order ("first call", "escalation"), which is a *sequencing* claim
+prose can make true.
+
+**Recorded as an open choice rather than a fixed one**, because re-labelling and
+wiring are different acts and only one of them happened. A mixed-model roster is
+a larger decision than a release: it changes cost in a direction users cannot
+predict from the plugin's own figures, and the refusal to pin tiers is a standing
+one with its own reopening trigger — an ablation showing a delegation cost win
+that tier routing would multiply. Until then the keys stay unused, and this
+paragraph exists so a later reader sees a decision rather than an omission.
+
 **The static figure is disciplined and the bodies are not.** v0.9.0 added roughly
 **7,377 tokens of on-invoke cost in one release, 6,500 corrected** — every addition individually
 justified by measurement, and their sum unmeasured, which is the exact failure
@@ -126,14 +141,33 @@ reports on-invoke cost per component so the next increase is visible while it
 happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md, frontmatter included, is 5,625 tokens on the chars/4 basis, ~4,956 corrected —
+SKILL.md, frontmatter included, is 5,281 tokens on the chars/4 basis, ~4,983 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
-tokens of a skill**. It sits on the line: under on the corrected basis, over on
-chars/4. Its load-bearing rules are front-loaded and its lane mechanics live in
-`checklists.md`, which is where they were moved when this measurement was taken.
-That margin is 44 tokens, and it was bought back: an earlier v0.9.0 draft
-measured 5,087 corrected and published 4,995, because the file grew by 419 chars
-after the number was taken and nothing re-derived it.
+tokens of a skill**.
+
+**That margin was negative until 2026-08-29, and the gate guarding it was the
+reason nobody knew.** The corrected figure used to be chars/4 divided by 1.135, a
+whole-estate average taken once in the 2026-08-25 audit. Measured with a real
+tokeniser, `review/SKILL.md` was **5,298 tokens — 298 OVER the cap** — while the
+gate reported 4,956 and called it 44 under. A single average does not hold per
+file, and the file it failed on was the only one anywhere near the limit.
+
+Two things changed. The corrected figure is now measured per build rather than
+derived, and the gate refuses to print one at all when no tokeniser is installed.
+And the cap check no longer asks whether a file is under a round number: it asks
+whether any **pinned rule** sits past the 5,000 tokens that re-attach, across
+every skill. That is `51dfbcc`'s failure mode reached by position instead of by
+deletion — a rule still present, still passing every presence check, and no
+longer in context when it matters. It is proved able to fail: padding inserted
+ahead of the rules made it report a pinned rule at token ~6,485.
+
+The file now fits whole, with 17 tokens of margin. Its load-bearing rules are
+front-loaded, its lane mechanics and its report-time suppression list live in
+`checklists.md`, and its base-resolution shell — 207 tokens for 709 chars, 22%
+denser than the file average because shell tokenises badly — moved out to
+`skills/review/scripts/base.sh`, where it can have a test. That last move was not
+token golf: the snippet implemented two of the five resolution steps its own
+prose described, and a script is the only form of that logic a test can reach.
 
 The per-skill cap is not the binding one. Re-attached skills share a **combined
 25,000-token budget**, filled from the most recently invoked, so on a long
@@ -141,7 +175,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Twelve components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **34,416 chars/4, ~30,323 corrected**.
+The ceiling if every component fires once is **36,369 chars/4, ~33,012 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging
@@ -242,7 +276,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~4,625 tok** | see above |
+| **omc-slim** | **~4,853 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -251,7 +285,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 **omc-slim is the most expensive row in that table**. It has grown on net across
-every release — 2,774 at v0.1.0 against 4,625 today — though not monotonically:
+every release — 2,774 at v0.1.0 against 4,853 today — though not monotonically:
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

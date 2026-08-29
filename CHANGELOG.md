@@ -3,6 +3,151 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.2
+
+The correctness release. Twenty-four recorded defects were sitting in the tree
+unfixed; nineteen of them had never been re-verified by anyone. All nineteen
+still reproduced. No component was added or removed.
+
+**`review` was 298 tokens over the post-compaction cap, and the gate that watched
+the cap was the reason nobody knew.** After a compaction Claude Code re-attaches
+the first 5,000 tokens of an invoked skill and drops the rest. The corrected
+token figure was chars/4 divided by 1.135 — one whole-estate average, taken once
+in the 2026-08-25 audit. Measured against a real tokeniser, `review/SKILL.md` was
+**5,298 tokens**, while the gate reported 4,956 and called it 44 under. A single
+average does not hold per file, and the one file it failed on was the only one
+near the limit.
+
+Three things changed, not one. The corrected figure is **measured** per build,
+and `measure-context.sh` prints the gap it used to assume. The gate **refuses to
+print a corrected figure at all** when no tokeniser is installed, rather than
+falling back to a constant. And the cap check stopped asking whether a file is
+under a round number: it asks whether any **pinned rule** sits past the 5,000
+tokens that re-attach, across every skill. That is `51dfbcc`'s failure — a rule
+present, passing every presence check, and not in context when it fires — reached
+by position instead of by deletion. Proved able to fail: padding ahead of the
+rules reports a pinned rule at token ~6,485. `review` now fits whole, with its
+output contract closing at token ~4,860.
+
+**A name is not a type.** Agents and skills both reach the model as bare
+`omc-slim:<name>` strings, and the two tool listings share the prefix, so the
+model picked the wrong tool — observed: `deepwork` dispatched through the Agent
+tool, error, retry as a skill. Every model-facing reference now carries its type
+in the same sentence, the output style carries a dispatch rule, and a gate checks
+32 references across frontmatter, the style, skill bodies, hook messages and the
+README. Agent bodies are deliberately outside that gate, with the reason stated
+where the scope is set: a predicate for "a line that instructs onward routing"
+needs a keyword list, and a keyword list that misses one returns green over an
+unmarked handoff.
+
+**One gate, one owner.** `deepwork` pinned `Gate N — attempt N of M` onto oracle
+prompts while `review` claimed the same marker for itself, so a phase that landed
+code had no single answer for which gate ran — and running both doubled the spend
+and held two budgets for one gate. Now: `review` gates a phase that lands code,
+`oracle` gates a phase that makes an architecture, security or data-integrity
+call, a phase that does both gets `review` plus at most one oracle escalation,
+and `deepwork` owns the marker and the budget. Both gate components carry a
+marker; neither issues one.
+
+**The deliverable hook stopped making two false accusations.** It counted only
+Edit/Write/NotebookEdit/MultiEdit, so a `fixer` following its own brief — which
+sanctions `sed`, `git mv` and code-generation servers — was reported to the user
+as having finished without writing anything. And it never looked at *where* a
+write landed, so `/tmp/notes.md` satisfied it. It now distinguishes three states
+and carries two messages, because one message would be false in one of them.
+`fixer`'s output contract names the mechanism whenever a change did not land
+through Edit or Write.
+
+**`designer` lost its Review mode and gained the rule inside it.** The
+frontmatter forbade critique-only audits; the body shipped a mode for exactly
+that; and the hook then warned on the sanctioned no-write outcome, with the test
+suite pinning that false positive as expected. Cutting the mode makes the
+frontmatter true and removes the need for a heuristic the harness could not
+guarantee. What the mode actually carried — name the location and the measured
+number, never "consider improving accessibility" — was a reporting rule all
+along, and now governs ordinary build reports.
+
+**One research policy for both writers.** `fixer` had no `WebSearch`; `designer`
+did, and its body told it to check current docs itself. Identical stale-API risk,
+two policies, one of them prose. `designer` now carries the same harness-enforced
+boundary and routes an unconfirmable fact back through the caller.
+
+Four defects the seven-seat review found in the fixes themselves, each proved
+before it was fixed. A write through a **symlinked directory inside the project**
+— a pnpm or yarn workspace link, a nix or Bazel symlink farm — resolved outside
+the root and drew the message *"landed outside the project directory… nothing in
+the project changed"*, which is false twice over about a file the user can see;
+containment is now tested lexically first and only then through symlinks. One
+path inside a **git submodule** made `git check-ignore` fail the entire batch,
+silently downgrading nested-`.gitignore` handling for the whole repository and
+announcing *"not a repository, or not installed"* — which was untrue and sent the
+reader to the wrong place; submodule paths are dropped and git's own words are
+carried out. A **rival plugin sharing our own name** rendered as "omc-slim
+(omc-slim)", which reads as the plugin warning about itself; it now names the
+install path, because that is the one datum that makes it actionable and it was
+already in hand. And the cap gate's position mapping **claimed a safety property
+it did not have** — collapsed whitespace before a match lands the estimate early,
+which is the unsafe direction — so it now subtracts the whole slack as a margin.
+
+Also: `deep-interview`'s description said one question at a time while its body
+said two to four; its ambiguity gate was a self-graded sum with no citation
+requirement and no floor on the Outcome dimension; and "you decide" at the
+approval gate had no defined exit — a gate with no exit is a stall. `deepwork`'s
+uncheckable-stage waiver was uncapped, unwritten and unreported; it is now a
+`Waived:` line in the stage map, surfaced at the third. `review`'s base
+resolution implemented two of the five steps its own prose described and died
+with `fatal: ambiguous argument` in any `master`-default repository. `codemap`'s
+fixer brief cited a file list no command emitted, dispatched one fixer per
+*ancestor* of a changed leaf, and diverged from git on `.gitignore` semantics in
+two silent ways — it now delegates to `git check-ignore` and names every case its
+fallback does not cover.
+
+**Seven live behaviours were pinned by nothing** and would have regressed in
+silence. `COVERAGE.tsv` rows can now name any repo-relative `*.md` path, because
+three of the seven are documented rather than prompted and a behaviour is no less
+real for living in a document.
+
+**`review`'s base resolution left the file.** It was a shell snippet inside
+`SKILL.md` implementing two of the five steps the prose beside it described, so
+every `master`-default repository died on `fatal: ambiguous argument`. Prose and
+code do not stay in step by intention, so it is now
+`skills/review/scripts/base.sh` with `base.test.sh` beside it — seven cases, the
+first of which is that repository, plus a negative control so a passing match
+means something. It also returned 207 tokens to a file that had none to spare:
+709 chars of shell tokenises 22% denser than the prose around it.
+
+**The release gate also found a Critical in the gate itself.** The
+GitHub-description check — added in a previous session, never committed — still
+derived its published figure as chars/4 ÷ 1.135. It survived the whole release
+because it is the one block a reviewer skips with `OMC_SLIM_SKIP_REMOTE=1`, and
+obeying it would have published **4,254 tokens** to the repository's front page
+while the README said **4,405**: the two most-read surfaces contradicting each
+other, which is the exact failure `README.md`'s own "quote a basis or don't quote
+a number" exists to prevent. It reads the measured figure now, and
+`MAINTAINERS.md` carries a release checklist whose first line is *do not set that
+flag at release time*.
+
+**The release gate found eleven contradictions in this release's own work, six of
+them introduced by it, and all eleven are fixed.** The worst: deleting `designer`'s
+Review mode left a critique-only visual audit with **no owner anywhere in the
+plugin** — designer routed it to `review`'s Interface lane, which routes
+judgement calls back to designer, and `review` cannot take it because it needs a
+diff. Designer now audits and ships the mechanical fixes, which is what `review`
+itself does. Next worst: `fixer` gained a rule whose stated justification
+described hook behaviour *this same release removed*, which is `51dfbcc`'s
+failure mode — a rule surviving while the sentence that makes it fire goes false.
+Also fixed: the gate section told the model to dispatch a skill through the Agent
+tool, one release after adding a rule against exactly that; the re-review budget
+was scoped "per gate" in one file and "per review run" in another; and the new
+self-identification line was a preamble the same file forbids, which an existing
+eval case would have caught.
+
+The hook suites are 25 and 22 cases against 60 mutants, up from 19 and 18 against
+41. `MAINTAINERS.md` opens an incidents ledger, so the four standing refusals
+have somewhere for their triggers to be counted — and records that one of them,
+aider watch mode, expired within a day of being written down, because Claude Code
+2.1.251 ships a `FileChanged` hook.
+
 ## v0.9.1
 
 A review of v0.9.0, and the fixes it forced. No component was added or removed.

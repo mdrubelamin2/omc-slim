@@ -74,8 +74,8 @@ found nothing" — silence is not an answer, and neither is your own memory.
 
 **A stage check that fails twice is not a third attempt.** The second failure
 says the cause is not what you think it is, and a third guess costs more than
-finding out. Hand it to `omc-slim:tracer`, which is built for exactly the state
-you are in: a fix already tried, and the failure still unexplained.
+finding out. Hand it to the `omc-slim:tracer` agent, which is built for exactly
+the state you are in: a fix already tried, and the failure still unexplained.
 
 Survey the toolset before you write the map, not after. Both scopes carry
 components — the project's `.claude/` and the user's `~/.claude/`, which usually
@@ -84,7 +84,7 @@ lane. Names say nothing about subject, so read descriptions; `ToolSearch` reache
 them where tools are deferred. Name the tool in the lane brief, because a
 specialist cannot survey on your behalf and inherits only what the brief says.
 
-1. **Is this still how it is done?** Route it to `omc-slim:librarian`, which reads the
+1. **Is this still how it is done?** Route it to the `omc-slim:librarian` agent, which reads the
    installed source before it reads anything about it, and carries a dated
    open-web pass into the finding where the claim is the kind the web can
    correct — or says it skipped one, and why. Your training has a cutoff; the
@@ -126,9 +126,14 @@ Numbered stages, each with an expected output — this is how you avoid finding 
 stage 7 that stage 2 rested on a wrong assumption.
 
 ```
-Stage 1: [name] → [expected artefact]
-Stage 2: [name] → [expected artefact]
+Stage 1: [name] → [expected artefact] → Check: [the command that can fail]
+Stage 2: [name] → [expected artefact] → Waived: [why nothing here could fail]
 ```
+
+**Every stage carries a `Check:` or a `Waived:`, never neither.** A stage with
+an empty slot is a hole you can see; a stage that simply omitted the line is a
+hole you cannot, and the count below is only as good as the lines that got
+written.
 
 **Every stage produces one verifiable artefact.** If a stage produces nothing
 checkable, merge it into the next.
@@ -208,6 +213,13 @@ and read; output diffed against the spec.
 verification will also pass its own introspection. No failable check exists? Say
 so and mark its output unverified, so the gap is visible downstream.
 
+**Write the waiver down, as a `Waived:` line in the stage map** — the stage, and
+why nothing there could fail — and repeat every one of them in the final message.
+**At the third `Waived:` line, stop and surface all three.** The count then lives
+in a written artefact instead of your memory, where a later grep can audit it,
+and three uncheckable stages in one run is usually one wrong plan rather than
+three unlucky ones.
+
 The loop runs backward too: **if a fix invalidates an earlier stage, re-run that
 stage's check before continuing.** An error caught at stage 3 is trivial; at stage
 8 it is not.
@@ -220,25 +232,41 @@ shaped search is what catches that.
 
 ### Review gates
 
-Oracle reviews go after each phase, never after each edit. Take the phases from
-the work's own dependencies and delivery boundaries; never split work to shrink
-a review. Hand the oracle the confirmed findings and file references you already
-have, so it assesses the decision instead of redoing discovery. Give it
+**One gate per phase, and the phase's kind picks who runs it.** A phase that lands
+code is gated by the `omc-slim:review` skill. A phase that makes an architecture,
+security or data-integrity call is gated by the `omc-slim:oracle` agent. A phase
+that does both gets the `omc-slim:review` skill as its gate plus **at most one** oracle
+escalation on the named decision — never both as parallel gates, which doubles
+the spend and holds two budgets for one gate.
+
+**You own the marker and the count; the gate does not.** Stamp
+`Gate N — attempt M of K` into whichever gate you open, and the per-gate budget
+with it. A gate carries the marker you gave it and never issues its own — two
+components each keeping a count is how one gate silently becomes two.
+
+**Open a gate through its own tool.** `omc-slim:review` is a skill and goes
+through the Skill tool; `omc-slim:oracle` is an agent and goes through the Agent
+tool. This section says "gate" for both because the phase decides which one, not
+because they are dispatched alike.
+
+Gates go after each phase, never after each edit. Take the phases from the work's
+own dependencies and delivery boundaries; never split work to shrink a gate. Hand
+the gate the confirmed findings and file references you already have, so it
+assesses the work instead of redoing discovery. Give it
 evidence, never a verdict: naming a severity or a concern to skip decides the
 review before it runs. Batch its material findings into one remediation pass and
 verify that. Once validation passes and no material blocker remains, advance —
 do not keep refining because refinement is possible.
 
 **Scan structure in the same message — when the phase moved structure.** Dispatch
-an explorer alongside the oracle review, over the phase's changed paths and their
+an explorer alongside the gate, over the phase's changed paths and their
 immediate dependencies, **if that phase changed module boundaries, dependency
 direction, or where files live.** A phase that only changed behaviour inside
 existing files has no structure to scan, and the scan returns a map of what you
 already knew.
 
 Cheapest agent, runs in parallel, so when it does run the gate costs no extra
-wall time. Do not open a second oracle review for
-what the scan found.
+wall time. Do not open a second gate for what the scan found.
 
 **Brief it for locations, never for judgements.** Duplication, responsibility
 overlap and a misplaced file are all conclusions about what was found, and
@@ -250,7 +278,7 @@ read the map and decide what warrants action.**
 
 **Cap the re-reviews.** **This budget is per gate, not per run** — a run with four
 gates holds four budgets. One review per gate and **at most two re-reviews — three while a Critical is still open**, with
-every oracle prompt stating where it is: `Gate 2 — review attempt 2 of 3`. Spend
+every gate you open stating where it is: `Gate 2 — attempt 2 of 3`. Spend
 one only when remediation materially changed the decision, or the original concern
 resisted focused evidence — never to re-confirm a mechanical change. Budget
 exhausted with a material risk still open: record it and ask whether to accept it,
@@ -272,10 +300,11 @@ action, a side effect outside this worktree, or a plan so broken every path is a
 guess.
 
 Surfacing is a different act and that list does not bound it — the warning
-threshold below stops to *report* three accumulated concerns, an exhausted review
-budget stops to *ask* about a risk still open, and §1's shrinking assumption
-stops to ask before the map runs. All three hand the user a decision. A ruling is
-what you make when no decision is owed.
+threshold below stops to *report* three accumulated concerns, a third `Waived:`
+line stops to report all three, an exhausted review budget stops to *ask* about a
+risk still open, and §1's shrinking assumption stops to ask before the map runs.
+Every one of them hands the user a decision. A ruling is what you make when no
+decision is owed.
 
 Everything else gets a **ruling** — decide, and log it:
 
@@ -317,8 +346,8 @@ restructure question and two agreed with each other. The third read git history,
 found `51dfbcc`, and overturned both — a confirmation-shaped review would have
 shipped the wrong answer.
 
-**Verify a problem before flagging it** — `omc-slim:verification-planning` holds the
-procedure. Absence of evidence is not the finding.
+**Verify a problem before flagging it** — the `omc-slim:verification-planning`
+skill holds the procedure. Absence of evidence is not the finding.
 
 ## Operational rules
 
@@ -327,7 +356,7 @@ three, stop and surface** them together — three small things pointing the same
 usually mean one real problem needing a decision.
 
 **Find-and-replace safety.** Anchor on word boundaries, and check the result —
-`omc-slim:fixer` runs the bulk edits and holds that procedure.
+the `omc-slim:fixer` agent runs the bulk edits and holds that procedure.
 
 **Progress file.** Work spanning sessions keeps a log at
 `docs/deepwork/<task-slug>.md`. It holds current understanding, confirmed

@@ -16,6 +16,32 @@ problem, and the contradiction between this plugin's evidence and its identity.
 
 ---
 
+## Corrections, 2026-08-29
+
+Three claims in this report did not survive a read of the diffs they rest on.
+Recorded here rather than edited away, because §1b's own caveat says its
+upstream-drift claims are commit-message-level, and this is what that caveat
+cost.
+
+1. **"~90 commits behind" is not reproducible.** Measured against
+   `oh-my-opencode-slim` on 2026-08-29: 163 commits all, 118 non-merge, 58
+   first-parent. No counting method yields ~90.
+2. **"The reversal went further after that document closed" is false.**
+   `src/skills/deepwork/SKILL.md` has exactly one commit since the pin —
+   `80f3845`, 2026-08-14 — which is twelve days *before* RESEARCH-2026-08-26
+   closed. That document was incomplete about a single commit, not outrun by
+   later ones. It did miss two deletions in that commit, which
+   `PROVENANCE.md`'s sweep section now records.
+3. **`task_nudge` does not exist.** The supervision tools are `task_status`,
+   `task_result`, `task_cancel`, `task_message` and `task_revive`, enumerated in
+   the loop guard's own exempt list.
+
+The guards §1b attributes are correctly placed — both belong to
+`oh-my-opencode-slim`, not to `oh-my-claudecode`, and both were confirmed in the
+diff: `tool-loop-guard` (issue #1071) and the duplicate-spawn block (#1070).
+
+---
+
 ## 0. Verdict
 
 **Not viable as "the orchestrator layer people adopt", on the repository's own

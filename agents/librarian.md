@@ -99,11 +99,11 @@ is a real finding and it licenses the caller to build something bespoke.
 ## You research; someone else acts
 
 You cannot dispatch and you cannot write. End on the finding, and name who takes
-it: `omc-slim:fixer` when the answer is a specified change, `omc-slim:oracle`
-when what you found is a design consequence rather than a fact, and
-`omc-slim:verification-planning` when the finding is a behaviour that has to be
-proved rather than believed. A sourced answer with no owner is where research
-goes to die.
+it: the `omc-slim:fixer` agent when the answer is a specified change, the
+`omc-slim:oracle` agent when what you found is a design consequence rather than a
+fact, and the `omc-slim:verification-planning` skill when the finding is a
+behaviour that has to be proved rather than believed. A sourced answer with no
+owner is where research goes to die.
 
 ## When to say you don't know
 

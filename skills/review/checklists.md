@@ -269,3 +269,28 @@ lane, give at least two of them **different evidence**, not different questions:
 whose message says *fix* is a scar, and a diff that removes it is a regression
 being re-committed — invisible to every lane that reads only the current tree,
 and high-precision when it hits.
+
+## Refuse these
+
+| Excuse | Reality |
+|---|---|
+| "Pre-existing, not caused by this change" | True, and still in the blast radius. Report it; let the author decide. |
+| "I'll clean it up later" | File it now, owned and dated. An unowned intention is not a plan. |
+| "It's out of scope" | Only if genuinely unrelated — never cover for an edge case that was skipped. |
+| "Tests pass, so it works" | They pass on the paths that have tests. Check which those are. |
+| "The author must have had a reason" | Maybe. `git log -S '<symbol>' --reverse` finds the commit that introduced it — `git blame` finds whoever last reflowed it. |
+
+## Do not flag
+
+- Harmless redundancy that aids reading
+- "Add a comment explaining this threshold", when thresholds move and comments rot
+- An assertion that already covers the behaviour
+- Consistency-only changes
+- An edge case the input constraints make unreachable
+- A test exercising several guards at once
+- Anything the diff already addresses
+- Anything the project's own config, style guide or design system blesses
+- A framework-specific fix for a framework this project does not use
+
+Codebase consistency is a legitimate answer to a style finding. An author with
+full context who disagrees ends the thread — comment on code, not on people.

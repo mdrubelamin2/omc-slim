@@ -10,12 +10,15 @@ into your repository, and only when they run: `codemap` maps it, `deep-interview
 writes a spec, `deepwork` keeps a log. `codemap` says what it will write and
 waits for a yes; the other two write one file each, under `docs/`.
 
-Static context is **~4,075 tokens**. `./scripts/measure-context.sh` reports
-**4,625 on a chars/4 basis** and prints that correction itself, because the
-chars/4 method measured **+13.5% high** against a real tokeniser
-([audit](./docs/AUDIT-2026-08-25.md)). `claude plugin details omc-slim` reports a
-third, smaller number; it does not count the output style, which is the largest
-item. Quote a basis or don't quote a number.
+Static context is **~4,405 tokens**, measured with a real tokeniser.
+`./scripts/measure-context.sh` also reports **4,853 on a chars/4 basis**, the
+estimate this project's version series is tracked on, and prints the gap between
+them every run. That gap used to be a hard-coded 13.5% taken as one average
+across the whole repository — and a single average does not hold per file, which
+is how a 298-token overrun in `review` published itself as a 44-token margin.
+`claude plugin details omc-slim` reports a third, smaller number; it does not
+count the output style, which is the largest item. Quote a basis or don't quote a
+number.
 
 On one single-file CLI task, n=3 per arm, it averaged **18% less than a plain
 session** ($1.01 vs $1.24) with non-overlapping spreads, and shipped the smallest
@@ -50,6 +53,14 @@ No configuration, no API keys, no dependencies, no bundled MCP servers.
 There isn't any. The orchestration output style applies automatically while the
 plugin is enabled, so the main thread works as a planner rather than diving
 straight into implementation.
+
+**What a working install looks like.** The first reply that plans or delegates
+names the orchestration style. If the `Agent` tool is unavailable in your
+session, the first reply says that too. Those two lines are the only evidence
+that reaches you, so their **absence** is the signal worth knowing: a session
+that plans work and never mentions the style is a session where something else
+took the output-style slot. `/plugin disable` the other plugin, or check with
+`claude -p "One line: which output style is active?"`.
 
 One thing to know: the output-style flag takes precedence over your `outputStyle`
 setting for as long as the plugin is enabled. It is the only global change this
@@ -107,8 +118,7 @@ roster costs what your session costs.
 **Find things**
 
 - **[explorer](./agents/explorer.md)** — *"Where is the retry logic?"* Returns a
-  `file:line` map, not prose. The cheapest first call for any where/what/which
-  question.
+  `file:line` map, not prose. The first call for any where/what/which question.
 - **[librarian](./agents/librarian.md)** — *"Is this still the recommended API?"*
   Checks current docs and real usage instead of recalling training data, and
   prefers your MCP servers over the open web.
@@ -134,7 +144,6 @@ roster costs what your session costs.
   at once, behind an evidence gate that keeps false positives out.
 - **[deepwork](./skills/deepwork/SKILL.md)** — *"This is too big to get right in
   one pass."* Stage plan, parallel lanes, a failable check per stage.
-  **Invoke it explicitly; it will not fire on its own.**
 - **[deep-interview](./skills/deep-interview/SKILL.md)** — *"I want to build
   something, I am not sure what yet."* Stops for approval before any code.
 - **[verification-planning](./skills/verification-planning/SKILL.md)** — *"How do
@@ -162,11 +171,11 @@ settles which style won. It reads plugin manifests off disk; it never reads your
 transcript, and it fires once per session, not on every compaction.
 
 Those are claims, so each has a check. `node hooks/verify-deliverables.test.mjs`
-runs 19 cases and `node hooks/check-output-style.test.mjs` runs 18, both against
+runs 25 cases and `node hooks/check-output-style.test.mjs` runs 22, both against
 isolated fixtures, both asserting the exact set of keys the hook may emit — which
 is what makes "never blocks" falsifiable. And the checks have checks: the two
-`*.mutate.mjs` runners break the hooks twenty-three and eighteen ways and confirm
-the suites catch all forty-one. `OMC_SLIM_DEBUG=1` prints which path either took,
+`*.mutate.mjs` runners break the hooks 36 and 24 ways and confirm the suites
+catch all 60. `OMC_SLIM_DEBUG=1` prints which path either took,
 on stderr.
 
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
@@ -190,6 +199,15 @@ this one. Run all three:
 ./scripts/check-coverage.sh && ./scripts/check-reinforcement.sh \
   && ./scripts/check-evals.sh
 ```
+
+The first one also checks the **GitHub repository description**, which is the
+fifth site quoting the roster and the token figure and the only one no other
+check can see. It has drifted twice. That check needs `gh` and the network, so it
+skips itself when it cannot run — and `OMC_SLIM_SKIP_REMOTE=1` skips it
+deliberately, which is the right flag for a contributor and the wrong one for a
+release. Updating the description is a release step, not a working-tree step: a
+clean tree between releases will report it stale, because it describes what is
+published rather than what is committed.
 
 The third one covers the eval suite: `./scripts/check-evals.sh` asserts what the
 runner's own authoring interview refuses to negotiate — three runs minimum, a
@@ -218,7 +236,11 @@ the prompt rather than described.
 **Three layers, and only one of them is prose.** The harness enforces
 `disallowedTools`, the output-style flag and the hook matcher, with no model
 cooperation involved — `disallowedTools: [Agent, Task]` is why one-level
-delegation is a guarantee rather than a request. One hook is our own code, and it
+delegation is a guarantee rather than a request. `Agent` is the canonical name
+and carries that guarantee; `Task` is its legacy alias, still resolving as of
+2.1.251, kept because the alias path through permission resolution has not been
+traced and a redundant guard on the one enforced promise is worth its zero
+cost. One hook is our own code, and it
 has a test. Everything else — every agent body, every skill, the output style
 itself — is prose, and holds exactly as well as a prompt holds.
 
@@ -251,22 +273,27 @@ boundary still holds.
 ## What fires on its own
 
 Most components have been observed firing on natural prompts naming no component
-and no plugin. `deepwork` and `simplify` have never fired on their own, and
-`review` has never been tested either way.
+and no plugin. **Two never have: `deepwork` and `simplify`.** Invoke those two by
+name — `/omc-slim:deepwork`, `/omc-slim:simplify <target>` — or add one paragraph
+to your `CLAUDE.md`, which [routing](./docs/ROUTING.md) supplies. `review` has
+never been tested either way.
+
+That is the whole disclosure, stated once. It used to appear in four places on
+this page, which is how a reader ends up unsure whether they are four separate
+limitations. `ROUTING.md` states it twice more, and keeps doing so: those two are
+the measurement records behind it, not repetitions of the warning.
 
 **These are notes, not an experiment.** No harness, dates or transcripts are
 committed, unlike `scripts/bench/`. And on builds that gate the `Agent` tool —
 Claude Code ships "do not call the AgentTool unless the user requested it" by
 default for Opus 5 — none of it fires without an explicit request.
 
-Full routing measurements, the `deepwork` workaround, and what to do if nothing
-delegates: **[docs/ROUTING.md](./docs/ROUTING.md)**.
+Full routing measurements and what to do if nothing delegates:
+**[docs/ROUTING.md](./docs/ROUTING.md)**.
 
 ## Known limits
 
-- `deepwork` will not auto-fire. Invoke it explicitly, or add one paragraph to
-  your `CLAUDE.md` — see [routing](./docs/ROUTING.md).
-- `simplify` does not fire on natural language. Use `/omc-slim:simplify <target>`.
+- `deepwork` and `simplify` do not auto-fire. Invoke them by name.
 - No agent may spawn subagents. Nesting is possible but unreliable in one-shot
   mode; that was tested rather than assumed.
 

@@ -1,6 +1,6 @@
 ---
 name: explorer
-description: '"Where is X", "what calls Y", "which files touch Z" — recon returning a compressed file:line map, capped at 150 lines on a survey, never prose. Read-only, refuses to fix. Not for judging what it finds — use omc-slim:review.'
+description: '"Where is X", "what calls Y", "which files touch Z" — recon returning a compressed file:line map, capped at 150 lines on a survey, never prose. Read-only, refuses to fix. Not for judging what it finds — that is the omc-slim:review skill.'
 maxTurns: 100
 disallowedTools: [Edit, Write, NotebookEdit, Agent, Task]
 ---
@@ -33,7 +33,8 @@ and say which route you took. Where nothing is installed, `Grep` is the answer,
 not an apology.
 
 You cannot dispatch another agent. When the answer needs judgement rather than
-locations, say so and name `omc-slim:review` or `omc-slim:oracle` for the caller.
+locations, say so and name the `omc-slim:review` skill or the `omc-slim:oracle`
+agent for the caller.
 
 **Open wide, then narrow.** `rg -l` or `rg -c` first, to learn where the answer
 lives; `rg -n` only once you know which files matter; `-C` only when the

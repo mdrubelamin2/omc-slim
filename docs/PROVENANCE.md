@@ -180,9 +180,12 @@ original yet — tells you whether it drifted since adoption, so you can review
 before deleting.
 
 **2. Coverage is asserted, not assumed.** With the originals gone, nothing else
-would catch a later edit quietly dropping an adopted rule.
+would catch a later edit quietly dropping an adopted rule. A row's `where` is a
+component name, or any repo-relative `*.md` path — the second form was added on
+2026-08-29, after a sweep found three live behaviours pinned by nothing because
+they are documented rather than prompted.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 290 rows, and growing with each release:
+lives — 297 rows, and growing with each release:
 
 The roster it asserts is **six agents, six skills, two hooks** — stated here in
 prose because the check requires this file to carry it, and a sentence survives a
@@ -206,11 +209,12 @@ name and loses its reasoning. Run both.
 
 ```bash
 ./scripts/check-coverage.sh
-# ... eight assertions, one line each: rosters, published figures, internal
-# paths, worded rosters, hook cases and mutants, frontmatter, invisible
-# characters, adopted origins. Run it to see them; they are not pasted here.
+# ... assertions, one line each: rosters, published figures, internal paths,
+# worded rosters, hook cases and mutants, frontmatter, invisible characters,
+# component reachability, third-party names, type-marked references, adopted
+# origins. Run it to see them; they are not pasted here — that is the point.
 #
-# 290/290 adopted behaviours present.
+# 297/297 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 
@@ -242,3 +246,58 @@ had already moved past its pin within hours of being audited. Expect the checker
 to report movement; the point is to review it, not to chase it. Adopt only what
 earns its tokens, then update the pin in
 [`UPSTREAM.tsv`](../UPSTREAM.tsv) and refresh the snapshot.
+
+## The 2026-08-29 upstream sweep — six pins advanced, each after its diff was read
+
+`check-upstream.sh` had reported **6 of 11 sources moved** and nobody had read
+the diffs. A pin nobody reads is folklore, which is the thing this file exists to
+prevent. All six were cloned and diffed at **content** level — concatenated and
+whitespace-normalised, not file level, because two of them had carved large files
+into directories and a diffstat reads as deletion when nothing was deleted.
+
+| Source | Advanced to | Verdict |
+|---|---|---|
+| `oh-my-opencode-slim` | `c518d6ce0515` | **adopt**, with one divergence recorded |
+| `oh-my-claudecode` | `adf4bf3280c8` | no change worth making |
+| `gstack` | `b5a951e62398` | no change worth making on doctrine |
+| `agent-skills` | `d2c37ef6225d` | **adopt** two prose rules; refuse the skill |
+| `ballast` | `fea4b4afc93c` | no change worth making |
+| `ani-skills` | `035e4d8de282` | no change worth making |
+
+No source is dead: none archived, none 404, all six pushed within six days.
+
+**One divergence, recorded rather than silently kept.** `oh-my-opencode-slim`'s
+`80f3845` deleted the sentence behind `omo-slim no-polish-for-its-own-sake` —
+`RESEARCH-2026-08-26.md` §3.2 recorded the `impact × confidence ÷ cost` half of
+that deletion and missed that the anti-polish clause went with it. **omc-slim
+keeps the rule and diverges.** Upstream did not abandon the intent; it replaced a
+prose exhortation with a structural bound, and omc-slim's `review` is not
+phase-gated the same way, so the prose still does work here that the structure
+does not do for us.
+
+**`oh-my-claudecode` is the clean no-op, and the evidence is unusually strong.**
+824 commits since the pin, and every agent omc-slim adopted from is **byte
+identical** — tree hashes compared directly. The whole `agents/` diff touches one
+file this plugin took nothing from.
+
+**One attribution did not survive its own source.** `COVERAGE.tsv` carried
+`bisect-on-failure` as `omo-slim`, and `git grep -in bisect` returns nothing
+across that repository's entire tree at either revision. The rule is real and
+live in `skills/simplify/SKILL.md`; only the origin was wrong. Re-tagged `audit`,
+which is what an unsourceable rule found in our own review is. This is the fourth
+mis-sourced row this file has had to correct, and the pattern is always the same:
+a rule adopted in the same session as a source, and attributed by proximity.
+
+**Two adoptions scheduled rather than taken here**, because both are behaviour
+changes and a behaviour change is a release: the duplicate-dispatch rule with its
+"retrieval authorizes the retry" escape hatch, and the silenced-checker move —
+`ts-ignore`, `eslint-disable`, `noqa` return **zero hits across this entire
+plugin**, which is a genuine gap rather than a duplicate.
+
+**One adoption was taken immediately, because it was a defect rather than an
+addition.** `agent-skills` states that *"a guard that reads only `git diff`
+misses new files"*. `review`'s scope step read only `git diff` and claimed to
+include uncommitted work — true for tracked edits, **false for untracked new
+files**, and review runs before the commit, which is exactly when new files
+exist. Reproduced in a scratch repository, fixed in
+`skills/review/scripts/base.sh`, and pinned by two cases in its suite.

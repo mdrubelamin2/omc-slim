@@ -13,7 +13,7 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "^(.*:)?(fixer|designer)$",
+        "matcher": "^(omc-slim:)?(fixer|designer)$",
         "hooks": [
           {
             "type": "command",

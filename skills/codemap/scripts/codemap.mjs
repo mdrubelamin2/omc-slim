@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   existsSync,
@@ -62,8 +63,15 @@ export class PatternMatcher {
         reg += '.*';
       }
 
-      if (pattern.startsWith('/')) {
-        reg = `^${reg.slice(1)}`;
+      // Git anchors a pattern to the .gitignore's own directory as soon as it
+      // contains a slash anywhere other than at the end — 'docs/build' matches
+      // only at the root, while 'build' matches at every depth. Keying on a
+      // leading slash alone made 'docs/build' match 'a/b/docs/build' too.
+      const withoutTrailingSlash = pattern.endsWith('/')
+        ? pattern.slice(0, -1)
+        : pattern;
+      if (withoutTrailingSlash.includes('/')) {
+        reg = pattern.startsWith('/') ? `^${reg.slice(1)}` : `^${reg}`;
       } else {
         reg = `(?:^|.*/)${reg}`;
       }
@@ -102,6 +110,99 @@ export function loadGitignore(root) {
   }
 
   return lines.filter((line) => !line.startsWith('!'));
+}
+
+// Which of these paths git ignores, or null when git cannot answer.
+// `git check-ignore` already implements every rule PatternMatcher approximates
+// — nested .gitignore files, depth anchoring, negation, precedence, the global
+// and info/exclude files — so where a repository exists it is both smaller and
+// exactly right to ask it. One batched call: a spawn per path would dominate
+// the run. Tracked files are deliberately not treated as ignored, which is
+// git's own answer for them.
+export function gitIgnoredPaths(root, relPaths) {
+  const ask = (paths) =>
+    spawnSync('git', ['-C', root, 'check-ignore', '-z', '--stdin'], {
+      input: paths.map((relPath) => `${relPath}\0`).join(''),
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+    });
+
+  let result = ask(relPaths);
+
+  // 0 = some ignored, 1 = none ignored. Anything else is git declining to
+  // answer: 128 outside a repository, a spawn error with no git installed.
+  //
+  // And one case that is neither, which cost the whole repository its nested
+  // .gitignore handling: git fails the ENTIRE batch with 128 if any single path
+  // lies inside a submodule — `fatal: Pathspec 'sub/a.txt' is in submodule
+  // 'sub'`. One such path made every other path in the tree fall back to the
+  // root-only matcher, and the fallback then announced "not a repository, or
+  // not installed", which is false and sends the reader looking in the wrong
+  // place. Drop the submodule paths and ask again: a path inside a submodule is
+  // that submodule's business, not this map's.
+  if (!result.error && result.status === 128) {
+    const prefixes = submodulePrefixes(root);
+    if (prefixes.length) {
+      const outside = relPaths.filter(
+        (rel) => !prefixes.some((p) => rel === p || rel.startsWith(`${p}/`)),
+      );
+      if (outside.length !== relPaths.length) {
+        result = ask(outside);
+      }
+    }
+  }
+
+  if (result.error || (result.status !== 0 && result.status !== 1)) {
+    // Carry git's own words out. The previous message guessed at the cause and
+    // guessed wrong whenever the cause was anything but a missing repository.
+    const why = (result.stderr || (result.error && result.error.message) || '')
+      .trim()
+      .split('\n')[0];
+    return { ignored: null, why };
+  }
+
+  return { ignored: new Set(result.stdout.split('\0').filter(Boolean)), why: '' };
+}
+
+// Repo-relative paths of every registered submodule, or [] if git will not say.
+function submodulePrefixes(root) {
+  const r = spawnSync('git', ['-C', root, 'submodule', '--quiet', 'foreach', 'echo $sm_path'],
+    { encoding: 'utf8' });
+  if (r.error || r.status !== 0) return [];
+  return r.stdout.split('\n').map((s) => s.trim()).filter(Boolean);
+}
+
+// Fallback for a tree git will not answer for. It reads the root .gitignore
+// only, so a nested one is unenforced — name the files, because that is the
+// point at which the user would be misled by the selection.
+function fallbackIgnoredPaths(root, relPaths) {
+  const nested = relPaths.filter((rel) => rel.endsWith('/.gitignore'));
+  if (nested.length) {
+    console.warn(
+      `Warning: ${nested.length} nested .gitignore file(s) are NOT applied without git (${nested.join(', ')}); only the root .gitignore is.`,
+    );
+  }
+
+  const matcher = new PatternMatcher(loadGitignore(root));
+  return new Set(relPaths.filter((relPath) => matcher.matches(relPath)));
+}
+
+// Diagnostics go to stderr: `files` writes a machine-readable listing on
+// stdout, and a preamble there would be indistinguishable from a file path.
+function resolveIgnoredPaths(root, relPaths) {
+  const { ignored: fromGit, why } = gitIgnoredPaths(root, relPaths);
+  if (fromGit) {
+    console.warn('Ignore rules: git check-ignore');
+    return fromGit;
+  }
+
+  console.warn(
+    `Ignore rules: built-in matcher — git declined${why ? `: ${why}` : ' (not a repository, or not installed)'}. ` +
+      'It applies the root .gitignore only, and diverges from git on: nested .gitignore ' +
+      "files, '!' negation, and a directory pattern written without a trailing slash " +
+      "('logs' ignores nothing beneath it, 'logs/' does).",
+  );
+  return fallbackIgnoredPaths(root, relPaths);
 }
 
 function isWalkableDir(name) {
@@ -143,32 +244,39 @@ function walkFiles(root) {
   return files.sort();
 }
 
+function toRelPath(root, fullPath) {
+  const relPath = path.relative(root, fullPath).replaceAll(path.sep, '/');
+  return relPath.startsWith('./') ? relPath.slice(2) : relPath;
+}
+
 export function selectFiles(
   root,
   includePatterns,
   excludePatterns,
   exceptions,
-  gitignorePatterns,
 ) {
   const includeMatcher = new PatternMatcher(includePatterns);
   const excludeMatcher = new PatternMatcher(excludePatterns);
-  const gitignoreMatcher = new PatternMatcher(gitignorePatterns);
   const exceptionSet = new Set(exceptions);
 
-  return walkFiles(root).filter((fullPath) => {
-    let relPath = path.relative(root, fullPath).replaceAll(path.sep, '/');
-    if (relPath.startsWith('./')) {
-      relPath = relPath.slice(2);
-    }
+  const candidates = walkFiles(root)
+    .map((fullPath) => ({ fullPath, relPath: toRelPath(root, fullPath) }))
+    .filter(({ relPath }) => !isGeneratedArtefact(relPath));
 
-    if (isGeneratedArtefact(relPath)) return false;
-    if (gitignoreMatcher.matches(relPath)) return false;
-    if (excludeMatcher.matches(relPath) && !exceptionSet.has(relPath)) {
-      return false;
-    }
+  const ignored = resolveIgnoredPaths(
+    root,
+    candidates.map(({ relPath }) => relPath),
+  );
 
-    return includeMatcher.matches(relPath) || exceptionSet.has(relPath);
-  });
+  return candidates
+    .filter(({ relPath }) => {
+      if (ignored.has(relPath)) return false;
+      if (excludeMatcher.matches(relPath) && !exceptionSet.has(relPath)) {
+        return false;
+      }
+      return includeMatcher.matches(relPath) || exceptionSet.has(relPath);
+    })
+    .map(({ fullPath }) => fullPath);
 }
 
 export function computeFileHash(filePath) {
@@ -236,6 +344,28 @@ export function getFoldersWithFiles(files, root) {
   }
 
   return folders;
+}
+
+// The directory a file belongs to — the one whose codemap.md describes it.
+function parentDir(relPath) {
+  const parts = relPath.split('/');
+  return parts.length === 1 ? '.' : parts.slice(0, -1).join('/');
+}
+
+// Every strict ancestor of a directory, root included.
+function ancestorDirs(dir) {
+  if (dir === '.') return [];
+  const parts = dir.split('/');
+  const result = ['.'];
+  for (let i = 1; i < parts.length; i++) {
+    result.push(parts.slice(0, i).join('/'));
+  }
+  return result;
+}
+
+function deepestFirst(a, b) {
+  const depth = (dir) => (dir === '.' ? 0 : dir.split('/').length);
+  return depth(b) - depth(a) || a.localeCompare(b);
 }
 
 export function migrateLegacyState(root) {
@@ -367,7 +497,6 @@ export function cmdInit({ root, include = [], exclude = [], exception = [] }) {
   const includePatterns = include.length ? include : ['**/*'];
   const excludePatterns = exclude;
   const exceptions = exception;
-  const gitignore = loadGitignore(resolvedRoot);
 
   console.log(`Scanning ${resolvedRoot}...`);
   console.log(`Include patterns: ${JSON.stringify(includePatterns)}`);
@@ -379,7 +508,6 @@ export function cmdInit({ root, include = [], exclude = [], exception = [] }) {
     includePatterns,
     excludePatterns,
     exceptions,
-    gitignore,
   );
 
   console.log(`Selected ${selectedFiles.length} files`);
@@ -419,14 +547,12 @@ export function cmdChanges({ root }) {
   const includePatterns = metadata.include_patterns ?? ['**/*'];
   const excludePatterns = metadata.exclude_patterns ?? [];
   const exceptions = metadata.exceptions ?? [];
-  const gitignore = loadGitignore(resolvedRoot);
 
   const currentFiles = selectFiles(
     resolvedRoot,
     includePatterns,
     excludePatterns,
     exceptions,
-    gitignore,
   );
 
   const currentHashes = Object.fromEntries(
@@ -473,18 +599,109 @@ export function cmdChanges({ root }) {
     for (const filePath of modified) console.log(`  ~ ${filePath}`);
   }
 
-  const affectedFolders = new Set(['.']);
-  for (const filePath of [...added, ...removed, ...modified]) {
-    const parts = filePath.split('/').slice(0, -1);
-    for (let i = 0; i < parts.length; i++) {
-      affectedFolders.add(parts.slice(0, i + 1).join('/'));
+  // A directory is remapped when its OWN files changed. Its ancestors hold no
+  // description of a grandchild's file; they aggregate their children's
+  // Responsibility summaries, and whether a summary actually moved only becomes
+  // visible once the child's codemap.md has been rewritten — which this script
+  // never reads, so the dependency is not computable from hashes. So the
+  // ancestor chain is reported as ONE re-aggregation dispatch, deepest first,
+  // instead of a fixer per level: editing src/a/b/c.ts used to spawn four.
+  const changedDirs = new Set(
+    [...added, ...removed, ...modified].map(parentDir),
+  );
+
+  const ancestors = new Set();
+  for (const dir of changedDirs) {
+    for (const ancestor of ancestorDirs(dir)) {
+      if (!changedDirs.has(ancestor)) ancestors.add(ancestor);
     }
   }
 
-  const sortedFolders = [...affectedFolders].sort();
-  console.log(`\n${sortedFolders.length} folders affected:`);
-  for (const folder of sortedFolders) {
-    console.log(`  ${folder}/`);
+  const sortedChanged = [...changedDirs].sort();
+  console.log(
+    `\n${sortedChanged.length} directories with changed files (one fixer each):`,
+  );
+  for (const dir of sortedChanged) {
+    console.log(`  ${dir}/`);
+  }
+
+  if (ancestors.size) {
+    const chain = [...ancestors].sort(deepestFirst).map((dir) => `${dir}/`);
+    console.log(
+      `\n${chain.length} ancestor directories to re-aggregate (ONE dispatch, deepest first):`,
+    );
+    console.log(`  ${chain.join(' ')}`);
+  }
+
+  return 0;
+}
+
+// The per-directory file list a codemap fixer is briefed with. Without it the
+// orchestrator had to invent the list, and a map that names files nobody opened
+// is the failure this whole tool exists to prevent.
+//
+// Output grammar, one line each: a line starting with '# ' is a comment or a
+// directory header; every other line is a repo-relative path.
+//
+// A path containing a newline, or beginning with '# ', would break that grammar
+// and hand the orchestrator two paths that do not exist. Such a path is named on
+// stderr and withheld from stdout rather than corrupting the listing: a codemap
+// fixer briefed with a phantom path reads a file that is not there and describes
+// it anyway. belonging to the
+// nearest header above it. A header with no paths under it is a directory that
+// contributes no files of its own and only aggregates its children's maps.
+export function cmdFiles({ root }) {
+  const resolvedRoot = path.resolve(root);
+  const state = loadState(resolvedRoot);
+  if (!state) {
+    console.error("No codemap state found. Run 'init' first.");
+    return 1;
+  }
+
+  const metadata = state.metadata ?? {};
+  const allSelected = selectFiles(
+    resolvedRoot,
+    metadata.include_patterns ?? ['**/*'],
+    metadata.exclude_patterns ?? [],
+    metadata.exceptions ?? [],
+  );
+
+  // A path holding a newline, or opening with the header marker, cannot be
+  // written into a line-per-path listing without splitting into paths that do
+  // not exist. Named on stderr and withheld from stdout: a fixer briefed with a
+  // phantom path opens nothing and describes it anyway.
+  const unlistable = allSelected.filter((f) => f.includes('\n') || f.startsWith('# '));
+  const selectedFiles = allSelected.filter((f) => !unlistable.includes(f));
+  if (unlistable.length) {
+    console.warn(
+      `Warning: ${unlistable.length} path(s) cannot appear in this listing because ` +
+        'they contain a newline or begin with "# ". They are excluded from stdout ' +
+        'and must be handed to a fixer by hand: ' +
+        unlistable.map((f) => JSON.stringify(f)).join(', '),
+    );
+  }
+
+  // Seeded from the same folder set init writes a codemap.md into, so every
+  // mapped directory gets a header even when it owns no files.
+  const byDirectory = new Map(
+    [...getFoldersWithFiles(selectedFiles, resolvedRoot)]
+      .sort()
+      .map((folder) => [folder, []]),
+  );
+  for (const fullPath of selectedFiles) {
+    const relPath = toRelPath(resolvedRoot, fullPath);
+    byDirectory.get(parentDir(relPath)).push(relPath);
+  }
+
+  console.log(`# ${byDirectory.size} directories`);
+  for (const [folder, files] of byDirectory) {
+    const label = folder === '.' ? './' : `${folder}/`;
+    const count = `${files.length} file${files.length === 1 ? '' : 's'}`;
+    const note = files.length ? '' : '; aggregates child codemaps only';
+    console.log(`\n# ${label} (${count}${note})`);
+    for (const relPath of files) {
+      console.log(relPath);
+    }
   }
 
   return 0;
@@ -502,14 +719,12 @@ export function cmdUpdate({ root }) {
   const includePatterns = metadata.include_patterns ?? ['**/*'];
   const excludePatterns = metadata.exclude_patterns ?? [];
   const exceptions = metadata.exceptions ?? [];
-  const gitignore = loadGitignore(resolvedRoot);
 
   const selectedFiles = selectFiles(
     resolvedRoot,
     includePatterns,
     excludePatterns,
     exceptions,
-    gitignore,
   );
 
   const { state: nextState } = buildState(
@@ -562,13 +777,14 @@ export function main(argv = process.argv.slice(2)) {
 
     if (!command || !options.root) {
       console.error(
-        'Usage: codemap.mjs <init|changes|update> --root /path [--include glob] [--exclude glob] [--exception path]',
+        'Usage: codemap.mjs <init|changes|files|update> --root /path [--include glob] [--exclude glob] [--exception path]',
       );
       return 1;
     }
 
     if (command === 'init') return cmdInit(options);
     if (command === 'changes') return cmdChanges(options);
+    if (command === 'files') return cmdFiles(options);
     if (command === 'update') return cmdUpdate(options);
 
     console.error(`Unknown command: ${command}`);

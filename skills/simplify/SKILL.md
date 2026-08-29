@@ -97,9 +97,9 @@ project's `.claude/` and the user's `~/.claude/`, their names say nothing useful
 and `ToolSearch` reaches them where tools are deferred.
 
 Two components carry work this skill should not do itself. Untested code needs a
-pin-down check first — that is `omc-slim:verification-planning`. Enumerating
-every consumer of a symbol is `omc-slim:explorer`, which returns locations and
-proposes nothing. Where nothing is installed for either, the project's own tools
+pin-down check first — that is the `omc-slim:verification-planning` skill.
+Enumerating every consumer of a symbol is the `omc-slim:explorer` agent, which
+returns locations and proposes nothing. Where nothing is installed for either, the project's own tools
 are the answer, and you say which you used.
 
 ## Process

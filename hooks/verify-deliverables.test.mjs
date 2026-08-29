@@ -2,13 +2,13 @@
 /**
  * omc-slim — verify-deliverables harness
  *
- * Runs verify-deliverables.mjs as a child process against nineteen cases and
+ * Runs verify-deliverables.mjs as a child process against twenty-four cases and
  * checks only its observable contract (exit code / stdout JSON / stderr):
  *
- *   1. write agent, nothing written      -> warns
- *   2. write agent, clean write          -> silent
+ *   1. write agent, nothing written      -> warns that no write tool was used
+ *   2. write agent, clean in-project write -> silent
  *   3. namespaced "omc-slim:fixer"       -> warns on the bare name
- *   4. designer, nothing written         -> warns; both WRITE_AGENTS are reached
+ *   4. designer whose build failed        -> warns; both WRITE_AGENTS are reached
  *   5. MultiEdit write                   -> silent; every WRITE_TOOL counts
  *   6. read-only agent                   -> exempt, silent
  *   7. write denied (is_error result)    -> warns; an attempt is not a write
@@ -20,12 +20,19 @@
  *  13. transcript over the 64 MB cap     -> never read, silent
  *  14. FIFO transcript (non-regular file) -> not read, silent, does not hang
  *  15. scan over its deadline           -> abstains, silent; never accuses
- *  16. Write / 17. NotebookEdit          -> silent; every WRITE_TOOL has a case
+ *  16. Write -> silent; 17. NotebookEdit -> outside, on its own path field
  *  18. blank OMC_SLIM_SCAN_BUDGET_MS    -> reads as unset, still warns
  *  19. non-numeric budget                -> falls back to the default, warns
+ *  20. every write landed in /tmp        -> warns, and says so — not "no writes"
+ *  21. symlinked project root            -> the write is still inside it, silent
+ *  22. no cwd in the payload             -> cannot place writes, silent
+ *  23. successful write with no path      -> cannot place it, silent
+ *  24. another plugin's "otherco:fixer"   -> not ours to police, silent
  *
  * Fixtures use the real transcript shape ($.message.content[]) so the depth
- * bound in collectBlocks is exercised as it is in production.
+ * bound in collectBlocks is exercised as it is in production. Write blocks carry
+ * the path field the real tool uses — `notebook_path` for NotebookEdit,
+ * `file_path` for the rest — because the hook now reads it.
  *
  * Every payload carries a decoy `transcript_path` — the parent session, which
  * the hook must never read. It only discriminates where the two verdicts
@@ -50,6 +57,8 @@ import {
   ftruncateSync,
   closeSync,
   lstatSync,
+  mkdirSync,
+  symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -75,9 +84,24 @@ const ALLOWED_FIELDS = new Set(["systemMessage", "suppressOutput"]);
 
 const WRITE_ID = "toolu_01A";
 
+/**
+ * A scratch path outside any project. `/tmp` on macOS is a symlink to
+ * `/private/tmp`, which is the point: the hook must resolve both sides before
+ * comparing, and the OS temp dir the fixtures live in is under `/var` rather
+ * than `/tmp`, so the two never overlap.
+ */
+const SCRATCH_PATH = "/tmp/omc-slim-scratch-notes.md";
+
 // --- fixture builders: real Claude Code transcript lines ----------------------
 
-function assistantWrite(id, name = "Edit") {
+/**
+ * One write-tool call, on the path field the real tool actually uses.
+ *
+ * `filePath` null ships a write with no path at all — the shape the hook has to
+ * treat as unplaceable rather than as a write outside the project.
+ */
+function assistantWrite(id, name = "Edit", filePath = SCRATCH_PATH) {
+  const key = name === "NotebookEdit" ? "notebook_path" : "file_path";
   return {
     type: "assistant",
     message: {
@@ -87,11 +111,16 @@ function assistantWrite(id, name = "Edit") {
           type: "tool_use",
           id,
           name,
-          input: { file_path: "/tmp/x.ts" },
+          input: filePath === null ? {} : { [key]: filePath },
         },
       ],
     },
   };
+}
+
+/** An in-project path under the fixture root. The parent dir need not exist. */
+function inProject(root) {
+  return join(root, "src", "x.ts");
 }
 
 function toolResultOk(id) {
@@ -171,10 +200,14 @@ function sparseTranscript(root, bytes) {
   return path;
 }
 
-/** The parent session. Contains a successful write the hook must never credit. */
+/**
+ * The parent session. Contains a successful IN-PROJECT write the hook must never
+ * credit — in-project so that a hook reading the parent falls fully silent, which
+ * is what makes the decoy discriminate in the warning cases.
+ */
 function writeDecoy(root) {
   return writeTranscript(root, "parent-session.jsonl", [
-    assistantWrite("toolu_parent"),
+    assistantWrite("toolu_parent", "Edit", inProject(root)),
     toolResultOk("toolu_parent"),
   ]);
 }
@@ -270,19 +303,40 @@ function contractViolation(res) {
   return outputViolation(res);
 }
 
-function warningViolation(out) {
+/**
+ * The two states get two messages, and each must be recognisable on its own.
+ *
+ * Asserting only "some warning appeared" would let the hook emit the no-write
+ * message for a /tmp-only run — a message that is false in that state, which is
+ * the defect these cases exist to close. So each phrase is pinned, and each
+ * checker rejects the other state's phrase.
+ */
+const NO_WRITE_PHRASE = "no successful Edit/Write-family tool use";
+const OUTSIDE_PHRASE = "landed outside the";
+
+function warningViolation(out, expected, rejected) {
   const { systemMessage } = out;
   if (typeof systemMessage !== "string")
     return "expected a systemMessage, got none";
-  if (!systemMessage.includes("finished without editing"))
-    return `systemMessage did not name the failure: ${systemMessage}`;
+  if (!systemMessage.includes(expected))
+    return `systemMessage did not say "${expected}": ${systemMessage}`;
+  if (systemMessage.includes(rejected))
+    return `systemMessage used the other state's wording: ${systemMessage}`;
   return null;
 }
 
+/** State 1: no successful write-family tool use anywhere. */
 function expectWarning(res) {
   const violation = contractViolation(res);
   if (violation) return violation;
-  return warningViolation(parseStdout(res.stdout));
+  return warningViolation(parseStdout(res.stdout), NO_WRITE_PHRASE, OUTSIDE_PHRASE);
+}
+
+/** State 2: writes succeeded, every one of them outside the project root. */
+function expectOutsideWarning(res) {
+  const violation = contractViolation(res);
+  if (violation) return violation;
+  return warningViolation(parseStdout(res.stdout), OUTSIDE_PHRASE, NO_WRITE_PHRASE);
 }
 
 /**
@@ -302,11 +356,27 @@ function expectWarningNaming(agentName) {
   };
 }
 
+/** The same, for the outside-the-project state. */
+function expectOutsideWarningNaming(agentName) {
+  return (res) => {
+    const violation = expectOutsideWarning(res);
+    if (violation) return violation;
+    const { systemMessage } = parseStdout(res.stdout);
+    if (!systemMessage.includes(`the ${agentName} agent`))
+      return `expected "the ${agentName} agent", got: ${systemMessage}`;
+    return null;
+  };
+}
+
 /** Tracing must go to stderr only: a stray console.log corrupts the JSON. */
 function expectDebugTrace(res) {
   const violation = outputViolation(res);
   if (violation) return violation;
-  const warning = warningViolation(parseStdout(res.stdout));
+  const warning = warningViolation(
+    parseStdout(res.stdout),
+    NO_WRITE_PHRASE,
+    OUTSIDE_PHRASE,
+  );
   if (warning) return warning;
   if (!res.stderr.startsWith("[omc-slim]"))
     return `expected an [omc-slim] trace on stderr, got: ${res.stderr || "(empty)"}`;
@@ -322,17 +392,44 @@ function expectSilence(res) {
   return null;
 }
 
-function payload(agentType, agentTranscript, root) {
+/**
+ * `cwd` defaults to the fixture root, which is what a real payload carries and
+ * what the containment test measures against. A case passes null to model a
+ * payload with no cwd at all.
+ */
+function payload(agentType, agentTranscript, root, cwd = root) {
   return JSON.stringify({
     agent_type: agentType,
     agent_transcript_path: agentTranscript,
     transcript_path: writeDecoy(root),
+    ...(cwd === null ? {} : { cwd }),
   });
 }
 
 // --- cases --------------------------------------------------------------------
 
 const cases = [
+  {
+    // A workspace link, a nix or Bazel symlink farm, or a linked package
+    // directory: the path is inside the project and resolves outside it. The
+    // resolved-only test called that "landed outside the project directory —
+    // nothing in the project changed", which is false in both clauses about a
+    // file the user can see in their own tree.
+    name: "a write through a symlinked directory inside the project is not outside it",
+    run: () =>
+      runHook((root) => {
+        const outside = mkdtempSync(join(tmpdir(), "omc-outside-"));
+        symlinkSync(outside, join(root, "linked"), "dir");
+        writeFileSync(join(outside, "a.ts"), "x");
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantWrite("w1", "Write", join(root, "linked", "a.ts")),
+          toolResultOk("w1"),
+        ]);
+        return payload("omc-slim:fixer", transcript, root);
+      }),
+    check: expectSilence,
+  },
+
   {
     name: "fixer that wrote nothing is flagged",
     run: () =>
@@ -345,11 +442,11 @@ const cases = [
     check: expectWarning,
   },
   {
-    name: "fixer with a successful write stays silent",
+    name: "fixer with a successful in-project write stays silent",
     run: () =>
       runHook((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID),
+          assistantWrite(WRITE_ID, "Edit", inProject(root)),
           toolResultOk(WRITE_ID),
         ]);
         return payload("fixer", transcript, root);
@@ -368,11 +465,17 @@ const cases = [
     check: expectWarningNaming("fixer"),
   },
   {
+    // The fixture used to be "the layout looks fine as it is." — a Review-mode
+    // verdict, i.e. a legitimate no-write outcome the harness then pinned as an
+    // expected warning. Warning on sanctioned behaviour is a defect, not a case,
+    // and `agents/designer.md`'s Review mode has since been deleted: a designer
+    // always writes. So the fixture is now an outcome that genuinely warrants
+    // the warning — the agent gave up before touching anything.
     name: "designer is checked too, not just fixer",
     run: () =>
       runHook((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("the layout looks fine as it is."),
+          assistantText("the build failed, so I stopped before changing anything."),
         ]);
         return payload("designer", transcript, root);
       }),
@@ -387,7 +490,7 @@ const cases = [
     run: () =>
       runHook((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "Write"),
+          assistantWrite(WRITE_ID, "Write", inProject(root)),
           toolResultOk(WRITE_ID),
         ]);
         return payload("fixer", transcript, root);
@@ -395,23 +498,31 @@ const cases = [
     check: expectSilence,
   },
   {
-    name: "NotebookEdit counts as a write",
+    // NotebookEdit is the one write tool that does not use `file_path` — its
+    // schema says `notebook_path`, and the fixture used to spell it the other
+    // way, so nothing here would have noticed the hook reading the wrong field.
+    //
+    // Written OUTSIDE the project on purpose, which makes one fixture prove two
+    // things: dropping NotebookEdit from WRITE_TOOLS produces the no-write
+    // message, and failing to read `notebook_path` produces silence. Both differ
+    // from the outside-the-project message this expects.
+    name: "NotebookEdit counts as a write, and its path is notebook_path",
     run: () =>
       runHook((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "NotebookEdit"),
+          assistantWrite(WRITE_ID, "NotebookEdit", SCRATCH_PATH),
           toolResultOk(WRITE_ID),
         ]);
         return payload("fixer", transcript, root);
       }),
-    check: expectSilence,
+    check: expectOutsideWarningNaming("fixer"),
   },
   {
     name: "MultiEdit counts as a write",
     run: () =>
       runHook((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "MultiEdit"),
+          assistantWrite(WRITE_ID, "MultiEdit", inProject(root)),
           toolResultOk(WRITE_ID),
         ]);
         return payload("fixer", transcript, root);
@@ -462,7 +573,7 @@ const cases = [
     run: () =>
       runHook((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          nestedOneLevelDeeper(assistantWrite(WRITE_ID)),
+          nestedOneLevelDeeper(assistantWrite(WRITE_ID, "Edit", inProject(root))),
           nestedOneLevelDeeper(toolResultOk(WRITE_ID)),
         ]);
         return payload("fixer", transcript, root);
@@ -578,6 +689,102 @@ const cases = [
         return payload("fixer", transcript, root);
       }),
     check: expectWarningNaming("fixer"),
+  },
+  {
+    // C8. A successful Write to /tmp used to satisfy the check outright: the
+    // agent "wrote a file", so the hook fell silent and the project was
+    // untouched. It is a warning — but NOT the no-write warning, which would be
+    // false here. expectOutsideWarning rejects the other state's wording, so a
+    // hook that collapses the two states back into one fails this case.
+    name: "a successful write outside the project is reported as such",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantWrite(WRITE_ID, "Write", SCRATCH_PATH),
+          toolResultOk(WRITE_ID),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectOutsideWarningNaming("fixer"),
+  },
+  {
+    // BOTH sides of the containment test must be symlink-resolved, or it is a
+    // string comparison between two spellings of the same directory — on macOS
+    // `/tmp` is `/private/tmp` and the OS temp dir is under `/var` ->
+    // `/private/var`, so this is the ordinary case, not an exotic one.
+    //
+    // The payload's cwd and the written path go through two DIFFERENT symlinks
+    // to one directory, deliberately: resolving only the root leaves the two
+    // aliases unequal, and so does resolving only the path. Either half missing
+    // turns a write the agent was asked to make into an accusation, and neither
+    // half can hide behind a platform where the temp dir happens to be real.
+    name: "a symlinked project root still contains its own writes",
+    run: () =>
+      runHook((root) => {
+        const project = join(root, "project");
+        mkdirSync(join(project, "src"), { recursive: true });
+        const cwdAlias = join(root, "by-cwd");
+        const writeAlias = join(root, "by-write");
+        symlinkSync(project, cwdAlias);
+        symlinkSync(project, writeAlias);
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantWrite(WRITE_ID, "Write", join(writeAlias, "src", "x.ts")),
+          toolResultOk(WRITE_ID),
+        ]);
+        return payload("fixer", transcript, root, cwdAlias);
+      }),
+    check: expectSilence,
+  },
+  {
+    // No cwd means the root cannot be resolved, so no write can be placed. The
+    // hook must fall back to the pre-path behaviour — any successful write
+    // counts — rather than guess that a scratch path is outside a project it
+    // cannot locate. The fixture writes to /tmp precisely so that a hook which
+    // guesses warns here and fails.
+    name: "a payload with no cwd cannot place writes, and says nothing",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantWrite(WRITE_ID, "Write", SCRATCH_PATH),
+          toolResultOk(WRITE_ID),
+        ]);
+        return payload("fixer", transcript, root, null);
+      }),
+    check: expectSilence,
+  },
+  {
+    // A write tool_use whose input carries no path at all. Unplaceable is not
+    // outside: treating it as outside turns any tool shape this hook does not
+    // know about into an accusation.
+    name: "a successful write with no path in its input stays silent",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantWrite(WRITE_ID, "Write", null),
+          toolResultOk(WRITE_ID),
+        ]);
+        return payload("fixer", transcript, root);
+      }),
+    check: expectSilence,
+  },
+  {
+    // C5. `otherco:fixer` is another plugin's agent, following another plugin's
+    // brief. Warning it about omc-slim's deliverable rule is over-reach, and the
+    // old lastIndexOf strip did exactly that. hooks.json is pinned to the same
+    // namespace; this proves the two layers agree.
+    //
+    // A BARE `fixer` is still covered — case 1 pins that — because no evidence
+    // in this repository establishes which spelling a `--plugin-dir` dev session
+    // presents, and silencing the hook in development is the worse failure.
+    name: "another plugin's namespaced agent is not ours to police",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(root, "agent.jsonl", [
+          assistantText("I reviewed it and changed nothing."),
+        ]);
+        return payload("otherco:fixer", transcript, root);
+      }),
+    check: expectSilence,
   },
 ];
 

@@ -1,7 +1,7 @@
 {
   "name": "omc-slim",
   "displayName": "omc-slim",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "A small pantheon of specialist agents for Claude Code. Delegation over accumulation: six specialists, six skills, two advisory hooks, no runtime injection on the tool-call path, and a terse senior-engineer register by default.",
   "author": {
     "name": "Md Rubel Amin",

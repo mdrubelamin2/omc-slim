@@ -1,7 +1,7 @@
 ---
 name: verification-planning
 description: 'Plans how to prove a change works or broke nothing: frames the claim, designs an evidence path from the system itself, and requires every check to be able to fail.'
-when_to_use: '"how do I prove this did not break anything", "how do I know this works", "what should I test". Not for writing the tests, only for deciding what would prove it. Judging a change that already exists is omc-slim:review.'
+when_to_use: '"how do I prove this did not break anything", "how do I know this works", "what should I test". Not for writing the tests, only for deciding what would prove it. Judging a change that already exists is the omc-slim:review skill.'
 ---
 
 # Verification Planning
@@ -14,13 +14,16 @@ the evidence path that later work follows.
 
 ## Who runs it, and with what
 
-This skill plans; other components execute. Send the locating work to
-`omc-slim:explorer` — which checks already exist, what they cover — and the
-resulting edits to `omc-slim:fixer`. Where the plan is one stage of a larger
-migration, `omc-slim:deepwork` owns the sequencing and this owns each stage's
-failable check — and if you are already inside `omc-slim:deepwork`, this *is*
-that stage's check. Do not re-enter the sequencing skill to plan one stage of the
-plan you are already running.
+This skill plans; other components execute. **Everything below is what the plan
+specifies, not what you personally perform** — the revert-and-re-run ritual, the
+runnable path, the closing interpretation. You write them into the plan and name
+their owner. Send the locating work to the
+`omc-slim:explorer` agent — which checks already exist, what they cover — and the
+resulting edits to the `omc-slim:fixer` agent. Where the plan is one stage of a
+larger migration, the `omc-slim:deepwork` skill owns the sequencing and this owns
+each stage's failable check — and if you are already inside `omc-slim:deepwork`,
+this *is* that stage's check. Do not re-enter the sequencing skill to plan one
+stage of the plan you are already running.
 
 The evidence path uses whatever this machine actually has. A test runner, a
 browser or devtools server, a database or API client, a coverage tool: any of

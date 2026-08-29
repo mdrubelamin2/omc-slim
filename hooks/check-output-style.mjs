@@ -32,12 +32,24 @@
  * reason takes the slot, omc-slim's prompt never loads, and the only symptom is
  * that the orchestrator stops orchestrating.
  *
- * So the hook does not try to learn which style won — the SessionStart payload
- * carries five fields and none of them is the output style (session_id,
- * transcript_path, cwd, hook_event_name, source; captured from a live run).
- * It reads the CAUSE off disk instead: another enabled plugin that also sets
- * `force-for-plugin`. That is a condition, not a verdict, so the message says
- * "may" and hands over the command that settles it.
+ * So this hook reads the CAUSE off disk instead: another enabled plugin that also
+ * sets `force-for-plugin`. That is a condition, not a verdict, so the message
+ * says "may" and hands over the command that settles it.
+ *
+ * It does not read the EFFECT, and that is now a choice rather than a limit.
+ * SessionStart still carries no output style — as of 2.1.251 the payload is
+ * session_id, transcript_path, cwd, hook_event_name, source, plus agent_type,
+ * model, session_title and four resume fields, and none of them is the style.
+ * But two other surfaces do carry it: a StatusLine hook's stdin has
+ * `output_style: {name}`, and the stream-json `system:init` frame and the
+ * control-protocol `initialize` response carry `output_style` alongside
+ * `available_output_styles` (all verified against 2.1.251, 2026-08-29).
+ *
+ * Adopting the StatusLine route would settle the question this hook can only
+ * raise. It is not adopted here because a status line renders continuously
+ * rather than once per session, and this plugin's cost pledge is about what runs
+ * repeatedly. Recorded as an open decision rather than an impossibility, so no
+ * later reader takes the silence for a dead end.
  *
  * Deliberately advisory, like the SubagentStop hook beside it: `systemMessage`
  * only, never `hookSpecificOutput.additionalContext`, and always exit 0. A guard
@@ -46,12 +58,46 @@
  * Set OMC_SLIM_DEBUG=1 to trace on stderr.
  */
 
-import { readFileSync, readdirSync, lstatSync } from "node:fs";
-import { join, basename } from "node:path";
+import { readFileSync, readdirSync, lstatSync, realpathSync } from "node:fs";
+import { join, basename, dirname } from "node:path";
 import { homedir } from "node:os";
+import { fileURLToPath } from "node:url";
 
-/** Our own plugin key, as it appears in `enabledPlugins` and installed_plugins.json. */
+/**
+ * Our own plugin key, as it appears in `enabledPlugins` and
+ * installed_plugins.json. Only the FALLBACK identity — see isSelf.
+ */
 const SELF = "omc-slim";
+
+/**
+ * Where this plugin is installed, symlink-resolved, or null if it cannot be told.
+ *
+ * The identity that matters is the path, not the name. A stale duplicate install
+ * or a same-name fork from another marketplace is a genuine rival for the forced
+ * style slot, and exempting it on its bare name let it take the slot in silence.
+ *
+ * This file's own location is the authority — hooks/<this file>, so the plugin
+ * root is two levels up. That needs no environment and cannot be pointed at
+ * another plugin, which `CLAUDE_PLUGIN_ROOT` could be: it is set by whichever
+ * plugin's hook is running, and exempting the wrong install is precisely the
+ * failure being fixed.
+ *
+ * OMC_SLIM_SELF_ROOT overrides it, the same seam OMC_SLIM_DEBUG and the budget
+ * overrides use. The test needs it because the mutation runner executes a copy
+ * of this file from a temp directory, where "two levels up" is the temp root.
+ */
+const SELF_ROOT = (() => {
+  const override = process.env.OMC_SLIM_SELF_ROOT;
+  const root =
+    typeof override === "string" && override.trim() !== ""
+      ? override
+      : dirname(dirname(fileURLToPath(import.meta.url)));
+  try {
+    return realpathSync(root);
+  } catch {
+    return null;
+  }
+})();
 
 /**
  * Wall-clock budget for the whole disk scan, well inside the 5 s declared in
@@ -86,9 +132,18 @@ const MAX_STYLES_PER_PLUGIN = 20;
  * could disable the deadline, so the mutation suite could not prove it was
  * wired at all. One function is one thing to break, and therefore one thing the
  * harness can catch.
+ *
+ * It records the expiry on the scan rather than only reporting it, so the two
+ * call sites cannot end up disagreeing about whether the result is complete.
+ * A partial result is still reportable — see forcedStyles — and it is only
+ * reportable if something says it was partial.
+ *
+ * @param {{deadline: number, complete: boolean}} scan
  */
-function expired(deadline) {
-  return Date.now() >= deadline;
+function expired(scan) {
+  if (Date.now() < scan.deadline) return false;
+  scan.complete = false;
+  return true;
 }
 
 function debug(...args) {
@@ -162,12 +217,44 @@ function installPaths() {
 }
 
 /**
+ * The style name this file declares if it forces itself on the session, else null.
+ *
+ * Only the frontmatter is parsed, and only far enough to answer — this runs
+ * before the user's first turn.
+ */
+function forcedNameIn(file) {
+  let text;
+  try {
+    const st = lstatSync(file);
+    if (!st.isFile() || st.size > MAX_STYLE_BYTES) return null;
+    text = readFileSync(file, "utf8");
+  } catch {
+    return null;
+  }
+  if (!text.startsWith("---")) return null;
+  const end = text.indexOf("\n---", 3);
+  if (end === -1) return null;
+  const frontmatter = text.slice(3, end);
+  // Match the key only at the start of a line. Nested inside another block it
+  // is not the key Claude Code reads, and matching it anywhere would report a
+  // plugin that merely mentions the flag in a description.
+  if (!/^force-for-plugin[ \t]*:[ \t]*(true|yes|on|1)[ \t]*$/im.test(frontmatter)) {
+    return null;
+  }
+  // Claude Code names the style from `name:`, falling back to the basename.
+  // Mirroring that keeps the warning quoting a string the user can actually
+  // find in `/config`.
+  const declaredName = /^name[ \t]*:[ \t]*(.+?)[ \t]*$/im.exec(frontmatter);
+  if (declaredName) return declaredName[1].replace(/^["']|["']$/g, "");
+  return basename(file, ".md");
+}
+
+/**
  * Does this plugin ship an output style with `force-for-plugin` set?
  *
- * Returns the style's declared name, or null. Only the frontmatter is parsed,
- * and only far enough to answer — this runs before the user's first turn.
+ * Returns the style's declared name, or null.
  */
-function forcedStyleName(pluginRoot, deadline) {
+function forcedStyleName(pluginRoot, scan) {
   // A plugin may point `outputStyles` somewhere other than the default
   // directory, exactly as it may for agents and skills, and the manifest accepts
   // one path or a list — Claude Code carries both an `outputStylesPath` and an
@@ -195,39 +282,29 @@ function forcedStyleName(pluginRoot, deadline) {
   if (files.length === 0) return null;
 
   for (const file of files.slice(0, MAX_STYLES_PER_PLUGIN)) {
-    if (expired(deadline)) {
+    const name = forcedNameIn(file);
+    if (name !== null) return name;
+    // Checked AFTER the file, not before it. A check at the top of the loop
+    // fires having read nothing, so it can never hold evidence to hand back —
+    // and handing back the evidence already in hand is the whole point of the
+    // partial result. The cost is a bounded overrun: one more style file, itself
+    // capped at MAX_STYLE_BYTES.
+    if (expired(scan)) {
       debug("budget exhausted while scanning", pluginRoot);
       return null;
     }
-    let text;
-    try {
-      const st = lstatSync(file);
-      if (!st.isFile() || st.size > MAX_STYLE_BYTES) continue;
-      text = readFileSync(file, "utf8");
-    } catch {
-      continue;
-    }
-    if (!text.startsWith("---")) continue;
-    const end = text.indexOf("\n---", 3);
-    if (end === -1) continue;
-    const frontmatter = text.slice(3, end);
-    // Match the key only at the start of a line. Nested inside another block it
-    // is not the key Claude Code reads, and matching it anywhere would report a
-    // plugin that merely mentions the flag in a description.
-    if (!/^force-for-plugin[ \t]*:[ \t]*(true|yes|on|1)[ \t]*$/im.test(frontmatter)) {
-      continue;
-    }
-    // Claude Code names the style from `name:`, falling back to the basename.
-    // Mirroring that keeps the warning quoting a string the user can actually
-    // find in `/config`.
-    const declaredName = /^name[ \t]*:[ \t]*(.+?)[ \t]*$/im.exec(frontmatter);
-    if (declaredName) return declaredName[1].replace(/^["']|["']$/g, "");
-    return basename(file, ".md");
   }
   return null;
 }
 
-/** Plugin key -> forced style name, for every enabled plugin that forces one. */
+/**
+ * Every enabled plugin that forces an output style, with where it is installed.
+ *
+ * Returns `{ found, complete }`, or null when the world cannot be read at all.
+ * `complete` is false when the time budget cut the scan short — the caller still
+ * reports whatever rival is already in `found`, and says the list may be short.
+ * Discarding it was silence with the evidence in hand.
+ */
 function forcedStyles(cwd) {
   const enabled = enabledPlugins(cwd);
   if (enabled === null || enabled.size === 0) {
@@ -240,25 +317,48 @@ function forcedStyles(cwd) {
     return null;
   }
 
-  const deadline = Date.now() + BUDGET_MS;
+  const scan = { deadline: Date.now() + BUDGET_MS, complete: true };
   const found = new Map();
   for (const key of enabled) {
-    if (expired(deadline)) {
-      debug("cannot tell: budget exhausted", found.size, "scanned");
-      return null;
-    }
     const root = paths.get(key);
-    if (!root) continue;
-    const style = forcedStyleName(root, deadline);
-    if (style) found.set(key, style);
+    if (root) {
+      const style = forcedStyleName(root, scan);
+      if (style) found.set(key, { style, root });
+    }
+    // After the plugin rather than before it, for the same reason as the inner
+    // loop: a check that fires before any work has nothing to report.
+    if (expired(scan)) {
+      debug("budget exhausted after", found.size, "found");
+      break;
+    }
   }
-  return found;
+  return { found, complete: scan.complete };
 }
 
 /** The plugin key's bare name — `omc-slim@omc-slim` is `omc-slim`. */
 function bareName(key) {
   const at = key.indexOf("@");
   return at === -1 ? key : key.slice(0, at);
+}
+
+/**
+ * Is this entry the plugin these hooks are running from?
+ *
+ * By install path, so a stale duplicate or a same-name fork at another path is
+ * reported rather than exempted. Where either path cannot be resolved the bare
+ * name is the fallback: dropping the exemption there would make every healthy
+ * install warn about itself at startup, which is a worse failure than the
+ * over-exemption being fixed here.
+ */
+function isSelf(key, installPath) {
+  if (SELF_ROOT !== null) {
+    try {
+      return realpathSync(installPath) === SELF_ROOT;
+    } catch {
+      // fall through to the name
+    }
+  }
+  return bareName(key) === SELF;
 }
 
 function readStdin() {
@@ -291,23 +391,48 @@ function main() {
   }
 
   const cwd = typeof data.cwd === "string" ? data.cwd : process.cwd();
-  const found = forcedStyles(cwd);
-  if (found === null) return emit(null);
+  const scanned = forcedStyles(cwd);
+  if (scanned === null) return emit(null);
 
-  const rivals = [...found].filter(([key]) => bareName(key) !== SELF);
+  const { found, complete } = scanned;
+  const rivals = [...found].filter(([key, { root }]) => !isSelf(key, root));
   debug("forced styles:", [...found.keys()].join(", ") || "(none)");
 
   // omc-slim itself missing from the map is NOT reported. It is the normal state
   // when the plugin runs from --plugin-dir during development, where there is no
   // cache entry to find, and a hook that cries wolf every dev session is a hook
-  // people turn off.
+  // people turn off. A scan cut short before it found any rival is silent for
+  // the same reason: nothing established, nothing to say.
+  //
+  // What a --plugin-dir session DOES now report is the INSTALLED omc-slim, when
+  // one is enabled alongside the working tree. That is not the self-warning this
+  // paragraph guards against — it is two distinct installs, both forcing a
+  // style, one of which really does lose. Verified here: launched from the cache
+  // path the hook is silent, launched from the working tree it names the cache
+  // copy. Disable the installed plugin for the session to silence it, which is
+  // the same remedy any other rival has.
   if (rivals.length === 0) return emit(null);
 
-  const names = rivals.map(([key, style]) => `${bareName(key)} (${style})`).join(", ");
+  // A rival sharing our own bare name — a stale duplicate install, or the cache
+  // copy seen from a --plugin-dir session — renders as "omc-slim (omc-slim)",
+  // which reads as the plugin warning about itself and gives the user nothing to
+  // act on. The one datum that makes it actionable is already in hand: which
+  // install. Only same-name rivals carry it, so the ordinary case stays short.
+  const names = rivals
+    .map(([key, { style, root }]) =>
+      bareName(key) === SELF && root
+        ? `${bareName(key)} (${style}) installed at ${root}`
+        : `${bareName(key)} (${style})`,
+    )
+    .join(", ");
+  const cutShort = complete
+    ? ""
+    : " That scan was cut short by its time budget, so there may be others it never reached.";
   return emit(
     `omc-slim: ${names} also forces an output style. Claude Code applies only one, ` +
-      `picks it by plugin load order, and reports the loss at a log level you never see. ` +
-      `If the orchestrator is not routing work to specialists, check which style won: ` +
+      `picks it by plugin load order, and does not tell you which.` +
+      cutShort +
+      ` If the orchestrator is not routing work to specialists, check which style won: ` +
       `claude -p "One line: which output style is active?"`,
   );
 }

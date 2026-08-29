@@ -14,6 +14,16 @@
  *   5. computeFolderHashes agrees with the O(folders x files) version it
  *      replaced, on a tree with nesting, root-level files and empty folders
  *
+ * ...and the three a second audit found:
+ *
+ *   6. `files` emits the per-directory file list the fixer brief pastes, and it
+ *      covers exactly the directories init writes a codemap.md into (A2)
+ *   7. a changed leaf dispatches one fixer for its own directory, not one per
+ *      ancestor (C1)
+ *   8. ignore rules come from `git check-ignore` in a repository — nested
+ *      .gitignore files included — and the fallback matcher anchors a pattern
+ *      containing a slash to the root, as git does (C2)
+ *
  * Self-contained: builds fixtures in a temp dir and removes them. No
  * dependencies beyond node built-ins.
  *
@@ -22,12 +32,21 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  PatternMatcher,
   computeFileHash,
   computeFolderHashes,
   isUnreadableHash,
@@ -51,6 +70,51 @@ function fixture(name, files) {
     writeFileSync(fullPath, contents);
   }
   return root;
+}
+
+// What init actually recorded, independent of any reporting command.
+function selectedPaths(root) {
+  const state = JSON.parse(
+    readFileSync(path.join(root, '.slim', 'codemap.json'), 'utf8'),
+  );
+  return Object.keys(state.file_hashes).sort();
+}
+
+function gitInit(root) {
+  const result = spawnSync('git', ['init', '-q', root], { encoding: 'utf8' });
+  return !result.error && result.status === 0;
+}
+
+// The `files` grammar the skill's dispatch brief is written against: '# ' lines
+// are comments or directory headers, every other line is a path under the
+// nearest header above it.
+function parseFilesListing(stdout) {
+  const byDirectory = new Map();
+  let current = null;
+
+  for (const line of stdout.split('\n')) {
+    if (!line) continue;
+    const header = /^# (\S+\/) \(/.exec(line);
+    if (header) {
+      current = header[1];
+      byDirectory.set(current, []);
+      continue;
+    }
+    if (line.startsWith('# ')) continue;
+    if (!current) throw new Error(`path before any header: ${line}`);
+    byDirectory.get(current).push(line);
+  }
+
+  return byDirectory;
+}
+
+function indentedBlock(output, headingPattern) {
+  const match = new RegExp(`${headingPattern}\\n((?:  .*\\n?)+)`).exec(output);
+  if (!match) return null;
+  return match[1]
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 // The implementation computeFolderHashes replaced, kept as the oracle.
@@ -191,6 +255,161 @@ const cases = [
         if ((actual[folder] ?? '') !== expected) {
           return `${folder}: ${actual[folder]} != ${expected}`;
         }
+      }
+      return null;
+    },
+  },
+  {
+    // A2: the brief tells a fixer to read "the file list codemap.mjs reported
+    // for this dir". Nothing reported one, so every run invented it.
+    name: 'files lists each mapped directory with the files it contributes',
+    check() {
+      const root = fixture('listing', {
+        'main.js': 'a',
+        'src/app.js': 'b',
+        'src/deep/other.js': 'c',
+        'src/deep/nested/mod.js': 'd',
+      });
+      run('init', '--root', root);
+      const listing = run('files', '--root', root);
+
+      if (listing.status !== 0) return `files failed:\n${listing.output}`;
+
+      const byDirectory = parseFilesListing(listing.stdout);
+      const expected = {
+        './': ['main.js'],
+        'src/': ['src/app.js'],
+        'src/deep/': ['src/deep/other.js'],
+        'src/deep/nested/': ['src/deep/nested/mod.js'],
+      };
+
+      const headers = [...byDirectory.keys()].sort().join(' ');
+      if (headers !== Object.keys(expected).sort().join(' ')) {
+        return `headers ${headers}:\n${listing.stdout}`;
+      }
+
+      for (const [directory, files] of Object.entries(expected)) {
+        const actual = byDirectory.get(directory).join(' ');
+        if (actual !== files.join(' ')) {
+          return `${directory} listed [${actual}], expected [${files.join(' ')}]`;
+        }
+        // Every header must be a directory init wrote a codemap.md into,
+        // or the orchestrator dispatches a fixer at a path with no map.
+        const mapPath = path.join(root, directory, 'codemap.md');
+        if (!existsSync(mapPath)) return `no codemap.md for header ${directory}`;
+      }
+      return null;
+    },
+  },
+  {
+    // C1: one edit under src/a/b used to report '.', 'src', 'src/a' and
+    // 'src/a/b' as equals — four fixers, three of them rewriting a map whose
+    // own files had not changed.
+    name: 'a changed leaf dispatches one fixer, not one per ancestor',
+    check() {
+      const root = fixture('ancestors', {
+        'top.js': 'a',
+        'src/a/other.ts': 'b',
+        'src/a/b/c.ts': 'c',
+      });
+      run('init', '--root', root);
+      writeFileSync(path.join(root, 'src/a/b/c.ts'), 'changed');
+      const changes = run('changes', '--root', root);
+
+      const perFixer = indentedBlock(
+        changes.output,
+        'directories with changed files \\(one fixer each\\):',
+      );
+      if (!perFixer) return `no per-fixer section:\n${changes.output}`;
+      if (perFixer.join(' ') !== 'src/a/b/') {
+        return `dispatches ${perFixer.length}: ${perFixer.join(' ')}`;
+      }
+
+      const batch = indentedBlock(
+        changes.output,
+        'ancestor directories to re-aggregate \\(ONE dispatch, deepest first\\):',
+      );
+      if (!batch) return `no ancestor batch:\n${changes.output}`;
+      if (batch.length !== 1) return `ancestors not batched: ${batch.length} lines`;
+      if (batch[0] !== 'src/a/ src/ ./') {
+        return `ancestor chain wrong or misordered: ${batch[0]}`;
+      }
+      return null;
+    },
+  },
+  {
+    // C2, first half: git owns the semantics wherever a repository exists, so
+    // a nested .gitignore is enforced instead of never being read.
+    name: 'ignore rules come from git check-ignore, nested .gitignore included',
+    check() {
+      const root = fixture('gitignored', {
+        'keep.js': 'k',
+        '.gitignore': 'root-ignored.js\n',
+        'root-ignored.js': 'x',
+        'sub/.gitignore': 'hidden.js\n',
+        'sub/hidden.js': 'h',
+        'sub/shown.js': 's',
+      });
+      if (!gitInit(root)) {
+        console.log('      (skipped: git not available)');
+        return null;
+      }
+
+      const init = run('init', '--root', root);
+      if (!init.stderr.includes('Ignore rules: git check-ignore')) {
+        return `did not delegate to git:\n${init.output}`;
+      }
+
+      // Asserted against the recorded selection, not the `files` listing, so
+      // this fails for its own reason rather than A2's.
+      const selected = selectedPaths(root);
+      for (const ignored of ['sub/hidden.js', 'root-ignored.js']) {
+        if (selected.includes(ignored)) {
+          return `${ignored} was selected: ${selected.join(' ')}`;
+        }
+      }
+      if (!selected.includes('sub/shown.js')) {
+        return `sub/shown.js was dropped: ${selected.join(' ')}`;
+      }
+      return null;
+    },
+  },
+  {
+    // C2, second half: the fallback matcher used to anchor on a leading slash
+    // only, so 'docs/generated/' matched 'a/b/docs/generated/' too.
+    name: 'a gitignore pattern containing a slash is anchored to the root',
+    check() {
+      if (new PatternMatcher(['docs/generated/']).matches('a/b/docs/generated/y.js')) {
+        return "'docs/generated/' matched below the root";
+      }
+      if (!new PatternMatcher(['docs/generated/']).matches('docs/generated/x.js')) {
+        return "'docs/generated/' stopped matching at the root";
+      }
+      if (!new PatternMatcher(['generated/']).matches('a/b/generated/y.js')) {
+        return "'generated/' stopped matching at depth";
+      }
+
+      const root = fixture('anchoring', {
+        'keep.js': 'k',
+        '.gitignore': 'docs/generated/\n',
+        'docs/generated/x.js': 'x',
+        'a/b/docs/generated/y.js': 'y',
+      });
+      const init = run('init', '--root', root);
+
+      // Only meaningful where the fallback actually ran; inside a git
+      // repository git answers instead, and it is already covered above.
+      if (!init.stderr.includes('built-in matcher')) {
+        console.log('      (end-to-end skipped: fixture is inside a git repository)');
+        return null;
+      }
+
+      const selected = selectedPaths(root);
+      if (selected.includes('docs/generated/x.js')) {
+        return `root-anchored path was selected: ${selected.join(' ')}`;
+      }
+      if (!selected.includes('a/b/docs/generated/y.js')) {
+        return `path below the anchor was ignored: ${selected.join(' ')}`;
       }
       return null;
     },

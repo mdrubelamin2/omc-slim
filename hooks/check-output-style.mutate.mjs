@@ -2,7 +2,7 @@
 /**
  * omc-slim — mutation check for the check-output-style harness.
  *
- * Breaks the hook on purpose, eighteen ways, and asserts the harness notices
+ * Breaks the hook on purpose, twenty-four ways, and asserts the harness notices
  * every time. A SURVIVED line is a hole in the tests, not a bug in the hook.
  *
  * This hook warns the user about a condition it can only infer, so the two
@@ -25,9 +25,37 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  */
 const MUTANTS = [
   ["omc-slim reported as its own rival",
-   "const rivals = [...found].filter(([key]) => bareName(key) !== SELF);",
+   "const rivals = [...found].filter(([key, { root }]) => !isSelf(key, root));",
    "const rivals = [...found];",
    "warns about the plugin that is working, every single session"],
+
+  // --- C3: who counts as "us" ------------------------------------------------
+  ["self-identification falls back to the bare name always",
+   "  if (SELF_ROOT !== null) {",
+   "  if (false) {",
+   "a stale duplicate install or a same-name fork takes the style slot in silence"],
+  ["the bare-name fallback is dropped",
+   "  return bareName(key) === SELF;",
+   "  return false;",
+   "an install whose own path cannot be resolved warns about itself at every startup"],
+
+  // --- C4: silence with the evidence in hand ---------------------------------
+  ["a cut-short scan discards the rivals it found",
+   '    if (expired(scan)) {\n      debug("budget exhausted after", found.size, "found");\n      break;\n    }',
+   '    if (expired(scan)) {\n      debug("budget exhausted after", found.size, "found");\n      return null;\n    }',
+   "the defect itself: a confirmed rival is thrown away because the clock ran out"],
+  ["expiry is not recorded on the scan",
+   "  scan.complete = false;",
+   "  scan.complete = true;",
+   "a partial list is presented as the whole picture"],
+  ["the cut-short caveat is dropped",
+   "  const cutShort = complete",
+   "  const cutShort = true",
+   "the user reads a short list as exhaustive and stops looking"],
+  ["the per-file deadline stops being checked",
+   '    if (expired(scan)) {\n      debug("budget exhausted while scanning", pluginRoot);',
+   '    if (false) {\n      debug("budget exhausted while scanning", pluginRoot);',
+   "one plugin with many style files can run past the whole budget on its own"],
   ["a disabled plugin counts as enabled",
    "merged.set(key, value === true)",
    "merged.set(key, true)",
@@ -49,8 +77,8 @@ const MUTANTS = [
    "/force-for-plugin[ \\t]*:[ \\t]*(true|yes|on|1)/im",
    "an indented key inside another block counts as forcing"],
   ["the scan deadline is removed",
-   "  return Date.now() >= deadline;",
-   "  return false;",
+   "  if (Date.now() < scan.deadline) return false;",
+   "  if (true) return false;",
    "an unbounded disk scan in front of the user's first turn"],
   ["blank style budget parsed as zero",
    'if (raw === undefined || raw.trim() === "") return 1500;',

@@ -4,14 +4,14 @@
 # kind=archived -> adopted in full then deleted on purpose; pin is the sha256 of
 #                  the snapshot in docs/upstream/, which is now the record
 # Update a pin only after reviewing the diff and adopting (or rejecting) the change.
-git	oh-my-opencode-slim	6faaed283f33ca5467a7909fa786d1c563fb81ad	https://github.com/alvinunreal/oh-my-opencode-slim
-git	oh-my-claudecode	5aa678c6f7a769df84561d9486d8e9e30b68c3dc	https://github.com/Yeachan-Heo/oh-my-claudecode
+git	oh-my-opencode-slim	c518d6ce05150794342f5da129918bd7449bfe8e	https://github.com/alvinunreal/oh-my-opencode-slim
+git	oh-my-claudecode	adf4bf3280c8a8d7b932d5c11aef84ba22d6a11d	https://github.com/Yeachan-Heo/oh-my-claudecode
 git	karpathy-skills	2c606141936f1eeef17fa3043a72095b4765b9c2	https://github.com/multica-ai/andrej-karpathy-skills
-git	gstack	d078622b73539fc1a7a27e709861e9b6b058ae98	https://github.com/garrytan/gstack
-git	agent-skills	be42637c5af93fdc8526b68ec2f2651b930f316c	https://github.com/addyosmani/agent-skills
-git	ballast	acdf495b8954f249ec7dfc6dcb7cee07dae6ee55	https://github.com/svy04/ballast
+git	gstack	b5a951e62398abc8aea5beed429cc2617184fcc1	https://github.com/garrytan/gstack
+git	agent-skills	d2c37ef6225dd8726cdd369a8030307f48592d26	https://github.com/addyosmani/agent-skills
+git	ballast	fea4b4afc93c2416a9bb37c27d94b2556b13eb08	https://github.com/svy04/ballast
 archived	CLAUDE.md	e1894ef55a06543b9a80aef2d6309f5a7e8a0b99226821712aa8a484e1810f7a	~/.claude/CLAUDE.md
 archived	fable-mode.SKILL.md	c48cbc5cf0c9c0bc2e9b150feb2d886ab419aa87ad66fc7bf642d59a1bd53276	~/.claude/skills/fable-mode/SKILL.md
-git	ani-skills	43fe972a6169e4f04e179e23784992d1213b3c02	https://github.com/aniruddha-adhikary/skills
+git	ani-skills	035e4d8de282e9d84a9a4abc5b96943a9ecd9cda	https://github.com/aniruddha-adhikary/skills
 git	powerball-harness	cf086c6a667d37610d30a4236b94d8ab02e4efc5	https://github.com/tim-hub/powerball-harness
 git	superpowers	b36e0829c6d0140e93cfef2ca599b1b07d4a7797	https://github.com/obra/superpowers

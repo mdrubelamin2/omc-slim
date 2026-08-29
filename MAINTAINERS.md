@@ -2030,3 +2030,82 @@ zero and was reverted.
 `CLAUDE.md`, so `README.md` now carries the paragraph to paste and the measurement
 behind it. The output style is unchanged and the +117 tokens of failed mandate were
 reverted.
+
+## The incidents ledger (opened v0.9.2, 2026-08-29)
+
+Four failure classes are declined features rather than gaps. Each declined with a
+falsifiable reopening trigger, and until now nothing counted the trigger. A
+refusal that is falsifiable in principle and unobservable in practice is a
+refusal nobody can ever overturn, which is a worse position than having no
+refusal at all.
+
+So this is where observations land. **The per-release dogfood transcript scan is
+a step in the release checklist**, and its findings come here. Counts accumulate
+across releases; they do not reset.
+
+| Class | Reopens at | Observed |
+|---|---|---|
+| Idle abandonment — the agent stops mid-task and waits | 3 incidents | 0 |
+| Identical-tool-call loop — the same call repeated with no new information | 1 incident | 0 |
+| Format drift after a mutation — output that no longer matches its contract | 1 review finding | 0 |
+| A standing rule missed after it left the context window | measurement exists | not measured |
+
+One line per incident, appended under the table: the date, the class, the
+transcript path, and one sentence on what happened. Nothing is entered from
+memory — an incident without a transcript path is not an incident, it is a
+recollection, and the whole point of the ledger is that the refusals turn on
+evidence rather than on impression.
+
+### Incidents
+
+*(none recorded yet — this section is deliberately empty rather than absent, so
+that "no incidents" is distinguishable from "nobody looked")*
+
+## A refusal that expired: aider watch mode
+
+Recorded 2026-08-28 as impossibility-class — *"no filesystem-change hook
+exists"*. **That was false by 2026-08-29.** Claude Code 2.1.251 ships a
+`FileChanged` hook event, payload
+`{session_id, transcript_path, cwd, prompt_id?, hook_event_name, file_path, event}`
+where `event` is `change`, `add` or `unlink`, backed by chokidar with
+`awaitWriteFinish`. `SessionStart`, `CwdChanged` and `FileChanged` hooks may all
+return `hookSpecificOutput.watchPaths`, so a plugin can register watches at
+session start and extend them as it goes.
+
+The refusal's own trigger — *"reopens only if the platform ships the missing
+capability"* — has therefore fired. It is reopened as an open question, not as
+adopted work: `FileChanged` is off the tool-call path, but it fires per write,
+and "nothing injects per tool call" is a pledge about what runs repeatedly rather
+than about which event name carries it. The question is spend, and it belongs to
+the same argument the Todo Enforcer lost.
+
+The lesson is about the record rather than the feature. **An impossibility claim
+is the shortest-lived kind of claim a plugin can publish**, because it is a
+statement about someone else's roadmap. This one lasted a day. Every remaining
+impossibility-class refusal carries a re-check date for that reason.
+
+## The release checklist
+
+Ordered, because two of these are only correct in this order.
+
+1. `./scripts/check-coverage.sh` — **without** `OMC_SLIM_SKIP_REMOTE=1`. That
+   flag exists for contributors on an aeroplane; using it at release time skips
+   the one published figure no other check can see, and v0.9.2 shipped a Critical
+   defect that survived precisely because a reviewer was told to set it.
+2. `./scripts/check-reinforcement.sh`, `./scripts/check-shell.sh`,
+   `./scripts/check-evals.sh`.
+3. Both hook suites and both mutation runners; `skills/codemap/scripts/codemap.test.mjs`;
+   `skills/review/scripts/base.test.sh`.
+4. **The contradiction sweep**, over the shipped prompt surface. It is a release
+   gate, not an action item. On its first run as a gate it found eleven
+   contradictions in the release that had just been written, six of them
+   introduced by that release — every one of which passed every presence check.
+5. **Scan the release's dogfood transcript** for the four failure classes in the
+   incidents ledger above, and record what you find there.
+6. Bump `.claude-plugin/plugin.json`, write the `CHANGELOG.md` entry, commit.
+7. **Update the GitHub repository description last**, after the tag, with the
+   command `check-coverage.sh` prints. It describes what is published, so doing
+   it earlier makes it describe something that does not exist yet.
+
+Between releases the description check will report stale. That is correct and it
+is not a red build: the tree has moved and the published description has not.
