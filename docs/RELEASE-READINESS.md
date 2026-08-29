@@ -17,7 +17,7 @@ this project's whole apparatus exists to prevent.
 | 2 | Out-of-box liveness | **NOT MET** | Needs three fresh-install sessions on natural prompts. Unrun. |
 | 3 | Inertness is visible | **Half MET and verified, half unrun** | `scripts/check-adversarial.sh` installs a real rival plugin — real manifest, real `installed_plugins.json`, real hook binary, nothing stubbed — and passes 9/9 including CRLF frontmatter, a style declared outside `output-styles/`, `force-for-plugin: yes` rather than `true`, and a **stale duplicate of omc-slim itself**, which the hook exempted by name until v0.9.2. The other half, a session whose `Agent` tool is gated, needs a live run. |
 | 4 | Native-parity ledger published | **MET** | [NATIVE.md](./NATIVE.md), verified against binary 2.1.251, with a dated removal criterion and a pre-registered falsifying outcome for each crowded slot. |
-| 5 | Contradiction sweep is a release gate | **MET, and it earned it** | On its first run as a gate it found eleven contradictions in the release being gated, six introduced by that release. Every one passed every presence check. |
+| 5 | Contradiction sweep is a release gate | **The mechanism is MET. The discipline was not.** | On its first run it found eleven contradictions in the release being gated, six introduced by it. Then it **did not run on v0.9.5 or v0.9.6** — and that is exactly where a gate-policy contradiction, a false pin count and a stale scope claim landed, all three found later by a seven-seat review rather than by the sweep. A release gate that the author stops running between releases is not a gate. |
 | 6 | The surface ratchet holds | **NOT MET** | Static went 4,197 → 4,405 → 4,309. Net +112 across the run, stated rather than re-baselined. Three of the four additions are required by criterion 3. |
 | 7 | Every number re-derivable | **MET for every published figure**; the eval clause is amended below | Six figures pinned to a real tokeniser, and the gate refuses to print a corrected number without one. |
 
@@ -51,6 +51,27 @@ to `designer`.
 
 A closed loop, created while fixing a different defect, invisible to every
 presence check. That is what the gate is for.
+
+## The one that failed by not being run
+
+Criterion 5 is the sharpest lesson in this file, and it is not about the plugin.
+The sweep was promoted to a release gate, justified itself immediately, and then
+**I stopped running it** for two releases while continuing to mark the criterion
+met. Three of the four findings a later review returned would have been caught by
+it, because all three are one shipped sentence contradicting another:
+
+- `check-coverage.sh` states that `CHANGELOG.md` is deliberately not enrolled,
+  *"because pinning a current figure into it forces rewriting what an earlier
+  release actually shipped"* — and `check-prose.sh` enrolled it, and did exactly
+  that to 355 lines of shipped history.
+- A comment reading *"Fenced blocks are deliberately NOT stripped"* sitting forty
+  lines from one reading *"Commented-out and fenced text is removed first."*
+- `CHANGELOG.md` claiming thirteen pinned rules where there are eleven.
+
+None is a correctness defect and none moved a fact. All three are the failure
+class this project measured as the compliance killer, shipped by the person who
+built the gate against it. **The checklist in `MAINTAINERS.md` has the step; what
+was missing was running it when the release felt small.**
 
 ## The criterion that turned out to rest on a false premise
 

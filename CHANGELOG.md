@@ -11,7 +11,7 @@ guards that failed open in silence. All ten are closed and every one is proved.
 The structural finding, in one sentence: **every gate here checked that a listed
 thing still exists, and nothing checked that an existing thing is listed.** Added
 Set member, edited matcher, deleted frontmatter key, gutted grader body, new
-unpinned agent, deleted sibling — one asymmetry, six symptoms.
+unpinned agent, deleted sibling. One asymmetry, six symptoms.
 
 The most expensive of them: `disallowedTools` is described inside
 `check-coverage.sh` itself as *"the only harness-enforced guarantee this plugin
@@ -31,26 +31,26 @@ A pinned safety rule could be inverted in place with the original left above it
 in an HTML comment: anchor and co-occurrences still findable, so the reinforcement
 gate reported *"120/120 rules intact"* over text saying the opposite. Both gates
 strip comments now. Fences are deliberately not stripped, because they carry
-output contracts and spec templates that are the shipped rule — the first attempt
+output contracts and spec templates that are the shipped rule; the first attempt
 reported `deep-interview`'s spec schema missing. The residual, a pin relocated
 into a fence headed "Rejected ideas", belongs to the contradiction sweep: a
 substring test cannot read a heading.
 
 `check-evals.sh` read grader frontmatter and never the body. All thirteen bodies
-could be replaced with `PASS.` — including the one whose job is catching a SQL
-injection — while it printed *"6/6 eval cases well-formed"*. Now type-aware,
+could be replaced with `PASS.`, including the one whose job is catching a SQL
+injection, while it printed *"6/6 eval cases well-formed"*. Now type-aware,
 because getting that wrong fails correct files: a `regex` grader's criterion is
 its pattern, an `llm` grader's body is the whole rubric.
 
 Four guards failed open and silent, which is worse than crashing when the thing
 failing is a guard. A symlinked `~/.claude/settings.json` — the normal dotfiles
-setup — permanently disabled the collision hook, in exactly the population that
+setup, permanently disabled the collision hook, in exactly the population that
 runs several plugins at once. `codemap.mjs` was a silent exit-0 no-op through any
 symlinked path, from the one component that writes into the user's repository.
 `base.sh` stalled 75 s with no output on an unreachable remote, as the first step
-of every review; it is bounded at 10 s now and says which of fetching, timed out,
+of every review. It is bounded at 10 s now and says which of fetching, timed out,
 failed or no-remote happened, because the silence was half the defect. And the
-mutation runner **scored a hung harness as a kill** — `spawnSync` sets
+mutation runner **scored a hung harness as a kill**. `spawnSync` sets
 `status = null` on timeout, `null !== 0`, so the else branch counted it killed.
 The mutation score is this project's strongest quality claim and one of its
 failure modes inflated it. Measured: a hanging mutant read `KILLED, score 1/1,
@@ -167,7 +167,7 @@ across this entire plugin. Weakening an assertion was covered in three places;
 silencing the checker that reads it was covered nowhere, and it is a different
 move.
 
-650 tokens left `verification-planning`'s always-read body. All thirteen of its
+650 tokens left `verification-planning`'s always-read body. All eleven of its
 pinned rules live in one section, `What counts as evidence`, and the seven
 numbered procedure steps carried none, which matches the skill's own Scope,
 where the staged procedure is explicitly for multi-phase work while a small

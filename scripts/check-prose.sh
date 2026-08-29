@@ -37,23 +37,61 @@ else
   # notebook to a landing page's standard is how a gate gets ignored. The line is
   # whether a document argues a conclusion to a reader, or records what happened
   # for the next maintainer.
-  FILES=("$ROOT/README.md" "$ROOT/CHANGELOG.md" "$ROOT/docs/NATIVE.md"
+  # CHANGELOG.md is deliberately absent, and the reason is a mistake this gate
+  # already made. check-coverage.sh states the policy: "CHANGELOG is deliberately
+  # NOT enrolled. It is version-scoped history, and pinning a current figure into
+  # it forces rewriting what an earlier release actually shipped." This gate
+  # enrolled it anyway and produced exactly that: 355 changed lines inside the
+  # already-shipped v0.9.0, v0.9.1 and v0.9.2 entries. No fact moved — a multiset
+  # comparison of every number, link and quoted span came back empty both ways —
+  # but style is not a reason to edit history, and two gates holding opposite
+  # policies on one file is worse than either policy.
+  #
+  # The newest entry is checked separately below, because that one is not history
+  # yet.
+  FILES=("$ROOT/README.md" "$ROOT/docs/NATIVE.md"
          "$ROOT/docs/ASSESSMENT-2026-08-29.md" "$ROOT/docs/RELEASE-READINESS.md"
-         "$ROOT/docs/DISTRIBUTION-DRAFT.md" "$ROOT/docs/QUALITY-BAR.md")
+         "$ROOT/docs/DISTRIBUTION-DRAFT.md" "$ROOT/docs/QUALITY-BAR.md"
+         "$ROOT/output-styles/omc-slim.md" "$ROOT"/agents/*.md
+         "$ROOT"/skills/*/SKILL.md)
 fi
+
+# The newest CHANGELOG entry, extracted to a temp file so the gate reads what is
+# being written now and not what shipped in March.
+NEWEST="$(mktemp -d)/CHANGELOG-newest-entry.md"
+trap 'rm -rf "$(dirname "$NEWEST")"' EXIT
+awk '/^## /{n++} n==1' "$ROOT/CHANGELOG.md" > "$NEWEST"
+if [ -s "$NEWEST" ] && [ "$#" -eq 0 ]; then FILES+=("$NEWEST"); fi
 
 python3 - "${FILES[@]}" <<'PY'
 import re, sys, statistics
 
 # Sourced thresholds
-EMDASH_PER_1K   = 10.0   # human corpus 3.7-10.13/1k; GPT-4.1 measured 10.62/1k
+# 10.0 rests on the HUMAN corpus, and the provenance of each half differs enough
+# that flattening them into one comment was itself a defect. The human range
+# 3.7-10.13/1k is slopdetector.org's own 700,000-word measurement, published with
+# its method. The "GPT-4.1 at 10.62" figure that used to sit here as "measured" is
+# second-hand: slopdetector citing arXiv:2603.27006, a single-author preprint,
+# unreviewed, whose per-1,000-word table nobody in this project has read. It is
+# kept as context and no longer as the basis, because a gate in a repository whose
+# moat is re-derivable numbers had exactly one number nobody could re-derive.
+EMDASH_PER_1K   = 10.0   # human corpus 3.7-10.13/1k (slopdetector, 700k words)
 TRICOLON_PER_500 = 2.5   # slopdetector: >1 polished triplet per 200 words
 NOTX_BUTY        = 3     # slopdetector: 3+ in one article is a template
 STYLE_PER_500    = 3.0   # slopdetector flag line
 BURSTINESS_MIN   = 0.4   # human 0.6-1.2, model 0.2-0.4 (GPTZero methodology)
 TRANSITION_FRAC  = 0.5   # >half of paragraphs opening on a formal transition
 # Derived here, not published. Every source names the pattern; none numbers it.
+#
+# And it is applied ONLY to documents. A prompt uses bold as a salience mechanism
+# for the model, not as a listicle tell for a reader — different function, so the
+# same number would be a category error. The countermeasure for a prompt is the
+# output instruction the style now carries ("punctuate like someone typing fast",
+# "vary sentence length"), which costs 40 tokens against 22 structural edits to
+# pinned files. That trade is the 51dfbcc lesson applied: a pass that keeps every
+# pinned phrase can still break behaviour, and bold is what makes a rule salient.
 BOLD_LEADIN_PER_SECTION = 1.5
+PROMPT_DIRS = ('agents/', 'skills/', 'output-styles/')
 
 # `harness` is deliberately NOT on this list. This repository uses it as a noun
 # for its own benchmark harness, dozens of times, correctly. A word list that
@@ -71,7 +109,12 @@ def strip(t):
     # ignored the first time it is right, because it was wrong three times first.
     t = re.sub(r'"[^"\n]{1,120}"', '""', t)
     t = re.sub(r'«[^»]{1,200}»', '', t)
-    t = re.sub(r'^```.*?^```', '', t, flags=re.M | re.S)   # fenced code
+    # Fences are NOT stripped, and check-coverage.sh reached the same conclusion
+    # for the same reason: they carry the OUTPUT CONTRACTS. Four of five component
+    # contracts mandate an em-dash on every line they emit — a ten-finding review
+    # emits eleven before the model writes a word of its own — and stripping
+    # fences made this gate structurally unable to see the tells the plugin
+    # specifies, as opposed to the ones it merely writes.
     t = re.sub(r'^\s*\|.*$', '', t, flags=re.M)            # tables
     t = re.sub(r'`[^`]*`', '', t)                          # inline code
     t = re.sub(r'\]\([^)]*\)', ']', t)                     # link targets
@@ -105,8 +148,9 @@ for path in sys.argv[1:]:
     fails = []
     if em1k > EMDASH_PER_1K:
         fails.append(f'em-dashes {em1k:.1f}/1k words, over {EMDASH_PER_1K} '
-                     f'(measured GPT-4.1 output is 10.6; human corpus tops out at 10.1)')
-    if lead_per_sec > BOLD_LEADIN_PER_SECTION:
+                     f'(the human corpus tops out at 10.1)')
+    is_prompt = any(d in path for d in PROMPT_DIRS)
+    if lead_per_sec > BOLD_LEADIN_PER_SECTION and not is_prompt:
         fails.append(f'{lead} paragraphs open on a bolded lead-in across {sections} '
                      f'sections = {lead_per_sec:.1f} each, over {BOLD_LEADIN_PER_SECTION}')
     warns = []

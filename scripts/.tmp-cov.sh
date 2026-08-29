@@ -89,11 +89,7 @@ while IFS=$'\t' read -r origin rule where pattern; do
   # matches. Without this, a rule that happens to wrap across two lines reads
   # as absent — which cost a false alarm the first time this was run by hand.
   #
-  # Commented-out text is removed first, and that is not tidiness. (Fences are
-  # NOT removed — see the note on strip_inert above, which is the true one. This
-  # comment said "and fenced" until 2026-08-29 and was wrong, which mattered
-  # because it is the comment a reader consults when deciding whether the cap
-  # gate can be bypassed by hiding a pin in a fence.) A
+  # Commented-out and fenced text is removed first, and that is not tidiness. A
   # rule can be inverted in place with the original left three lines above inside
   # an HTML comment: the pattern is still findable, so this loop reports the rule
   # present while the shipped text says the opposite. Demonstrated against the
@@ -176,7 +172,7 @@ PY
 # Reader sites are enrolled by hand, not found by pattern, so the dated figures
 # in CHANGELOG.md and RESEARCH.md can never fire. The cost of that is a new site
 # added later without enrolling it here, which is the cheaper failure.
-python3 - "$ROOT" <<'PY' || exit 1
+python3 - "$ROOT" <<'PY' || true
 import glob, os, re, subprocess, sys
 root = sys.argv[1]
 

@@ -291,8 +291,12 @@ a rule adopted in the same session as a source, and attributed by proximity.
 **Two adoptions scheduled rather than taken here**, because both are behaviour
 changes and a behaviour change is a release: the duplicate-dispatch rule with its
 "retrieval authorizes the retry" escape hatch, and the silenced-checker move —
-`ts-ignore`, `eslint-disable`, `noqa` return **zero hits across this entire
-plugin**, which is a genuine gap rather than a duplicate.
+`ts-ignore`, `eslint-disable`, `noqa` returned **zero hits across every agent,
+skill, hook and output style**, which is a genuine gap rather than a duplicate.
+(That sentence read "this entire plugin" until 2026-08-29, and stopped being true
+when the delegation benchmark's fixture generator began emitting `# noqa` lines
+inside the Python it writes. Those are generated fixture code, not shipped
+prompt, so the finding stands and the scope was wrong.)
 
 **One adoption was taken immediately, because it was a defect rather than an
 addition.** `agent-skills` states that *"a guard that reads only `git diff`
