@@ -33,6 +33,69 @@ import { basename, join } from "node:path";
 const sha = (text) => createHash("sha256").update(text).digest("hex");
 
 /**
+ * What one harness run means.
+ *
+ * A run that never finished is not a result. `spawnSync` reports a timeout as
+ * `error.code === "ETIMEDOUT"` with `status === null`, and `null === 0` is
+ * false — so a mutant that made the HARNESS HANG used to land in the same
+ * branch as a genuine failure and be counted as KILLED. The mutation score is
+ * the strongest quality claim this repository makes, and that was one of its
+ * failure modes inflating it.
+ *
+ * Signals and spawn failures are unusable for the same reason: nothing was
+ * measured. Neither a kill nor a survival, and the run fails on one, because a
+ * harness that hangs under a mutant is a defect in the harness whichever way
+ * the mutant would have gone.
+ *
+ * Pure, and exercised by the self-check below: no suite runs this file, so this
+ * is the only thing standing between the distinction and a silent revert.
+ *
+ * @param {{status: number|null, signal: string|null, error?: Error}} run
+ * @returns {{outcome: "unusable"|"survived"|"killed", why: string}}
+ */
+function classify(run) {
+  if (run.error) {
+    return {
+      outcome: "unusable",
+      why: `${run.error.code || "error"}: ${run.error.message}`,
+    };
+  }
+  if (run.status === null) {
+    return { outcome: "unusable", why: `terminated by ${run.signal}` };
+  }
+  if (run.status === 0) {
+    return { outcome: "survived", why: "harness passed anyway" };
+  }
+  return { outcome: "killed", why: "" };
+}
+
+for (const [expected, run] of [
+  ["survived", { status: 0, signal: null }],
+  ["killed", { status: 1, signal: null }],
+  // The shape spawnSync actually returns on `timeout:`, which is the one this
+  // used to score as a kill.
+  [
+    "unusable",
+    {
+      status: null,
+      signal: "SIGTERM",
+      error: Object.assign(new Error("spawnSync ETIMEDOUT"), {
+        code: "ETIMEDOUT",
+      }),
+    },
+  ],
+  ["unusable", { status: null, signal: "SIGKILL" }],
+]) {
+  const { outcome } = classify(run);
+  if (outcome !== expected) {
+    throw new Error(
+      `mutate-runner self-check: a run of ${JSON.stringify(run)} scored as ` +
+        `"${outcome}", expected "${expected}" — the score this prints is wrong`,
+    );
+  }
+}
+
+/**
  * Run every mutant against the harness.
  *
  * @param {object} target
@@ -112,30 +175,15 @@ export function runMutants({ hook, test, mutants }) {
     const output = (run.stdout || "") + (run.stderr || "");
     const failures = (output.match(/^FAIL/gm) || []).length;
 
-    // A run that never finished is not a result. `spawnSync` reports a timeout
-    // as `error.code === "ETIMEDOUT"` with `status === null`, and `null === 0`
-    // is false — so a mutant that made the HARNESS HANG used to fall into the
-    // else branch and be counted as killed. The mutation score is the strongest
-    // quality claim this repository makes, and that is one of its failure modes
-    // inflating it.
-    //
-    // Reported as its own outcome and failed on, because a harness that hangs
-    // under a mutant is a defect in the harness whichever way the mutant went.
-    // Signals and spawn failures land here for the same reason: nothing was
-    // measured.
-    const unusableReason = run.error
-      ? `${run.error.code || "error"}: ${run.error.message}`
-      : run.status === null
-        ? `terminated by ${run.signal}`
-        : null;
+    const { outcome, why } = classify(run);
 
-    if (unusableReason) {
-      unusable.push([label, consequence, unusableReason]);
+    if (outcome === "unusable") {
+      unusable.push([label, consequence, why]);
       console.log(
-        `  UNUSABLE  ${label.padEnd(46)} ${unusableReason} <-- neither killed nor survived`,
+        `  UNUSABLE  ${label.padEnd(46)} ${why} <-- neither killed nor survived`,
       );
-    } else if (run.status === 0) {
-      survivors.push([label, consequence, "harness passed anyway"]);
+    } else if (outcome === "survived") {
+      survivors.push([label, consequence, why]);
       console.log(`  SURVIVED  ${label.padEnd(46)} <-- hole in the tests`);
     } else {
       killed++;

@@ -826,13 +826,22 @@ NSPY
 #
 # Not enrolled in the README hook counts above: those describe the two hooks, and
 # folding a third suite into that sentence would make it wrong in a different way.
-if base_out=$(bash "$ROOT/skills/review/scripts/base.test.sh" 2>&1); then
-  echo "$base_out" | tail -1 | sed 's/^/review base resolution: /'
-else
-  echo "  SUITE FAILED  skills/review/scripts/base.test.sh"
-  echo "$base_out" | sed 's/^/                  /'
-  exit 1
-fi
+# Both component suites, not just the one. codemap.mjs is 800+ lines, is the only
+# thing here that writes into the USER's repository, and its suite was reachable
+# from CI and from nothing else — so a local `check-coverage.sh` reported green
+# over a broken codemap. The hook suites above are enrolled with README counts
+# because those counts are published; these two are enrolled for the exit code.
+for suite in "bash $ROOT/skills/review/scripts/base.test.sh" \
+             "node $ROOT/skills/codemap/scripts/codemap.test.mjs"; do
+  name=$(basename "${suite##* }")
+  if suite_out=$($suite 2>&1); then
+    echo "$suite_out" | tail -1 | sed "s|^|${name}: |"
+  else
+    echo "  SUITE FAILED  $name"
+    echo "$suite_out" | tail -12 | sed 's/^/                  /'
+    exit 1
+  fi
+done
 
 # --- the harness-enforced mechanisms, asserted -----------------------------
 # Every other block in this file checks that a LISTED thing still exists. None
