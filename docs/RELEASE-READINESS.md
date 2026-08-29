@@ -4,8 +4,10 @@ Dated 2026-08-29. Each of the seven exit criteria in
 [TODO-v1.0.md](./TODO-v1.0.md) is checked against the item that was supposed to
 produce its evidence, not against how much was done near it.
 
-**Verdict: not v1.0. Four criteria met, three need a run that spends money, and
-one of the four was met by discovering the criterion rested on a false premise.**
+**Verdict: not v1.0. Five criteria met, three need a run that spends money — the
+counts overlap because criterion 3 is half met. One of the five was met by
+discovering the criterion rested on a false premise, and one more was met in
+v0.9.7 by running the gate that had lapsed.**
 
 The version stands at **v0.9.7**. Calling it v1.0 would require either running
 the measurements or quietly weakening the criteria, and the second is the failure
@@ -17,7 +19,7 @@ this project's whole apparatus exists to prevent.
 | 2 | Out-of-box liveness | **NOT MET** | Needs three fresh-install sessions on natural prompts. Unrun. |
 | 3 | Inertness is visible | **Half MET and verified, half unrun** | `scripts/check-adversarial.sh` installs a real rival plugin — real manifest, real `installed_plugins.json`, real hook binary, nothing stubbed — and passes 9/9 including CRLF frontmatter, a style declared outside `output-styles/`, `force-for-plugin: yes` rather than `true`, and a **stale duplicate of omc-slim itself**, which the hook exempted by name until v0.9.2. The other half, a session whose `Agent` tool is gated, needs a live run. |
 | 4 | Native-parity ledger published | **MET** | [NATIVE.md](./NATIVE.md), verified against binary 2.1.251, with a dated removal criterion and a pre-registered falsifying outcome for each crowded slot. |
-| 5 | Contradiction sweep is a release gate | **The mechanism is MET. The discipline was not.** | On its first run it found eleven contradictions in the release being gated, six introduced by it. Then it **did not run on v0.9.5 or v0.9.6** — and that is exactly where a gate-policy contradiction, a false pin count and a stale scope claim landed, all three found later by a seven-seat review rather than by the sweep. A release gate that the author stops running between releases is not a gate. |
+| 5 | Contradiction sweep is a release gate | **MET, and the lapse is kept on the record** | It skipped v0.9.5 and v0.9.6, and that is exactly where a gate-policy contradiction, a false pin count and a stale scope claim landed — all found later by a seven-seat review rather than by the sweep. It ran on v0.9.7, in two lanes over all eighteen prompt files, and found **eleven** contradictions: four output contracts with no slot for what their own rule demands, three words carrying two meanings, two wiring claims the harness contradicts, two skills disagreeing with their own siblings. All eleven closed. Two runs, two double-digit hauls, and both releases it skipped shipped defects — the evidence says this gate earns its cost and that skipping it is what costs. |
 | 6 | The surface ratchet holds | **NOT MET** | Static went 4,197 → 4,405 → 4,309 → 4,413. Net +216 across the run, stated rather than re-baselined. Three of the four earlier additions are required by criterion 3; the v0.9.7 addition of +70 is the catch-all precedence rule, taken because a router that sends explorer work to `general-purpose` wastes the whole 4,413 rather than saving 70. |
 | 7 | Every number re-derivable | **MET for every published figure**; the eval clause is amended below | Ten sites pinned to a real tokeniser, and the gate refuses to print a corrected number without one. v0.9.7 found the pin LIST was the weak part rather than the measurement: seven sites were enrolled and every other present-tense use of the same number was not, so three sentences kept quoting a superseded total. Also corrected the on-invoke ceiling, which was scaled from the static set's ratio and understated by 997 tokens. |
 
