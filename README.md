@@ -20,22 +20,36 @@ claude --plugin-dir ./omc-slim
 
 ## What changes
 
-- **It plans before it edits.** Multi-step work gets a stage map with a check per
-  stage, instead of fourteen edits and a summary.
-- **It sends work to specialists.** Searching, research, bulk edits and UI go to
-  agents that do one thing, so your main thread keeps its context for the problem.
-- **It will not claim a check it did not run.** A hook reads the transcript and
-  tells you when an agent reported a passing test with no test in it.
+**It plans before it edits.** Ask for something that spans four files and you get
+a numbered stage map with a check per stage, shown before any work starts. Not
+fourteen edits and a summary that says it went well.
 
-No MCP servers, no files written unless you run one of the three that do. It
-does override your `outputStyle` while enabled, and only `/plugin disable
-omc-slim` gives that back.
+**It cannot claim a test it never ran.** A hook reads the agent's own transcript.
+If it reported a passing suite and no test command is in there, you are told. The
+worst case this guards against is measured: one benchmark had an agent report
+every task complete while 19 of 45 held-out tests failed, on a transcript reading
+`5/5 tests pass` about a suite of eight.
+
+**Read-only means read-only.** The agents that research and search have `Edit`
+and `Write` denied at the harness level, not discouraged in a prompt. The same
+mechanism stops any agent spawning another, so a delegation cannot quietly become
+a tree that spends your budget.
+
+**It says what it could not check.** Reviews carry the quote that proves each
+finding, and a finding with no evidence is dropped rather than reported. Where
+something could not be verified, that is written down instead of smoothed over.
+
+**It stays out of the way.** ~4,413 tokens of always-on context, nothing injected
+per tool call, no MCP servers of its own, and it inherits whatever servers and
+skills your project already has. It writes no files unless you run one of the
+three that do.
+
+One thing it does take over: your `outputStyle`, for as long as it is enabled.
+`/plugin disable omc-slim` gives that back.
 
 ## What you can ask for
 
-Ask in plain language. Most start on their own, though that is observed rather
-than measured, and some builds gate delegation until you ask for it
-([ROUTING.md](./docs/ROUTING.md) has the one-paragraph fix).
+Ask in plain language. You should not need to name any of them.
 
 | Agent | Ask it | What comes back |
 |---|---|---|
@@ -55,35 +69,26 @@ than measured, and some builds gate delegation until you ask for it
 | [simplify](./skills/simplify/SKILL.md) | *"This is over-built."* | Deletes speculative abstraction, config nobody sets, hand-rolled standard library |
 | [codemap](./skills/codemap/SKILL.md) | *"Nobody here has read this repository."* | A codemap per directory plus a root atlas. Expensive, and it says so first |
 
-Two do not start on their own. Type `/omc-slim:deepwork` or
-`/omc-slim:simplify <target>`, or paste the paragraph in
-[ROUTING.md](./docs/ROUTING.md) into your `CLAUDE.md` and they will.
+`deepwork` and `simplify` are the two you invoke by name:
+`/omc-slim:deepwork`, `/omc-slim:simplify <target>`.
 
 ## Is it on?
 
-The first reply that plans or delegates names the style. If the `Agent` tool is
-missing from your session, that first reply says so too.
+The first reply that plans or delegates names the style. Its **absence** is the
+signal: another enabled plugin can take the output-style slot, and Claude Code
+picks the winner by load order without telling you.
 
-Those two lines are the only evidence that reaches you, so their **absence** is
-the signal. A session that plans work and never mentions the style means another
-plugin took the output-style slot, and Claude Code picks the winner by load order
-without telling you. Check with:
-
-```
-claude -p "One line: which output style is active?"
-```
-
-For a permanent badge in your status line, showing `omc-slim ●` when the style is
-in force and `omc-slim ✗ (Concise won)` when it is not, add this. It costs no
-model tokens:
+For a permanent badge, add the status line. It costs no model tokens and prints
+`omc-slim ●` when the style is in force, `omc-slim ✗ (Concise won)` when it is
+not:
 
 ```json
 { "statusLine": { "type": "command",
                   "command": "/path/to/omc-slim/scripts/optional/statusline.sh" } }
 ```
 
-To turn it off: `/plugin disable omc-slim`. The style is part of the system
-prompt, so it changes after `/clear` or in a new session.
+To turn it off: `/plugin disable omc-slim`. Output style is part of the system
+prompt, so changes land after `/clear` or in a new session.
 
 ## For a team
 
@@ -115,30 +120,38 @@ plugin change:
   delegating plugin pays full price for prefixes it could have read from cache.
   `{ "subagentPromptCacheTtl": "1h" }`
 
-## What it does not do
+## What we measured, including what did not work
 
-It does not make Claude more correct.
+No other plugin in this category publishes a negative result about itself. This
+one does, on its front page, because a plugin that hides its misses is a plugin
+you cannot calibrate.
 
-The one benchmark, on a single-file task at n=3 per arm, came out 18% cheaper at
-equal graded quality. **Zero subagents ran in any arm, with delegation available
-the whole time.** That is a finding against this plugin's own thesis and it is on
-the front page on purpose. One task at n=3 proves very little, the winning arm
-also ran with two MCP servers the others did not, and the build it measured is
-older than the one you install.
+**It does not make Claude more correct.** It changes cost, structure and what
+gets checked. Four independent studies find a behavioural rules layer moves
+exactly those and not correctness, and our own numbers fit that pattern.
 
-And `deepwork` and `simplify` do not start on their own. Invoke them by name.
+**Delegation was available in every benchmark run and the model never chose it.**
+Nine runs, 18% cheaper at equal graded quality, and zero subagents in any arm.
+That is a finding against this plugin's own thesis. One task at n=3 proves very
+little, the winning arm had two MCP servers the others did not, and the build it
+measured is older than the one you install.
 
-The full list, with evidence for each: **[LIMITATIONS.md](./docs/LIMITATIONS.md)**.
-How the numbers were taken: **[BENCHMARK.md](./docs/BENCHMARK.md)**.
+**Two skills do not start on their own.** Invoke `deepwork` and `simplify` by
+name, or paste one paragraph into your `CLAUDE.md`. The rest have been seen
+starting unprompted, but that is observed rather than measured, and some builds
+gate delegation until you ask for it.
+
+Everything known to be weak or unproven, with evidence for each:
+**[LIMITATIONS.md](./docs/LIMITATIONS.md)**. How the numbers were taken, and the
+four measurement bugs found before publishing them:
+**[BENCHMARK.md](./docs/BENCHMARK.md)**. What starts on its own and what to do if
+it does not: **[ROUTING.md](./docs/ROUTING.md)**.
 
 ## How it works
 
-The main thread plans and reconciles; specialists do the work. One level deep,
-and that is enforced by the harness rather than asked for in a prompt, so an
-agent cannot quietly spawn a tree of its own.
-
-Neither hook can block anything. Both emit a message, always exit 0, and stay
-quiet when they cannot tell.
+The main thread plans and reconciles; specialists do the work. Neither hook can
+block anything: both emit a message, always exit 0, and stay quiet when they
+cannot tell.
 
 Agents are scoped by what they must **not** do, never by a fixed tool list, so
 each one picks up whatever your project already provides:
