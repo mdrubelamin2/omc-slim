@@ -29,11 +29,17 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ "$#" -gt 0 ]; then
   FILES=("$@")
 else
-  # Only what a stranger reads before deciding. docs/ research reports are
-  # frozen history and are deliberately out of scope: they are working records,
-  # not a pitch, and holding a lab notebook to a landing page's standard is how
-  # a gate gets ignored.
-  FILES=("$ROOT/README.md" "$ROOT/CHANGELOG.md" "$ROOT/docs/NATIVE.md")
+  # Only what a stranger reads before deciding: the README, the CHANGELOG, the
+  # native-parity position, the assessment, the readiness check and the pitch.
+  #
+  # The research reports — RESEARCH-2026-08-26, both VIABILITY passes, COMPRESSION,
+  # AUDIT — stay out of scope. They are lab notebooks, not a pitch, and holding a
+  # notebook to a landing page's standard is how a gate gets ignored. The line is
+  # whether a document argues a conclusion to a reader, or records what happened
+  # for the next maintainer.
+  FILES=("$ROOT/README.md" "$ROOT/CHANGELOG.md" "$ROOT/docs/NATIVE.md"
+         "$ROOT/docs/ASSESSMENT-2026-08-29.md" "$ROOT/docs/RELEASE-READINESS.md"
+         "$ROOT/docs/DISTRIBUTION-DRAFT.md")
 fi
 
 python3 - "${FILES[@]}" <<'PY'
