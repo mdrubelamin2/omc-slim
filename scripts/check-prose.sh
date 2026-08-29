@@ -55,11 +55,22 @@ TRANSITION_FRAC  = 0.5   # >half of paragraphs opening on a formal transition
 # Derived here, not published. Every source names the pattern; none numbers it.
 BOLD_LEADIN_PER_SECTION = 1.5
 
-STYLE = r'\b(delve[sd]?|delving|leverage[sd]?|utili[sz]e[sd]?|robust|seamless|tapestry|realm|beacon|pivotal|multifaceted|testament|showcas\w+|underscor\w+|comprehensive|elevate[sd]?|empower\w*|foster\w*|streamlin\w+|harness(?:es|ed|ing)?|intricate|nuanced|myriad|plethora)\b'
+# `harness` is deliberately NOT on this list. This repository uses it as a noun
+# for its own benchmark harness, dozens of times, correctly. A word list that
+# flags a project's own vocabulary is a word list people switch off, and a gate
+# switched off protects nothing.
+STYLE = r'\b(delve[sd]?|delving|leverage[sd]?|utili[sz]e[sd]?|robust|seamless|tapestry|realm|beacon|pivotal|multifaceted|testament|showcas\w+|underscor\w+|comprehensive|elevate[sd]?|empower\w*|foster\w*|streamlin\w+|intricate|nuanced|myriad|plethora)\b'
 TRANSITION = r'^(Furthermore|Moreover|Additionally|Ultimately|In conclusion|Notably|Importantly|Consequently)\b'
 NOTX = r"\b(?:it'?s not just|not just)\b[^.]{2,60}\b(?:but|it'?s)\b"
 
 def strip(t):
+    # Quoted spans come out before anything is counted. A document that QUOTES a
+    # banned word — this project's own distribution draft says «do not write
+    # "delve", "leverage" or "seamless"» — was being flagged for naming the
+    # thing it forbids. A predicate that cannot tell use from mention will be
+    # ignored the first time it is right, because it was wrong three times first.
+    t = re.sub(r'"[^"\n]{1,120}"', '""', t)
+    t = re.sub(r'«[^»]{1,200}»', '', t)
     t = re.sub(r'^```.*?^```', '', t, flags=re.M | re.S)   # fenced code
     t = re.sub(r'^\s*\|.*$', '', t, flags=re.M)            # tables
     t = re.sub(r'`[^`]*`', '', t)                          # inline code
