@@ -5,7 +5,9 @@
  * A passing test suite proves nothing about the bugs it would catch. Each
  * caller hands over a hook, its harness and a list of ways to break the hook on
  * purpose; this runs them and asserts the harness notices every time. A SURVIVED
- * line is a hole in the tests, not a bug in the hook.
+ * line is a hole in the tests, not a bug in the hook. An UNUSABLE line is
+ * neither: the harness never finished, so that mutant was never measured, and a
+ * run holding one fails rather than quietly scoring it.
  *
  * It was extracted when the second hook arrived. The sandbox logic below carries
  * scar tissue from a real corruption (see MUTANTS NEVER TOUCH THE TRACKED FILE),

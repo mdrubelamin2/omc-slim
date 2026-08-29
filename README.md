@@ -225,11 +225,11 @@ settles which style won. It reads plugin manifests off disk; it never reads your
 transcript, and it fires once per session, not on every compaction.
 
 Those are claims, so each has a check. `node hooks/verify-deliverables.test.mjs`
-runs 38 cases and `node hooks/check-output-style.test.mjs` runs 22, both against
+runs 38 cases and `node hooks/check-output-style.test.mjs` runs 24, both against
 isolated fixtures, both asserting the exact set of keys the hook may emit — which
 is what makes "never blocks" falsifiable. And the checks have checks: the two
-`*.mutate.mjs` runners break the hooks 56 and 24 ways and confirm the suites
-catch all 80. `OMC_SLIM_DEBUG=1` prints which path either took,
+`*.mutate.mjs` runners break the hooks 56 and 25 ways and confirm the suites
+catch all 81. `OMC_SLIM_DEBUG=1` prints which path either took,
 on stderr.
 
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call

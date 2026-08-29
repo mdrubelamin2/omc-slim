@@ -151,7 +151,7 @@ here so it is not mistaken for an oversight.
 | `designer` | A first-party frontend-design skill | A bounded **writer agent** rather than guidance. Same taste injection, different mechanism — and this is the component the project's own keep/cut audit rated "Yet", meaning it compensates for timidity rather than incapability. |
 | `oracle` | `/security-review` covers the security slice (native since Aug 2025 — carried forward from the 2026-08-28 pass and **not re-verified against 2.1.251**; treat as dated) | The **architecture** slice is uncovered, and the assigned-opposing-position mechanism is not a native behaviour. Measured: assigning the opposing position produced 99.2% disagreement against a 48.3% baseline, while merely instructing dissent was statistically indistinguishable from baseline. |
 | `simplify` | `/simplify` — *"Review the changed code for reuse, simplification, efficiency, and altitude cleanups, then apply the fixes. Quality only — it does not hunt for bugs"*, model-invocable | Deliberate **Chesterton-fence deletion**: the introducing commit cited, the citation refused on a shallow clone or a move commit, and a declared-public-entrypoint check that runs before anything else. Native does post-change cleanup; this deletes what should never have been written. |
-| `codemap` | One `CLAUDE.md`/`AGENTS.md` | Hierarchical per-directory maps. **Weakest row in this table**, and the project says so: `codemap` creates exactly the stale-markdown artefact class users complain about, and its own defects list is the longest of any component. |
+| `codemap` | One `CLAUDE.md`/`AGENTS.md` | Hierarchical per-directory maps. Weakest row in this table, and the project says so — see below. |
 
 ## The output style, and the argument with an expiry date
 
@@ -242,6 +242,51 @@ an omission.
 Two classes are genuinely unclaimed, and both are closer to what this plugin is
 good at than orchestration is: **drift detection** — does the agent still follow
 the rule forty turns in? — and **onboarding quality**.
+
+## `codemap`, and why a mitigation is not a fix
+
+The most-cited artefact complaint in the current corpus, dated 2026-08-27:
+*"I spent months blaming the model. The bugs were in my markdown: 50+ pointers to
+files that don't exist, 70% dead docs."* `codemap` manufactures exactly that
+artefact class, in every mapped directory, plus a section in root `AGENTS.md`
+that Claude Code auto-loads into every session.
+
+v0.9.5 made the artefacts state their own freshness: a provenance header on every
+generated map carrying the commit and date, a `stale` subcommand that reports per
+directory whether the map still describes the tree and exits non-zero when it
+does not, and an `AGENTS.md` block that teaches the check instead of commanding
+blind trust. It handles the cases that occur — a shallow clone never prints a
+distance it cannot compute, which matters because a shallow clone is what CI
+checks out and *"0 commits behind"* would be wrong in the reassuring direction.
+
+**It is a real improvement and it does not move `codemap` off the wrong side of
+that complaint.** Three reasons, from the pass that built it:
+
+1. **Nothing runs the check.** The only artefact loaded automatically is the
+   `AGENTS.md` block, and all it can do is ask an agent to run a command before
+   trusting a map. Agents skip instructions — that is the premise this whole
+   repository is built on. The failure mode survives: an agent reads a stale map,
+   never runs `stale`, acts on it. What changed is that it went from *silently
+   wrong* to *wrong unless someone remembers*.
+2. **`stale` can prove a map is outdated and never that it was right.** It
+   compares hashes. A map whose Flow section was hallucinated on day one reports
+   `FRESH` forever — now with a commit SHA beside it, which looks *more*
+   authoritative than the unverified map it replaced. No amount of provenance
+   metadata reaches that; only reading the code does.
+3. **The `AGENTS.md` write remains the most damaging thing the skill does.** It
+   is a permanent per-session context tax on every future session in the user's
+   repository, for an artefact most of those sessions will not use. It is seven
+   lines now and phrased as *verify before relying*, which is the right
+   direction. It should probably not be a default step at all.
+
+Underneath all three is the thing the fix cannot touch. **`codemap`'s cost model
+is what makes its output rot.** One agent per directory is expensive enough that
+nobody regenerates casually, so the artefact has to persist — and persisting is
+precisely what makes it go stale. The version of this component that is
+unambiguously on the right side of the complaint is a map generated *into the
+session* and never committed: an artefact that cannot outlive the tree it
+describes cannot lie about it. That is a different component, not a patch to this
+one, and it is the open question this row carries into v1.0.
 
 ## What is not a gap
 
