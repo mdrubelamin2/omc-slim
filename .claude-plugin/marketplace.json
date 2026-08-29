@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "omc-slim",
-  "description": "omc-slim \u2014 a small pantheon of specialist agents for Claude Code, built for cost-efficiency and measured against a plain session.",
+  "description": "omc-slim — a discipline layer for Claude Code, measured against a plain session and published with its own negative result.",
   "owner": {
     "name": "Md Rubel Amin",
     "url": "https://github.com/mdrubelamin2"
@@ -10,7 +10,7 @@
     {
       "name": "omc-slim",
       "source": "./",
-      "description": "A small pantheon of specialist agents for Claude Code. Delegation over accumulation: six specialists, six skills, two advisory hooks, and no runtime injection on the tool-call path.",
+      "description": "A discipline layer for Claude Code, not an orchestrator: a terse senior-engineer register, evidence gates on the model's own output, and a stop before it builds the wrong thing. Six specialists, six skills, two advisory hooks, and no runtime injection on the tool-call path.",
       "license": "MIT",
       "keywords": [
         "orchestration",

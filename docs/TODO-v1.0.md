@@ -566,6 +566,18 @@ same commit; "never blocks, always exit 0" stays load-bearing.
   session-to-recipe (need attachment/transcript machinery a plugin does
   not get). Each reopens only if the platform ships the missing
   capability.
+- **No approval delegation to a reviewer model** (Codex `auto_review`, and the
+  same thing built on `PreToolUse` now that a hook's `ask` floors the decision at
+  a prompt). Refused on three grounds, in order of weight. It **inverts the one
+  thing this project has measured**: the +14.50 result is not "a gate exists", it
+  is *a human stops and decides*, and auto-review's entire purpose is to remove
+  the human from that position. It is **on the tool-call path** — not a
+  borderline case like `Stop`, the definitional one. And it is **unbounded spend
+  of the class already refused**, a reviewer model per gated call, forever.
+  Reopens if Claude Code ships a first-party approval-delegation surface with a
+  bounded cost model, at which point the third ground dies and the first two get
+  re-argued on their own merits. The portable residue was taken: a denied action
+  is information, so take a different path or stop — never re-issue the same call.
 - **No testimonials, star charts, unverifiable multipliers, or
   adjectives the evidence does not force** — no trigger; identity.
 - **Standing-rule delivery** — ships only with a measured violation-rate

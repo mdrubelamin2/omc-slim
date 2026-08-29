@@ -2,7 +2,7 @@
 /**
  * omc-slim — mutation check for the verify-deliverables harness.
  *
- * Breaks the hook on purpose, thirty-five ways, and asserts the harness
+ * Breaks the hook on purpose, fifty-six ways, and asserts the harness
  * notices every time. A SURVIVED line is a hole in the tests, not a bug in the
  * hook.
  *

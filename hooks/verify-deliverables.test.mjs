@@ -2,7 +2,7 @@
 /**
  * omc-slim — verify-deliverables harness
  *
- * Runs verify-deliverables.mjs as a child process against twenty-four cases and
+ * Runs verify-deliverables.mjs as a child process against thirty-eight cases and
  * checks only its observable contract (exit code / stdout JSON / stderr):
  *
  *   1. write agent, nothing written      -> warns that no write tool was used
@@ -28,6 +28,23 @@
  *  22. no cwd in the payload             -> cannot place writes, silent
  *  23. successful write with no path      -> cannot place it, silent
  *  24. another plugin's "otherco:fixer"   -> not ours to police, silent
+ *
+ * and thirteen more for the third state, which is about the report rather than
+ * the files. Every one of those writes cleanly INTO the project, so the two
+ * write states are silent and only the claim state can speak:
+ *
+ *   a result claimed with no check anywhere   -> flagged
+ *   the same claim with `npm test` behind it  -> silent
+ *   a reported failure                        -> silent; honesty is not a claim
+ *   an empty last_assistant_message, no text  -> silent
+ *   a claim with a successful dispatch        -> silent; it may have run there
+ *   a claim only in last_assistant_message    -> flagged; the field wins
+ *   a claim with `git status` behind it       -> flagged; that is not a check
+ *   a claim with a FAILED dispatch            -> flagged
+ *   no write AND a claim                      -> one message carrying both
+ *   a claim with no readable transcript       -> silent
+ *   a claim among prose that hedges elsewhere -> flagged
+ *   "all verified", "45 of 45 passed"         -> flagged, one phrasing each
  *
  * Fixtures use the real transcript shape ($.message.content[]) so the depth
  * bound in collectBlocks is exercised as it is in production. Write blocks carry

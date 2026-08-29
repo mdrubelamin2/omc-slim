@@ -189,6 +189,60 @@ Two further style-slot facts that belong here rather than in a footnote:
   this repository that the style governs only the main loop are corrected by this
   row.
 
+## Two native surfaces that are not documented, and one that went GA
+
+Recorded because the ledger's job is to be right about the baseline, and the
+baseline moved under it twice this week.
+
+**`observer:` is the advisor pattern, shipping and unannounced.** Read from the
+2.1.251 binary, gated behind `CLAUDE_CODE_EXPERIMENTAL_OBSERVER_AGENTS`, absent
+from the documentation and from a 6,060-line changelog. The frontmatter key
+auto-spawns a background agent whenever its parent runs; the observer receives
+read-only activity digests and reports through a dedicated `ObserverReport` tool,
+never to the worker. Its own framing prompt, verbatim from the binary:
+
+> If — and only if — you notice something genuinely useful (a mistake about to
+> compound, a missed constraint, **prior art**), report it with the ObserverReport
+> tool — it delivers to \[the coordinator], NOT to the worker… The expected steady
+> state is silence.
+
+That is `oracle`'s second opinion and `librarian`'s prior-art role, as a runtime
+primitive, with `observeSubagents` and `observerMessage` beside it. It is
+experimental, env-gated and undocumented, so nothing here is built on it. It is
+also the clearest signal available about where the platform is going, and the
+answer is: into this plugin's territory.
+
+**Per-subagent model control went native in August 2026.** The aider
+architect/editor split — a strong model plans, a cheap one emits the diff,
+reported to roughly halve spend with no measurable quality drop — is now
+expressible in agent frontmatter. This plugin's six specialists are the natural
+consumers and none of them uses it. `LIMITATIONS.md` records that as an open
+choice rather than an oversight.
+
+**Dynamic Workflows are GA**, and the row above states the seam. One number
+belongs with it: `ultracode` fires only from a prompt a human typed. It does not
+fire from `-p`, an SDK prompt, a scheduled task, a webhook or a PR comment. A
+prose layer is re-sent every turn; a workflow is a thing you remember to invoke,
+and the failure this plugin exists for happens on turn one.
+
+## Six problem classes this plugin does not name
+
+Each has a working project behind it. Listed so the gap is a decision rather than
+an omission.
+
+| Class | Who owns it | Why it is not here |
+|---|---|---|
+| Crash and compaction survival | `planning-with-files` — plan, findings and progress on disk, re-injected each turn | `LIMITATIONS.md` names compaction eviction as a top failure mode and ships no mechanism for it |
+| Cost attribution per rule | `token-warden` — every rule pays rent against a frozen benchmark or is evicted | This plugin ships ~4,300 always-on tokens with no per-component accounting |
+| Session resumption as an artefact | native `SessionStart` resume payload, `claude agents` | one hook that reports a condition |
+| Codebase indexing as a token strategy | `Graphify` — a queryable graph | `codemap` writes markdown |
+| Security posture | ECC's `agentshield`, native `--restricted` | there is no security section in this repository |
+| Team conventions and multi-repo | the project that owned this is dying, so the slot is open | flagged as a gap and never taken |
+
+Two classes are genuinely unclaimed, and both are closer to what this plugin is
+good at than orchestration is: **drift detection** — does the agent still follow
+the rule forty turns in? — and **onboarding quality**.
+
 ## What is not a gap
 
 Recorded so nobody re-opens them as oversights.

@@ -866,25 +866,34 @@ for f in sorted(glob.glob(os.path.join(root, 'skills/*/SKILL.md'))) + \
 for f in sorted(glob.glob(os.path.join(root, 'hooks/*.mjs'))):
     if f.endswith(('.test.mjs', '.mutate.mjs')):
         continue
-    src = open(f, encoding='utf-8').read()
-    scope.append((os.path.relpath(f, root) + ' messages',
-                  '\n'.join(re.findall(r'`omc-slim:[^`]*`|"omc-slim:[^"]*"', src))))
+    # The whole source, not the extracted matches. Pulling matches out and
+    # re-joining them destroyed the sentence they sat in, and the type word is
+    # BY DEFINITION in that sentence — the gate reported a line reading "for a
+    # plugin agent is `omc-slim:fixer`" as untyped, having removed the word
+    # "agent" itself. A predicate that mangles its own input is worse than no
+    # predicate. Comments count here too: a comment naming a component without
+    # its type is the same ambiguity for the next reader.
+    scope.append((os.path.relpath(f, root), open(f, encoding='utf-8').read()))
 scope.append(('README.md', open(os.path.join(root, 'README.md'), encoding='utf-8').read()))
 
 bad = 0
 checked = 0
 for label, text in scope:
-    flat = re.sub(r'\s+', ' ', text)
-    for sent in re.split(r'(?<=[.!?:])\s+(?=[A-Z*`\-])|\n', flat):
-        for m in REF.finditer(sent):
-            if m.group(1) not in COMPONENTS:
-                continue          # the namespace block above owns a bad name
-            checked += 1
-            if DISPATCH.search(sent) or TYPE.search(sent):
-                continue
-            bad += 1
-            print(f'  UNTYPED REF   {label} names {m.group(0)!r} with no type word')
-            print(f'                  {sent.strip()[:110]}')
+    # Paragraphs first, then sentences INSIDE a paragraph. Splitting the whole
+    # text on newlines treats every wrapped line as its own sentence, which is
+    # how a type word two words after a line break stopped counting.
+    for block in re.split(r'\n\s*\n', text):
+        flat = re.sub(r'\s+', ' ', block)
+        for sent in re.split(r'(?<=[.!?:])\s+(?=[A-Z*`\-])', flat):
+            for m in REF.finditer(sent):
+                if m.group(1) not in COMPONENTS:
+                    continue      # the namespace block above owns a bad name
+                checked += 1
+                if DISPATCH.search(sent) or TYPE.search(sent):
+                    continue
+                bad += 1
+                print(f'  UNTYPED REF   {label} names {m.group(0)!r} with no type word')
+                print(f'                  {sent.strip()[:110]}')
 if not checked:
     print('  NO REFERENCES the type-marking scope matched nothing — check the globs')
     raise SystemExit(1)

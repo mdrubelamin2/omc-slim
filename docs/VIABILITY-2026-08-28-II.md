@@ -301,6 +301,28 @@ that no longer exists" scar knowingly. So:
 
 ---
 
+## 5b. Correction, 2026-08-29 — the Codex dismissal was wrong
+
+§3 says Codex *"was surveyed and yielded nothing portable — its 2026 surface
+converged with CC's own"*. A second sweep found three portable items, one of
+which is now a standing refusal.
+
+1. **`/review` is read-only by contract** — *"Codex reports prioritized findings
+   without modifying your working tree"*. This plugin's `review` fixes what is
+   mechanical, deliberately. That is a difference worth naming rather than an
+   oversight, and it has a cost this repository already knows: a review that
+   edits invalidates its own evidence, which is `review`'s own shelf-life rule
+   pointed at itself.
+2. **Auto-review is a genuine new mechanism**, not permission machinery. It is
+   refused, with the reason on record, in `TODO-v1.0.md`'s standing refusals.
+3. **Rejection reasons became a shipped feature** — Codex CLI 0.144.5,
+   2026-07-16: *"provides clearer rejection reasons when commands are denied"*. A
+   refusal that explains itself is a product decision, not a prompt convention.
+   Adopted as prose in `fixer`.
+
+The §3 sentence should read "yielded three portable items, one of which we
+decline".
+
 ## 5. What this pass could not verify
 
 - Nineteen of 24 audit findings rest on lane evidence (file:line quoted, two

@@ -188,8 +188,14 @@ roster costs what your session costs.
 Two, and neither can block anything. Both emit `systemMessage` only, always exit
 0, and stay silent when they cannot tell.
 
-**`SubagentStop`**, for `fixer` and `designer` only, checks that a write-capable
-agent actually wrote something and tells **you** when it did not.
+`SubagentStop`, for `fixer` and `designer` only, reports three states to you: no
+write-family tool use at all, writes that all landed outside the project, and the
+one that matters most — the agent asserted a verification result and no test,
+build or typecheck command appears in its transcript. That last one exists
+because of a measured failure: on one 45-task benchmark an agent reported every
+task complete while **19 of 45** failed held-out tests, on a transcript reading
+`5/5 tests pass` about a suite of eight. The hook never accuses; it names the
+state and says to ignore it if the work landed another way.
 
 **`SessionStart`** checks whether another enabled plugin also sets
 `force-for-plugin` on an output style. Claude Code applies exactly one, picks it
@@ -200,11 +206,11 @@ settles which style won. It reads plugin manifests off disk; it never reads your
 transcript, and it fires once per session, not on every compaction.
 
 Those are claims, so each has a check. `node hooks/verify-deliverables.test.mjs`
-runs 25 cases and `node hooks/check-output-style.test.mjs` runs 22, both against
+runs 38 cases and `node hooks/check-output-style.test.mjs` runs 22, both against
 isolated fixtures, both asserting the exact set of keys the hook may emit — which
 is what makes "never blocks" falsifiable. And the checks have checks: the two
-`*.mutate.mjs` runners break the hooks 36 and 24 ways and confirm the suites
-catch all 60. `OMC_SLIM_DEBUG=1` prints which path either took,
+`*.mutate.mjs` runners break the hooks 56 and 24 ways and confirm the suites
+catch all 80. `OMC_SLIM_DEBUG=1` prints which path either took,
 on stderr.
 
 There is no `Stop` hook, no `PostToolUse` hook, and nothing on the tool-call
