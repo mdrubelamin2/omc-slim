@@ -28,9 +28,11 @@ estimate this project's version series is tracked on, and prints the gap between
 them every run. That gap used to be a hard-coded 13.5% taken as one average
 across the whole repository — and a single average does not hold per file, which
 is how a 298-token overrun in `review` published itself as a 44-token margin.
-`claude plugin details omc-slim` reports a third, smaller number; it does not
-count the output style, which is the largest item. Quote a basis or don't quote a
-number.
+`claude plugin details omc-slim` reports a third, smaller number because it does
+not count the output style at all — and it also counts about **42 tokens per
+component of framing that no text measurement can see**, so the figure above is a
+floor rather than the whole charge. Both are in
+[LIMITATIONS.md](./docs/LIMITATIONS.md). Quote a basis or don't quote a number.
 
 On one single-file CLI task, n=3 per arm, it averaged **18% less than a plain
 session** ($1.01 vs $1.24) with non-overlapping spreads, and shipped the smallest

@@ -118,6 +118,21 @@ survives wherever you already have it, and the plugin no longer decides on your
 behalf which hosts your queries reach. See
 [the audit](./AUDIT-2026-08-25.md) for how it was found.
 
+**The published static figure is a floor, not the whole charge.** It counts the
+output style body plus the text of twelve descriptions. The harness charges more:
+measured 2026-08-29 against the installed v0.9.1, `claude plugin details` reports
+**1,461 always-on tokens** for the twelve components where our own basis measures
+**962** — roughly **42 tokens per component** of framing (name, type, list
+structure) that no measurement of the text can see. Across the roster that is
+about **500 tokens**, so the true always-on cost is nearer 4,800 than the ~4,309
+this repository publishes.
+
+It is not folded into the headline, and the reason is a scar: 42 rests on a
+single observation of a number the harness itself labels an estimate, and this
+project has already published one wrong figure by baking a single-observation
+constant into a headline. Both numbers are stated; neither is invented. Re-derive
+the harness side with `claude plugin details omc-slim`.
+
 **No agent pins a model or an effort level, and both keys exist.** `model:` and
 `effort:` are documented agent frontmatter. Until v0.9.2 the output style priced
 the roster as "cheap" and "expensive" anyway, which was a cost claim no mechanism
