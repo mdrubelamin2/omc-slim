@@ -10,22 +10,11 @@ You help users understand and map repositories by creating hierarchical codemaps
 
 ## Announce before you start
 
-This skill is expensive — it reads the whole tree and spawns one fixer per
-directory. On a few-hundred-file repository that is real money and several
-minutes. It also **writes files into the user's repository**: a `codemap.md` in
-every mapped directory, `.slim/codemap.json`, and a section in root `AGENTS.md`.
+This skill is expensive — it reads the whole tree and spawns one fixer per directory. On a few-hundred-file repository that is real money and several minutes. It also **writes files into the user's repository**: a `codemap.md` in every mapped directory, `.slim/codemap.json`, and a section in root `AGENTS.md`.
 
-So: say what it will cost and what it will write, and get a yes first. Reaching
-for it unprompted is correct; doing so silently is not. Proposing and running are
-different acts, and only the first is yours.
+So: say what it will cost and what it will write, and get a yes first. Reaching for it unprompted is correct; doing so silently is not. Proposing and running are different acts, and only the first is yours.
 
-Recorded so no later pass re-opens it: `disable-model-invocation: true` is the
-native key for the other road — "on request only", invisible until someone types
-the name. It was applied once and reverted, because it removes the skill from
-context entirely rather than hiding it from the slash menu, and that also removed
-the one unprompted routing decision ROUTING.md records this skill winning. The
-announce-and-confirm gate above is what protects the user from the spend; the
-frontmatter key is not.
+Recorded so no later pass re-opens it: `disable-model-invocation: true` is the native key for the other road — "on request only", invisible until someone types the name. It was applied once and reverted, because it removes the skill from context entirely rather than hiding it from the slash menu, and that also removed the one unprompted routing decision ROUTING.md records this skill winning. The announce-and-confirm gate above is what protects the user from the spend; the frontmatter key is not.
 
 If the repository is small enough to simply read, read it instead.
 
@@ -45,8 +34,7 @@ If it does not exist, check for legacy state at `.slim/cartography.json`.
 
 If legacy state exists: move `.slim/cartography.json` to `.slim/codemap.json`, then continue with change detection.
 
-*(This migration is deprecated and comes out in v1.1. It exists for repositories
-mapped before the rename; a repository mapped since has never written that path.)*
+*(This migration is deprecated and comes out in v1.1. It exists for repositories mapped before the rename; a repository mapped since has never written that path.)*
 
 If `.slim/codemap.json` exists: Skip to Step 3 (Detect Changes) - no need to re-initialize.
 
@@ -73,8 +61,7 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" init \
 
 This creates:
 - `.slim/codemap.json` - File and folder hashes for change detection
-- Empty `codemap.md` files in all relevant subdirectories, each opening with a
-  provenance header naming the commit, date and file count it was written against
+- Empty `codemap.md` files in all relevant subdirectories, each opening with a provenance header naming the commit, date and file count it was written against
 
 4. **Delegate codemap writing to Fixer agents** - Dispatch one fixer per folder, using the brief in "Dispatching a codemap fixer" below.
 
@@ -93,18 +80,8 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" changes \
    - Modified files
    - Affected folders
 
-3. **Only update affected codemaps.** `changes` now prints two sections, and they
-   get different treatment. Dispatch **one fixer per directory whose own files
-   changed**, using the same brief. The **ancestor directories** below that only
-   re-aggregate their children's summaries go to **one** dispatch, deepest first
-   — a leaf edit used to spawn a fixer for every level above it, three of which
-   rewrote maps whose own directories had not changed.
-4. **Run update LAST** — after the fixers return **and** after Step 4 writes the
-   root map. It saves the new hashes *and* re-stamps every `codemap.md`
-   provenance header, which is the run's statement that the maps are current. Run
-   it before the fixers and it certifies maps nobody touched; run it before
-   Step 4 and it certifies the root map, which the root folder always carries a
-   header for and which Step 4 has not written yet.
+3. **Only update affected codemaps.** `changes` now prints two sections, and they get different treatment. Dispatch **one fixer per directory whose own files changed**, using the same brief. The **ancestor directories** below that only re-aggregate their children's summaries go to **one** dispatch, deepest first — a leaf edit used to spawn a fixer for every level above it, three of which rewrote maps whose own directories had not changed.
+4. **Run update LAST** — after the fixers return **and** after Step 4 writes the root map. It saves the new hashes *and* re-stamps every `codemap.md` provenance header, which is the run's statement that the maps are current. Run it before the fixers and it certifies maps nobody touched; run it before Step 4 and it certifies the root map, which the root folder always carries a header for and which Step 4 has not written yet.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" update \
@@ -113,17 +90,13 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" update \
 
 ### Checking freshness
 
-A stale map is worse than no map: it is confidently wrong context in a file
-agents were told to trust. `stale` answers, per mapped directory, whether its map
-still describes the tree — exits non-zero if any does not, so it works as a check.
+A stale map is worse than no map: it is confidently wrong context in a file agents were told to trust. `stale` answers, per mapped directory, whether its map still describes the tree — exits non-zero if any does not, so it works as a check.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" stale --root ./
 ```
 
-Each row is `FRESH`, or a status and the reason it cannot be trusted — files
-changed, no header, never written, header skewed, map missing. A commit distance
-it cannot know (no repository, shallow clone) is named, never guessed.
+Each row is `FRESH`, or a status and the reason it cannot be trusted — files changed, no header, never written, header skewed, map missing. A commit distance it cannot know (no repository, shallow clone) is named, never guessed.
 
 ### Step 4: Finalize Repository Atlas (Root Codemap)
 
@@ -160,71 +133,37 @@ This is idempotent - repeated codemap runs will detect the existing section and 
 
 ## Dispatching a codemap fixer
 
-Fixer writes these files, because the alternatives cannot. Explorer, oracle and
-tracer are read-only, so they can survey a directory but never produce the file.
-Designer writes, but only UI.
+Fixer writes these files, because the alternatives cannot. Explorer, oracle and tracer are read-only, so they can survey a directory but never produce the file. Designer writes, but only UI.
 
-Fixer executes a specification and does not research one. So the brief below is
-the specification. It fixes the output path, the required headings, the exact
-files to read, and a check the fixer can actually run. Send one brief per
-directory.
+Fixer executes a specification and does not research one. So the brief below is the specification. It fixes the output path, the required headings, the exact files to read, and a check the fixer can actually run. Send one brief per directory.
 
-Get the exact file list from the script rather than improvising it — a map that
-describes files nobody opened is the failure this command exists to stop:
+Get the exact file list from the script rather than improvising it — a map that describes files nobody opened is the failure this command exists to stop:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" files --root ./
 ```
 
-A line starting with `# ` is a header or a comment; every other line is a
-repo-relative path belonging to the nearest header above it. A header with no
-paths under it is a directory that contributes no files of its own and only
-aggregates its children's maps. Diagnostics go to stderr, so stdout needs no
-filtering. Run it after `init`; it re-selects from disk, so it stays current.
+A line starting with `# ` is a header or a comment; every other line is a repo-relative path belonging to the nearest header above it. A header with no paths under it is a directory that contributes no files of its own and only aggregates its children's maps. Diagnostics go to stderr, so stdout needs no filtering. Run it after `init`; it re-selects from disk, so it stays current.
 
-> Write `<dir>/codemap.md`. It opens with a machine-maintained provenance header
-> ending in `<!-- /codemap:provenance -->`. **Leave every line up to and including
-> that marker exactly as it is**, and replace everything below it. `update`
-> rewrites that header; anything you put in it is lost.
+> Write `<dir>/codemap.md`. It opens with a machine-maintained provenance header ending in `<!-- /codemap:provenance -->`. **Leave every line up to and including that marker exactly as it is**, and replace everything below it. `update` rewrites that header; anything you put in it is lost.
 >
-> Read only these files: `<the paths listed under this directory's header by
-> `codemap.mjs files`>`.
-> You may also read one hop out — a file this directory imports — to see what a
-> call actually does. Describe only this directory: a neighbour you read is
-> context, not content. Where you need more than one hop, name the path and stop.
+> Read only these files: `<the paths listed under this directory's header by `codemap.mjs files`>`. You may also read one hop out — a file this directory imports — to see what a call actually does. Describe only this directory: a neighbour you read is context, not content. Where you need more than one hop, name the path and stop.
 >
-> Read the tests for this directory even though they are excluded from the map.
-> They are the densest statement of intended behaviour you will find, and the
-> map is about intent. Do not describe them; use them.
+> Read the tests for this directory even though they are excluded from the map. They are the densest statement of intended behaviour you will find, and the map is about intent. Do not describe them; use them.
 >
-> Use exactly these four `##` headings, in this order: Responsibility, Design,
-> Flow, Integration. `<paste the "Codemap Content" section of this skill here,
-> including the example>`
+> Use exactly these four `##` headings, in this order: Responsibility, Design, Flow, Integration. `<paste the "Codemap Content" section of this skill here, including the example>`
 >
-> Verification you must run and report: every path you cite resolves under the
-> repo root, and the file carries all four headings. Both are `test -f` and
-> `grep` — report the counts, not a claim.
+> Verification you must run and report: every path you cite resolves under the repo root, and the file carries all four headings. Both are `test -f` and `grep` — report the counts, not a claim.
 
-That check proves the citations resolve and the shape is right. It does not
-prove the prose is accurate, so read the returned codemap before accepting it.
+That check proves the citations resolve and the shape is right. It does not prove the prose is accurate, so read the returned codemap before accepting it.
 
 ## Cite symbols, never line numbers
 
-A codemap outlives the session that wrote it, and **a line number is exact at
-authoring time and silently wrong later**. One audited plan carried eleven stale
-citations, and the two worst pointed roughly thirty lines past the symbol they
-named, into an unrelated class — an agent editing by them modifies the wrong code
-*while reporting success*.
+A codemap outlives the session that wrote it, and **a line number is exact at authoring time and silently wrong later**. One audited plan carried eleven stale citations, and the two worst pointed roughly thirty lines past the symbol they named, into an unrelated class — an agent editing by them modifies the wrong code *while reporting success*.
 
-So in every file this skill writes: name the function, class, constant or export.
-`resolveSession` in `auth/session.ts`, never `auth/session.ts:118`. Where a range
-genuinely matters, name what bounds it — "the retry block inside `send`" — not
-where it happened to sit today.
+So in every file this skill writes: name the function, class, constant or export. `resolveSession` in `auth/session.ts`, never `auth/session.ts:118`. Where a range genuinely matters, name what bounds it — "the retry block inside `send`" — not where it happened to sit today.
 
-The `omc-slim:review` skill is the exception that proves it. Its `file:line` gate
-is right because a review reads a live tree in the same session, and the citation
-dies with it.
-Nothing written to disk gets that.
+The `omc-slim:review` skill is the exception that proves it. Its `file:line` gate is right because a review reads a live tree in the same session, and the citation dies with it. Nothing written to disk gets that.
 
 ## Codemap Content
 
@@ -258,6 +197,4 @@ vendor SDK. Idempotency keys are derived from the order id.
 - Depends on: ledger, provider adapter
 ```
 
-The root atlas takes the same four headings plus a `Directory Map (Aggregated)`
-table — one row per mapped directory, carrying its Responsibility summary and a
-relative link to its `codemap.md`.
+The root atlas takes the same four headings plus a `Directory Map (Aggregated)` table — one row per mapped directory, carrying its Responsibility summary and a relative link to its `codemap.md`.
