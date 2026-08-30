@@ -15,7 +15,7 @@ change that audit made tightens the bar, and the standing below is worse for it.
 That is the correct direction: a criterion you can pass by writing a sentence is
 one that will be passed by writing a sentence.
 
-The version stands at **v0.9.7**. Calling it v1.0 would require either running
+The version stands at **v0.9.8**. Calling it v1.0 would require either running
 the measurements or quietly weakening the criteria, and the second is the failure
 this project's whole apparatus exists to prevent.
 

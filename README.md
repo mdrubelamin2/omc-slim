@@ -39,7 +39,7 @@ a tree that spends your budget.
 finding, and a finding with no evidence is dropped rather than reported. Where
 something could not be verified, that is written down instead of smoothed over.
 
-**It stays out of the way.** ~4,413 tokens of always-on context, nothing injected
+**It stays out of the way.** ~4,885 tokens of always-on context, nothing injected
 per tool call, no MCP servers of its own, and it inherits whatever servers and
 skills your project already has. It writes no files unless you run one of the
 three that do.
@@ -103,10 +103,10 @@ disables it in `.claude/settings.local.json` wins, so nobody is trapped.
 
 ## What it costs
 
-**~4,413 tokens** of always-on context, and nothing injected per tool call. Treat
+**~4,885 tokens** of always-on context, and nothing injected per tool call. Treat
 it as a floor: the harness adds framing no text measurement sees, so the real
-figure is nearer 4,900 ([LIMITATIONS.md](./docs/LIMITATIONS.md)).
-`./scripts/measure-context.sh` re-derives it, and also prints **4,842 on a
+figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)).
+`./scripts/measure-context.sh` re-derives it, and also prints **5,321 on a
 chars/4 basis**, the estimate this project's version series is tracked on.
 
 Two settings of yours will save you more than this plugin costs, and neither is a

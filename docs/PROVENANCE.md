@@ -185,7 +185,7 @@ component name, or any repo-relative `*.md` path. The second form was added on
 2026-08-29, after a sweep found three live behaviours pinned by nothing because
 they are documented rather than prompted.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 301 rows, and growing with each release:
+lives — 316 rows, and growing with each release:
 
 The roster it asserts is **six agents, six skills, two hooks**. It is stated here
 in prose because the check requires this file to carry it, and a sentence
@@ -214,7 +214,7 @@ name and loses its reasoning. Run both.
 # component reachability, third-party names, type-marked references, adopted
 # origins. Run it to see them; they are not pasted here — that is the point.
 #
-# 301/301 adopted behaviours present.
+# 316/316 adopted behaviours present.
 # Safe to delete the adopted sources; the plugin covers them.
 ```
 

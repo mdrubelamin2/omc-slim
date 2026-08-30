@@ -346,3 +346,18 @@ audit	fixer-grep-every-caller	fixer	grep every caller of the function you are
 audit	fixer-toolset-both-scopes	fixer	it comes from both the project's
 audit	fixer-deferred-tools	fixer	an unsearched tool is invisible
 audit	designer-deferred-tools	designer	an unsearched tool is invisible
+audit	size-ladder	output-styles	Rigour is a dial, not a floor
+audit	size-content-override	output-styles	Content overrides size
+audit	small-owes-one-check	output-styles	not a plan for one
+audit	comments-are-last-resort	output-styles	The default count for a
+audit	comments-no-history	output-styles	Git owns history
+audit	brief-carries-size-tier	output-styles	Name the size tier as well
+audit	fixer-no-history-comments	fixer	Never write history into a source file
+audit	designer-comments-last-resort	designer	the default count is zero
+audit	review-delete-added-narration	review/checklists.md	Delete them; git owns history
+audit	simplify-conversational-comment	simplify	A conversation, not a comment
+audit	no-tooling-is-a-question	output-styles	No tooling is a question, not a gap to fill
+audit	ask-before-first-check	output-styles	ask before building the first check
+audit	fixer-no-tooling-stop	fixer	stop rather than install something
+audit	designer-no-build-say-so	designer	say so instead of adding one
+audit	vp-no-commands-ask	verification-planning	never specifies a runner the user has not chosen

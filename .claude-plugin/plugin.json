@@ -1,7 +1,7 @@
 {
   "name": "omc-slim",
   "displayName": "omc-slim",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "A discipline layer for Claude Code, measured against a plain session: a terse senior-engineer register, evidence gates on the model's own output, and a stop before it builds the wrong thing. Six specialists, six skills, two advisory hooks, and no runtime injection on the tool-call path.",
   "author": {
     "name": "Md Rubel Amin",

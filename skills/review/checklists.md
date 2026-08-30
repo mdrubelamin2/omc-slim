@@ -102,7 +102,9 @@ when it runs past a line or two.
   the checker stopped looking, which is a different move and an easier one to
   miss. Tightening is silent, loosening is loud: only a change that lowers the
   bar is a finding
-- Narration comments the change added
+- Comments the change added that narrate, address the reader, or record history:
+  "as requested", "changed from X", a dated note, a banner divider. Delete them;
+  git owns history
 - A `TODO` naming work this change finished
 - Dead code, unreachable branches, imports the change orphaned
 - Duplicated *knowledge* that must change together

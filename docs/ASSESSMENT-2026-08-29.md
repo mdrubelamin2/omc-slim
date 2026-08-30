@@ -118,14 +118,14 @@ That is a product. It is a smaller product than the one on the label.
 
 ## 5. The cost, stated the way a sceptical user will state it
 
-4,413 tokens of always-on context, plus on-invoke bodies up to 35,559 if
+4,885 tokens of always-on context, plus on-invoke bodies up to 35,868 if
 everything fires.
 
 On a subscription the direct cost is not dollars, and that is the wrong frame
 anyway. **The real cost is attention.** This repository's own LIMITATIONS cites
 LongCodeBench: Claude 3.5 Sonnet falls **29% → 3%** from 32K to 256K, and
-Anthropic's own guidance says recall degrades as the window fills. So 4,413
-tokens is not free even when it is free. It is 4,413 tokens of the budget that
+Anthropic's own guidance says recall degrades as the window fills. So 4,885
+tokens is not free even when it is free. It is 4,885 tokens of the budget that
 decides whether the model can still find the thing it needs at turn forty.
 
 The user-facing question is therefore not "what does this cost" but **"what does
@@ -137,7 +137,7 @@ never fires certainly does not.
 *"You can remove tens of thousands of startup tokens just by disabling these
 bloated schemas you don't use"*; *"At one point I made sure to remove all plugins
 and skills"*; *"Is Superpowers still relevant?… do all the improvements in CC
-negate the need for this set of skills?"* A 4,413-token plugin is judged against
+negate the need for this set of skills?"* A 4,885-token plugin is judged against
 that suspicion **before** it is judged on merit.
 
 ## 6. The AI-slop trap this project is standing in

@@ -233,7 +233,8 @@ meant.
 | **Comment that contradicts the code** | Read both. Fix whichever is wrong; never leave the pair |
 | Narration — "first we validate", "now return the result" | Delete. The tell of generated code |
 | Docstring repeating the signature and nothing else | Delete. Keep one that names units, ranges or failure modes |
-| Banner dividers, attribution, dated changelog notes | Delete — git owns history |
+| Comment addressed to a person — "as requested", "I went with X because" | Delete. A conversation, not a comment |
+| Recording a change — "changed from X", a dated note, banner dividers, attribution | Delete — git owns history |
 | `TODO`/`FIXME` naming work already done | Delete. Keep live ones that name an owner |
 
 | Redundancy | Fix |

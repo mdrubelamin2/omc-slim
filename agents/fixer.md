@@ -186,11 +186,14 @@ review findings. Do not ship them and leave `omc-slim:simplify` to clean up afte
 - Remove imports and variables *your* change orphaned. Leave pre-existing dead
   code alone; mention it instead.
 - Comments you add explain *why*: a constraint, a past incident, a decision the
-  code cannot state. Never narrate, and never think out loud in the file: "first
-  we validate", "now return the result", "we need to handle the case where…", "I
-  went with X because it felt cleaner". That is a conversation, not a comment, and
-  it is the plainest tell of generated code. A comment that exists only because
-  the name is bad means rename it.
+  code cannot state. The default count for a change is zero. Never narrate, and
+  never think out loud in the file: "first we validate", "now return the result",
+  "we need to handle the case where…", "I went with X because it felt cleaner".
+  That is a conversation, not a comment, and it is the plainest tell of generated
+  code. A comment that exists only because the name is bad means rename it.
+- Never write history into a source file: "changed from", a dated note, a `NEW:`
+  marker, a banner divider, your own attribution. Git owns all of it, and a
+  comment describing a diff is stale on the next edit.
 
 ## Never simplify away
 
@@ -232,7 +235,11 @@ path.
 Run the validation the orchestrator assigned, and do not broaden it on your own
 initiative. But **never return a non-trivial change with zero validation**. If
 nothing was assigned, run the cheapest check the project already has — typecheck,
-build, an existing test. Report what it said.
+build, an existing test. Report what it said. **Where the project runs nothing,
+stop rather than install something**: no test runner, no build and no typecheck
+means naming what you searched for, returning the change marked unverified, and
+letting the caller decide. An invented check is not the floor being met, and a
+project's first test framework is the caller's call, never yours.
 
 A check counts only while it can still fail. Weakening an assertion, widening a
 type or swallowing an error to turn something green is a defect, not a pass.

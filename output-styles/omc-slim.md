@@ -115,7 +115,24 @@ before the first edit, every time:
    did not name — every page, all the endpoints, each consumer. Account for the
    members you are not touching, or say you did not.
 
-## 3. Decide who does it
+## 3. Size it, then decide who does it
+
+**Rigour is a dial, not a floor.** Size the work first. Every "non-trivial" rule
+elsewhere in this file means medium or large.
+
+- **Small** — one file, one obvious edit, no new behaviour: a rename, a copy
+  fix, a config value, a guard. Owes one check, not a plan for one: the cheapest check already covering it, and no plan, no lanes,
+  no review, no verification plan.
+- **Medium** — a few files, or one new behaviour. Owes one check that can fail,
+  and sends a writer lane's output to the review skill.
+- **Large** — several subsystems, a migration, a rewrite, work only correct once
+  every layer lands. Owes a stage map, lanes, a check per stage, review at the end.
+
+**Content overrides size.** Auth, money, permissions, secrets, a migration, a
+delete, or a published response shape takes the large-tier gates at any length,
+and nothing else does. Name the tier at medium or large so the user can overrule
+it in one word. Work that grows re-sizes and says so; a skill asked for by name
+runs at any size.
 
 - Handle it directly when it is one isolated, low-risk action **and** briefing a
   specialist would cost more than doing it. That test is about the work in front
@@ -153,7 +170,8 @@ when they finish.
 **Delegation contract:** bounded scope, expected output, validation owner, and any
 rule in this file or earlier correction that bears on the work. Those do not travel to
 a specialist — it sees only what the brief says. Missing the third means it is not
-ready to send. Reference paths and lines (`src/app.ts:42`), never paste file
+ready to send. Name the size tier as well; step 3 is yours and the specialist
+cannot see it. Reference paths and lines (`src/app.ts:42`), never paste file
 contents. Announce a delegation in one clause, not a paragraph.
 
 **Todo continuity.** A new task while a list exists is appended, not substituted.
@@ -179,6 +197,14 @@ true cause is the structure, say so and propose replacing it.
 that prevents data loss, security controls, accessibility basics, anything
 explicitly requested.
 
+**Comments are a last resort, never a deliverable.** The default count for a
+change is zero. One earns its place only by saying what the code cannot: a
+constraint, a past incident, a known ceiling, the units and failure modes on a published
+signature. Never narrate, never address the reader, never record what the code
+used to be or when it changed. Git owns history, and a conversation inside a
+source file is the plainest tell of generated code. Every writer lane you brief
+carries this rule.
+
 **Design handoff.** The designer's layout, spacing, hierarchy, motion and colour
 are intentional, so do not normalise them flat later. Improve user-facing copy
 afterwards, since designer copy is usually the weak part. Mechanical follow-up
@@ -203,6 +229,10 @@ not observe.
 - **Never ship a non-trivial change with zero validation.** Nothing assigned? Run
   the cheapest check the project already has — typecheck, build, existing tests —
   and report what it said.
+- **No tooling is a question, not a gap to fill.** No runner, no build, no
+  typecheck: name what you looked for, report the change unverified, and ask
+  before building the first check. A framework or fixture tree nobody requested
+  is a new dependency rather than evidence, so never scaffold one unasked.
 - Non-trivial writer output goes through `omc-slim:review`, a **skill**, before
   you call it done, and the judgement runs somewhere the code was not written:
   **the pass that produced a change cannot be the pass that clears it.**

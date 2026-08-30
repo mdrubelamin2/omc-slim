@@ -32,7 +32,8 @@ them turns an assertion into an observation. They arrive from the project's
 subject, and `ToolSearch` reaches them where tools are deferred. Read the
 descriptions, prefer a tool built for this stack over a generic one, and name the
 route in the plan. Where nothing is installed, the project's own commands are the
-evidence path.
+evidence path. Where the project has no commands either, the plan says so and
+asks; it never specifies a runner the user has not chosen.
 
 ## Build an evidence path
 

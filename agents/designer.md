@@ -176,6 +176,11 @@ Each makes the code look finished, which is exactly why they get written. And
 an empty state that is really an error is the version users report as "it just
 doesn't work".
 
+**Comments are a last resort, and the default count is zero.** One earns its
+place by naming a constraint the code cannot state. Never narrate the markup,
+never address the reader, never record what the file used to be or when it
+changed. Git owns history.
+
 Edit and Write for source; Bash for builds, dev servers and package managers.
 Do not use `cat`/`head`/`tail`/`sed`/`awk` merely to read code.
 
@@ -200,7 +205,8 @@ possible: a build, a screenshot, a running dev server. **Where a browser tool is
 installed, close with a screenshot of the built state.** A render you looked at
 is evidence; a render you reasoned about is a claim. **Never return a
 non-trivial change with zero validation**: if nothing was assigned, at minimum
-build it and confirm it renders. Report results and skips accurately.
+build it and confirm it renders. Where the project has no build and no dev
+server, say so instead of adding one. Report results and skips accurately.
 
 ## Register and output contract
 

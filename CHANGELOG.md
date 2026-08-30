@@ -3,6 +3,54 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.8
+
+Two complaints from the author, both about the plugin doing more than the work
+asked for.
+
+The first: verification and review fired on tasks too small to need either. The
+cause was one undefined word. Every gate in the output style keyed on
+"non-trivial", nothing said what that meant, and a rename qualified as readily as
+a migration. Step 3 now opens on a three-tier ladder. Small is one file, one
+obvious edit, no new behaviour, and it owes one check, not a plan for one: no
+plan, no lanes, no review skill, no verification plan. Medium owes one check that
+can fail. Large owes the stage map. Every "non-trivial" rule elsewhere in the
+file now resolves to medium or large, so the existing verification floor is
+unchanged in wording and much narrower in reach.
+
+Content still overrides size. Auth, money, permissions, secrets, a migration, a
+delete or a published response shape takes the large-tier gates at any diff
+length, because a one-line change to an auth check is still the most dangerous
+line in the release. The `review` skill keeps its own rule that size never skips
+a triggered lane; what changed is when the orchestrator invokes it at all.
+
+The second: generated comments. Narration, asides addressed to the reader, and
+notes recording what the code used to be. The output style, `fixer` and
+`designer` now state that the default comment count for a change is zero, and
+that a comment earns its place only by saying what the code cannot. `simplify`
+gained a row for the conversational kind and folded the historical one into the
+banner-and-attribution row it duplicated, and `review` now deletes rather than
+merely flags any the diff added. Git owns
+history, and a comment describing a diff is stale on the next edit.
+
+A third change came out of the same conversation. The verification floor said
+run something, and where a project ran nothing the model built the something
+itself: a test file, a runner, a config nobody asked for. The floor now stops at
+the project's own tooling. No runner, no build, no typecheck means naming what
+was searched for, reporting the change unverified, and asking whether to add one.
+`fixer`, `designer` and `verification-planning` carry the same stop, and
+`deepwork` already had it as its `Waived:` line.
+
+The cost is real and is published: static context moves from ~4,413 to ~4,885
+corrected tokens, 5,321 on the chars/4 basis — about 10%, against a headline that
+sells being small. A compression pass ran before release under the protocol in
+[COMPRESSION-2026-08-28.md](./docs/COMPRESSION-2026-08-28.md) and returned 98 of
+those tokens, almost all of it by merging rules stated twice rather than by
+shortening wording: the no-tooling stop appeared in two places in both the output
+style and `fixer`, and the ladder restated its own small tier. Fifteen new rows
+in COVERAGE.tsv pin what remains so a later pass cannot quietly drop them, and
+the next release should still be looking for what to cut.
+
 ## v0.9.7
 
 A release gate that had stopped running was run, and it found eleven
