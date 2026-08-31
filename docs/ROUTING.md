@@ -96,14 +96,19 @@ Paste this into `~/.claude/CLAUDE.md` for every project, or a project's own
 `CLAUDE.md` for one:
 
 ```markdown
-### omc-slim:deepwork is mandatory for qualifying work
+### omc-slim:deepwork — offer it on qualifying work
 
-For any task that spans multiple files, multiple sources, or multiple steps — or
-when the user asks to be thorough / systematic / "deep work" — you MUST invoke the
-**deepwork** skill (Skill tool, `skill: omc-slim:deepwork`) BEFORE any other tool
-call or substantive output. Do not skip, defer, or work around it. Skip it only
-for genuinely trivial, one-shot requests.
+When a task is a migration, a rewrite, or a change that is only correct once
+several subsystems land together, offer the **deepwork** skill in one line
+(Skill tool, `skill: omc-slim:deepwork`) before substantive output. Run it on a
+yes, or when the user names it. Routine multi-file edits stay on the main
+thread.
 ```
+
+v0.9.x shipped this paragraph as a mandate ("MUST invoke ... BEFORE any other
+tool call"). v0.10.0 replaced it with the offer above: the mandate fired
+deepwork on routine multi-file work, which the skill's own sizing refuses, and
+the demand-driven default made the contradiction load-bearing.
 
 Without it, invoke the skill yourself — `/omc-slim:deepwork <task>` — and
 everything else in the plugin works unchanged.

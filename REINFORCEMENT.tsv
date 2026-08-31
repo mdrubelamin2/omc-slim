@@ -38,58 +38,29 @@
 # Checked by scripts/check-reinforcement.sh. Exit 1 on any gutted rule.
 #
 # rule	where	anchor	must_cooccur
-near-synonyms	output-styles	dozens of near-synonyms	does not quietly skip a step under pressure|Invoking the right skill beats improvising the same procedure worse|not by what surfaces first
-two-scopes	output-styles	two scopes	the project's `.claude/`|the user's `~/.claude/`|most machines carry far more at the user level|misses nearly everything
-roster-is-a-floor	output-styles	roster is a floor, not a ceiling	equally available and often better|Survey before planning and name the tool in the delegation
-deferred-tools	output-styles	ToolSearch	an unsearched tool is invisible, not absent
-read-the-artefact-first	output-styles	Read the artefact first	Brevity applies to solutions, never to reading|An assumption stated as a finding poisons everything downstream|the smallest change in the wrong place is a second bug
-stale-recall	output-styles	Your recalled knowledge is stale	checked against a current source, never recalled|an unsourced external claim is indistinguishable from a recalled one
-prior-art-before-inventing	output-styles	look for prior art first	a named algorithm, a standard, an RFC, a reviewed implementation|beats one derived in one pass|never the depth of the reading
-search-before-you-write	output-styles	Does it already exist?	Re-implementing what lives a few files over is the most common waste|Does it need to exist at all?
-grep-every-caller	output-styles	Grep every caller	One guard in the shared function beats a guard in each caller|patching only the named path leaves every sibling broken
-account-for-the-full-set	output-styles	What is the full set?	every page, all the endpoints, each consumer|Account for the members you are not touching
+read-the-artefact-first	output-styles	Read the artefact before concluding	an assumption stated as a finding poisons everything downstream
 ships-whole	output-styles	ships whole	error paths, edge cases|Cutting a feature is a decision to state|cutting error handling is a defect to hide
-surgical-scope	output-styles	unrequested	never against *large* work|Surgical scope, not timid scope|asked to rewrite, redesign or rethink, that **is** the scope
+surgical-scope	output-styles	Changes trace to the request	an asked-for rewrite is a real rewrite
 never-simplified-away	output-styles	Never simplified away	input validation at trust boundaries|error handling that prevents data loss|security controls|accessibility basics|anything explicitly requested
-weakening-a-check	output-styles	"Looks right" is not a check	a check is evidence only while it can still fail|weakening an assertion, widening a type or swallowing an error|Never imply a result you did not observe
-own-it-and-finish-it	output-styles	descriptions, never exits	good stopping point|a named blocker with evidence is a result|asking *which* reading is right before starting is encouraged
-handle-it-directly	output-styles	one isolated, low-risk action	briefing a specialist would cost more than doing it|never a running count|three small fixes in a row are three small fixes
-delegation-contract	output-styles	Delegation contract	bounded scope, expected output, validation owner|any rule in this file or earlier correction that bears on the work|Missing the third means it is not ready to send
-todo-continuity	output-styles	Todo continuity	appended, not substituted|Preserve order and status|finish the in-progress task first
-reconcile-the-union	output-styles	Each verified only its own slice	nothing has yet checked the union|Run the project's own check once against the merged result
-zero-validation	output-styles	zero validation	the cheapest check the project already has|typecheck, build, existing tests|report what it said
-review-is-a-second-pass	output-styles	cannot be the pass that clears it	Non-trivial writer output goes through `omc-slim:review`|somewhere the code was not written
-concision-is-not-less-work	output-styles	Concision governs how you write	never to verify less, read less or finish less|is the deliverable, and is given in full
-in-full-exempts-length-only	output-styles	exempts length, and nothing else	one idea per sentence, twenty-five words|A long answer is many short sentences, never permission to write loose ones
-close-with-what-now	output-styles	what the user does next	The evidence lives in the second one|never a claim standing in for it|Nothing left to do says so
-three-options-at-most	output-styles	three options at most	Give the context that decides it|say which one you would pick|not done the narrowing yourself
-context-window	output-styles	Do not manage the context window	Capacity is the harness's job|never propose compacting unless the user raises it|never out of fear of a limit
-surgical-scope	fixer	bounds *whose* work you do	not how large the work is|If the task is a rewrite, rewrite it fully|Do not improve adjacent code
-never-simplify-away	fixer	Input validation at trust boundaries	Error handling that prevents data loss|Security controls|Accessibility basics|Anything explicitly requested|correct on edge cases
-zero-validation	fixer	zero validation	the cheapest check the project already has|report what it said
+weakening-a-check	output-styles	wearing a passing badge	a check that cannot fail is not evidence|never saw the bug fail proves nothing
+own-it-and-finish-it	output-styles	with evidence, is a result	Do not ask permission to continue agreed work
+delegation-contract	output-styles	A brief carries	bounded scope, expected output, who validates|the specialist sees only the brief
+zero-validation	output-styles	Never claim a check you did not run	a claim about whatever subset ran
+review-is-a-second-pass	output-styles	the step you cannot do to yourself	your clearance of your own diff is not a review
+in-full-exempts-length-only	output-styles	exempts length, and nothing else	every rule above still binds it|A long answer is many short sentences
+close-with-what-now	output-styles	what the user does next	never a claim|Nothing left to do says so
+three-options-at-most	output-styles	at most three options	which one you would pick
 simplify-scope	simplify	the guard is on *unrequested* work	that **is** the scope|Follow one problem across every file it occupies|name the restructure and let the caller decide
 one-level-delegation	deepwork	Keep delegation one level deep	enforced, not advisory|Specialists cannot spawn agents|split into parallel lanes
 introspection-is-not-a-check	deepwork	is not a check	will also pass its own introspection|mark its output unverified
 introspection-is-not-a-check	verification-planning	is not a check	A check must be able to fail|will also pass its own introspection
-design-handoff	output-styles	are intentional	do not normalise them flat later|Mechanical follow-up|back to the designer
-search-before-write	output-styles	Search before you write	before the first edit, every time
-search-q-exists	output-styles	Does it already exist?	Re-implementing what lives a few files over|Does it need to exist at all?
-search-q-callers	output-styles	Who else calls this?	One guard in the shared function|leaves every sibling broken
-search-q-full-set	output-styles	What is the full set?	places the request did not name|Account for the members you are not touching
-plan-before-edit	output-styles	Plan before the first edit	the stage map comes first|ships two layers and reports success
-evidence-not-plausibility	output-styles	Evidence, not plausibility	State goals so they can fail|the smallest runnable thing that breaks when it breaks
 register-simple-english	output-styles	Simplified Technical English (ASD-STE100)	not baby talk and not|fragments
-lead-with-answer	output-styles	Lead with the answer	No preamble, no restating the request|no summary unless asked
+lead-with-answer	output-styles	Lead with the answer	No preamble, no summary of what the reader just watched
 explorer-output-cap	explorer	Cap: 150 lines	on a survey|the most relevant 150
 explorer-cap-yields-to-completeness	explorer	The cap does not apply to an enumeration	A truncated set is worse than no set|Asked for all of something, return all of it
 explorer-proposes-nothing	explorer	Never suggest a fix	a refactor, or a next step|That is the caller's job
 explorer-shell-is-read-only	explorer	Bash is for non-mutating diagnostics only	Never `git checkout`, `stash` or `reset`|discard uncommitted work that is not yours
 explorer-negative-result	explorer	If you found nothing	say so in one line|name where you looked
-oracle-verify-before-flag	oracle	Never report a fault you have not confirmed present	grep it, diff it, run it, read the source|A warning raised because evidence was not found, rather than because a fault was found, is itself an error|manufactures doubt and sends the caller chasing ghosts|Absence of evidence is not the finding
-oracle-advises-never-implements	oracle	You advise; the fixer and designer implement	Never `git checkout`, `stash` or `reset`|discard uncommitted work that is not yours
-oracle-root-causes	oracle	Find root causes, not symptoms	Grep every caller before blaming one
-oracle-claims-carry-locations	oracle	A claim about code without a location is a guess	Cite `file.ts:line`
-oracle-verdict-first	oracle	Rank findings by severity	Lead with the verdict|do not pad with minor style notes when the question was architectural
 tracer-first-plausible-story	tracer	Your failure mode is committing to the first plausible story	You are called when the cause is not known|Resist it
 tracer-three-hypotheses	tracer	Generate at least three competing hypotheses	before gathering evidence|If you can only think of one, you have not understood the system yet
 tracer-falsify	tracer	before you go looking	Stating the test after seeing the evidence|A hypothesis you only confirmed is untested
@@ -110,12 +81,7 @@ librarian-prior-art	librarian	Report whether the problem is already solved	the n
 librarian-no-established-solution	librarian	there is no established solution	It is a real finding and it licenses the caller to build something bespoke
 librarian-say-you-dont-know	librarian	If the docs do not cover it, say so and report what they *do* cover	A confident answer assembled from adjacent facts is the failure mode of this role
 librarian-sources-travel	librarian	Every load-bearing claim gets a source	No source, no claim
-designer-timidity-is-the-failure	designer	the default failure mode of this role is timidity	producing something correct, generic and forgettable|Commit to a point of view|Where a choice is between safe and interesting, and both serve the user, take interesting
-designer-stale-recall	designer	Framework APIs move and your recollection of them has a cutoff	Confirm a component API, a config key or a CSS feature against the installed version or current docs|rather than recalling it
-designer-accessibility-not-optional	designer	Accessibility is not optional	semantic markup, focus states, contrast, keyboard paths, reduced-motion|A beautiful interface nobody can operate is a failed one
-designer-review-mode-locations	designer	report concrete problems with locations	has a 2.1:1 contrast ratio and no focus ring|not "consider improving accessibility"
-designer-zero-validation	designer	Never return a non-trivial change with zero validation	make it user-visible where possible|at minimum build it and confirm it renders|Report results and skips accurately
-codemap-cost-is-real	codemap	This skill is expensive	it reads the whole tree and spawns one fixer per directory|writes files into the user's repository|a `codemap.md` in every mapped directory|`.slim/codemap.json`, and a section in root `AGENTS.md`
+codemap-cost-is-real	codemap	This skill is expensive	it reads the whole tree and spawns one writer agent per directory|writes files into the user's repository|a `codemap.md` in every mapped directory|`.slim/codemap.json`, and a section in root `AGENTS.md`
 codemap-announce-gate	codemap	say what it will cost and what it will write, and get a yes first	Reaching for it unprompted is correct; doing so silently is not
 codemap-exclusions-mandatory	codemap	Exclude (MANDATORY)	Do NOT include tests, documentation, or translations|Respect `.gitignore` automatically
 codemap-agents-md-idempotent	codemap	skip this step	already contains a `## Repository Map` section|the reference is already set up
@@ -138,10 +104,8 @@ review-filter-at-the-end	review	Filter at the end, never while looking	Surface e
 review-brief-with-evidence	review	Brief a lane with evidence, never with a verdict	locate the work|decides the review before it runs|a lane handed the answer reports the answer
 review-lanes-trigger-on-content	review	Every lane triggers on the diff's content, never on its length	a migration is a schema change at 30 lines and at 3,000|too small to review
 review-size-picks-who-not-whether	review	Size decides only	who runs the lane, not whether it runs|a lane the table triggers gets run and reported
-fixer-webfetch-not-research	fixer	`WebFetch` is allowed for a page the caller named	Reading one URL you were handed is execution|going looking is research|cannot be stale about this project
 deepwork-reversible-not-obvious	deepwork	Reversibility is not the same as obviousness	no precedent in this repository still earns one competing option|building the wrong shape confidently
 deepwork-generate-freely	deepwork/depth.md	Generate freely; report at most three	The cap is on what you write down|a generation cap is how the second idea never gets had
-orchestrator-is-the-fan-out	output-styles	You are the only place fan-out can happen	Specialists cannot spawn agents|has to be planned here, before dispatch|three lanes in one message
 deepwork-research-is-a-stage	deepwork	Research is a stage, not a reflex	plans the wrong work in the right order|never that the plan was current
 deepwork-named-source-or-nothing	deepwork	checked, found nothing	silence is not an answer|neither is your own memory
 deepwork-scale-never-skip	deepwork	Scale the pass, never skip it	still owes questions 2 and 3|Only question 1 scales with consequence
@@ -154,7 +118,11 @@ deep-interview-score-anyway	deep-interview	Score the ambiguity anyway	it is the 
 deep-interview-guard-is-for-autofire	deep-interview	This guard is for the case where nothing was invoked	Stop and say so if the request is already specific
 deepwork-explicit-runs	deepwork	Invoked on purpose? Then run	the question is settled|the most annoying possible response|Scale the work down if it deserves less
 librarian-bash-non-mutating	librarian	Bash is for non-mutating diagnostics only	Never `git checkout`|never anything that writes|changes the tree the caller is working in
-fixer-grep-every-caller	fixer	grep every caller	One guard in the shared function is a smaller diff|leaves every sibling caller still broken
-fixer-toolset-both-scopes	fixer	it comes from both the project's	the user's `~/.claude/`|usually more from the latter|prefer it over hand-writing the equivalent
-fixer-deferred-tools	fixer	unsearched tool is invisible	Where tools are deferred|`ToolSearch` is how you find them
-designer-deferred-tools	designer	unsearched tool is invisible	Where tools are deferred|`ToolSearch` is how you find them
+cost-follows-demand	output-styles	Cost follows demand	nothing here spends until the task's content or the user's words ask for it
+interview-is-offered	output-styles	run it only on a yes	A question is answered, never interviewed
+content-list-escalator	output-styles	the only self-escalator	offer the review skill in one line|Never silently dispatch
+oracle-verify-before-flag	oracle	Never report a fault you have not confirmed present	grep it, diff it, run it, read the source|A warning raised because evidence was not found, rather than because a fault was found, is itself an error|manufactures doubt and sends the caller chasing ghosts|Absence of evidence is not the finding
+oracle-advises-never-implements	oracle	You advise; a briefed writer implements	Never `git checkout`, `stash` or `reset`|discard uncommitted work that is not yours
+oracle-root-causes	oracle	Find root causes, not symptoms	Grep every caller before blaming one
+oracle-claims-carry-locations	oracle	A claim about code without a location is a guess	Cite `file.ts:line`
+oracle-verdict-first	oracle	Rank findings by severity	Lead with the verdict|do not pad with minor style notes when the question was architectural
