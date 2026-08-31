@@ -9,11 +9,6 @@
  * neither: the harness never finished, so that mutant was never measured, and a
  * run holding one fails rather than quietly scoring it.
  *
- * It was extracted when the second hook arrived. The sandbox logic below carries
- * scar tissue from a real corruption (see MUTANTS NEVER TOUCH THE TRACKED FILE),
- * and two copies of that would have drifted — the second copy is exactly where a
- * fixed bug comes back.
- *
  * Not a test file. `runMutants` is called by *.mutate.mjs, never run directly.
  */
 
@@ -36,11 +31,8 @@ const sha = (text) => createHash("sha256").update(text).digest("hex");
  * What one harness run means.
  *
  * A run that never finished is not a result. `spawnSync` reports a timeout as
- * `error.code === "ETIMEDOUT"` with `status === null`, and `null === 0` is
- * false — so a mutant that made the HARNESS HANG used to land in the same
- * branch as a genuine failure and be counted as KILLED. The mutation score is
- * the strongest quality claim this repository makes, and that was one of its
- * failure modes inflating it.
+ * `error.code === "ETIMEDOUT"` with `status === null`, which a bare
+ * `status === 0` test would score as a kill.
  *
  * Signals and spawn failures are unusable for the same reason: nothing was
  * measured. Neither a kill nor a survival, and the run fails on one, because a
@@ -72,8 +64,7 @@ function classify(run) {
 for (const [expected, run] of [
   ["survived", { status: 0, signal: null }],
   ["killed", { status: 1, signal: null }],
-  // The shape spawnSync actually returns on `timeout:`, which is the one this
-  // used to score as a kill.
+  // The shape spawnSync actually returns on `timeout:`.
   [
     "unusable",
     {
@@ -108,23 +99,14 @@ export function runMutants({ hook, test, mutants }) {
   const pristine = readFileSync(hook, "utf8");
   const pristineSha = sha(pristine);
 
-  // --- MUTANTS NEVER TOUCH THE TRACKED FILE ---------------------------------
-  // Each mutant is written to a throwaway copy under the OS temp dir, and the
-  // harness is pointed at it with OMC_SLIM_HOOK_PATH. The tracked hook is only
-  // ever read.
+  // Mutants are written to a temp copy; the tracked hook is only ever read. The
+  // copy lives under the OS temp dir, and the harness is pointed at it with
+  // OMC_SLIM_HOOK_PATH.
   //
-  // It used to be mutated in place and restored from the snapshot. Two
-  // concurrent runs corrupted each other: run B snapshotted while run A held a
-  // mutant, then faithfully "restored" that mutant, and the sha256 line still
-  // said "match" because it matched the snapshot B took. That shipped a
-  // `WRITE_AGENTS = new Set(["fixer"])` mutant to disk, silently disabling the
-  // designer check while every other gate reported green.
-  //
-  // A lock plus a pristine guard was the first fix. Both were wrong: the
-  // pristine guard could not see a mutant whose `find` string occurs twice
-  // (String.replace substitutes only the first, so `includes(find)` stays true),
-  // and its printed remedy — `git checkout --` — discards uncommitted work. Not
-  // writing to the tracked file removes the whole class instead of policing it.
+  // Two concurrent runs that mutate the tracked file in place can restore each
+  // other's mutants (this shipped a `WRITE_AGENTS = new Set(["fixer"])` mutant
+  // to disk once). Writing to a temp copy removes the whole class instead of
+  // policing it.
   //
   // Prefixed so a leaked dir is identifiable and sweepable. SIGKILL cannot be
   // caught, so the exit handler below is best-effort; sweep stale siblings first

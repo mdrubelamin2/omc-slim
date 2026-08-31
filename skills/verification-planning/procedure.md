@@ -4,7 +4,7 @@ The seven steps `SKILL.md` names. Open this when the work is multi-phase; a smal
 
 **Everything here is what the plan specifies, not what you personally perform.** The skill plans; other components execute. Write each step's outcome into the plan and name its owner.
 
-Every step closes on a **Complete when**, and that is the point of writing them down: a step declared finished by feel is the failure this skill exists against.
+Every step closes on a **Complete when**, and that is the point of writing them down. A step declared finished by feel is the failure this skill exists against.
 
 ## 1. Frame the claim
 
@@ -32,7 +32,7 @@ Ask for official or project-specific facilities, constraints, and trade-offs tha
 
 ## 4. Set a verification budget
 
-At the final state, state the distinct claims and assign one owner to establish or refute each. Choose the minimum non-duplicative evidence that covers the claims and important boundaries. Reuse evidence only while its relevant code, inputs, environment, and state remain valid. Required repository and release checks still apply. Scale the budget to consequence: minimality is right for work a commit undoes, and wrong for a migration, a published interface or a deletion, where the cheapest check that could have caught it is the one you skipped. Broaden or repeat verification when a stated condition justifies it.
+At the final state, state the distinct claims and assign one owner to establish or refute each. Choose the minimum non-duplicative evidence that covers the claims and important boundaries. Reuse evidence only while its relevant code, inputs, environment, and state remain valid. Required repository and release checks still apply. Scale the budget to consequence: minimality is right for work a commit undoes. And it is wrong for a migration, a published interface or a deletion, where the cheapest check that could have caught it is the one you skipped. Broaden or repeat verification when a stated condition justifies it.
 
 **Complete when:** every distinct claim has one named owner and one piece of non-duplicative evidence, sized to what being wrong about it would cost.
 

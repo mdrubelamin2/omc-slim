@@ -233,7 +233,7 @@ an omission.
 | Class | Who owns it | Why it is not here |
 |---|---|---|
 | Crash and compaction survival | `planning-with-files` — plan, findings and progress on disk, re-injected each turn | `LIMITATIONS.md` names compaction eviction as a top failure mode and ships no mechanism for it |
-| Cost attribution per rule | `token-warden` — every rule pays rent against a frozen benchmark or is evicted | This plugin ships ~4,300 always-on tokens with no per-component accounting |
+| Cost attribution per rule | `token-warden` — every rule pays rent against a frozen benchmark or is evicted | This plugin ships ~4,666 always-on tokens with no per-component accounting |
 | Session resumption as an artefact | native `SessionStart` resume payload, `claude agents` | one hook that reports a condition |
 | Codebase indexing as a token strategy | `Graphify` — a queryable graph | `codemap` writes markdown |
 | Security posture | ECC's `agentshield`, native `--restricted` | there is no security section in this repository |
@@ -317,6 +317,13 @@ Recorded so nobody re-opens them as oversights.
 - **`observer:` / `observerMessage:` / `observeSubagents:`** exist in shipping
   code and in no documentation — a first-party supervisory-critic pattern.
   Attractive, unstable, undocumented, and therefore not built on.
+- **`FileChanged`.** Native since 2.1.251. This plugin consumes it: a
+  SessionStart hook seeds `watchPaths` for source directories inside a project, and a
+  FileChanged hook appends a jsonl ledger with no model-visible output. That is
+  a consumer, not an overlap to measure. Removal criterion: none; if the event
+  disappears, the ledger goes silent and the claim scan still runs. It does not
+  fire in a remote-workspace session, so the ledger is empty there and the claim
+  scan runs without it.
 - **`disableBundledSkills`** is the clean lever for A/B-ing this plugin's
   components against their native counterparts. It belongs to the measurement
   wagon, not to this ledger.

@@ -3,6 +3,179 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.9.9
+
+Two complaints, both from the audit run on the morning of the release. The
+first: the README said the plugin cannot claim a test it never ran. The hook
+behind that sentence watched only `fixer` and `designer` on SubagentStop, and
+the committed benchmark's win path is the main thread, where nothing watched.
+The second: the sentence was easy to fool where the hook did run. `git log
+--oneline latest` counted as a test run, because the command line contained
+`test`. A write through Auto-mode Bash left no Edit/Write block to find.
+
+The first draft of this release got three things wrong, and a different
+instrument found each. It said a claim miss on Stop would add
+`additionalContext` for the model, and that this was not a continue. The
+2.1.251 binary and the hooks docs say it is one. It kept the FileChanged ledger
+inside the project, under `.claude/`. The review skill found that one by
+tripping over it: `base.sh` listed the ledger as an untracked file for the lanes
+to read. A `git add -A` would have committed absolute paths and session ids, and
+a repository could commit a symlink at that path. And it stamped each row with
+delivery time. chokidar delivers an event 0.5 to 0.7 s after the write,
+measured, so every stamp was late by that much.
+
+The claim scan runs on `Stop` for the main thread, over `last_assistant_message`
+and the turn's own transcript. A miss reaches the user as a `systemMessage`.
+Nothing reaches the model. On Stop a message to the model continues the turn
+under the same loop protections as `decision: "block"`, and this plugin never
+continues a turn (oh-my-claudecode #959 / #2542). A turn opens at the last
+human line. `isMeta` entries, compaction summaries, `<task-notification>`,
+`<command-name>`, `<command-message>`, `<local-command-*>`, `<system-reminder>`
+and `[Request interrupted` user lines are not human lines and do not open one.
+Before that fix, 38 of 101 turns in this repository's own transcript would have
+flagged an honest run. If the transcript holds no assistant entry for the turn
+yet, Stop abstains. Both events abstain when the payload has no
+`last_assistant_message`, which is the case when the final message has no text
+block.
+
+On Stop the hook reads only the tail of the session transcript, backwards from
+the last human turn. Measured on a 42 MB session of 18,500 lines, five runs
+each. A whole-file read cost 0.29 to 0.35 s and 263 MB of peak RSS per Stop.
+The tail read costs 0.04 s and 59 MB.
+
+The ledger lives under `~/.claude/omc-slim/ledgers/`, or `$CLAUDE_CONFIG_DIR`
+where that is set, one file per project. The name is the first 16 hex
+characters of the sha256 of the project path. Nothing is written inside the
+project, so `.gitignore` needs no line for it. A row is `{t, session_id, path,
+event}`, `t` the written file's mtime, and no row is written without a
+`session_id`. The reader consults the ledger only when the subagent's own
+transcript shows a `Bash` or `mcp__*` tool use. An agent that never ran a shell
+cannot have made a write the transcript does not show. It requires the row's
+`session_id` to equal the payload's, `t` after the subagent's first transcript
+timestamp, and a path inside the project. It skips `unlink`. A hit means the
+hook cannot tell who wrote, which is silence, never a deliverable.
+
+Every shell command in a turn now gets one of three verdicts. A known runner is
+a check only if its tool result came back clean, so a denied `npm test` no
+longer counts. A known non-runner is not a check: `git`, `echo`, `cat`, `ls`,
+`grep`, `sed`, `find`, `curl` and the like. Anything else is unknown, and the
+claim advisory abstains when any unknown command ran. A parse that cannot say
+what ran cannot say nothing ran. Wrappers are seen through:
+`timeout`, `env`, `sudo`, `nice`, `uv run --frozen`, `poetry run -q`, `bundle
+exec`, `sh -c "…"` and `docker compose exec`. Shell compounds are read: `if npm
+test; then`, `for …; do pytest; done`, `! pytest`. A script whose name carries
+test, spec, check, lint or verify is a check: `./run_tests.sh`, `node
+hooks/x.test.mjs`, `./scripts/check-coverage.sh`. So are `python manage.py
+test`, `tox`, `nox`, `pre-commit`, `pyright`, bare `make`, `mvn package` and
+`npm run test-unit`. A heredoc body is not a command. On the claim side,
+`verified` counts only beside test, build, typecheck or lint in the same
+sentence. A decimal no longer breaks sentence splitting, and "no failures", "0
+failed" and "as expected" read as assertions.
+
+A second review pass found four more ways the matcher accused an honest run,
+and they are closed: a heredoc body no longer swallows the commands after it,
+a `)` glued to a word no longer hides `npm test`, an error on a line that
+mixes a check with `git commit` is not charged to the check, and an unlisted
+target such as `make ci` or `rake spec` reads as unknown rather than
+non-check. A `#` comment contributes no verdict. The ledger tolerates two
+seconds of mtime granularity. The seed hook descends a first-level directory
+that is itself a package, orders `src` and `lib` ahead of the cap, skips
+lockfiles, databases and logs at the root, and accepts `requirements.txt`,
+`Pipfile`, `tsconfig.json` and `.hg` as project markers.
+
+SessionStart names watch roots only inside a project. `seed-watch-paths` does
+nothing for `$HOME`, for a filesystem root, or for a directory without a marker
+(`.git`, `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `Makefile`
+and sixteen more). It descends workspace directories (`packages/`, `apps/`,
+`libs/`, `services/`, `crates/`, `modules/`, `examples/`) to each child's
+subdirectories, so `packages/foo/src` is watched and `packages/foo/node_modules`
+is not. It names root-level source files too, and caps the list at 48 entries.
+A workspace child's own root-level files are not watched. Two skip sets, on
+purpose. The ledger ignores 13 never-source names at any depth: `node_modules
+.git __pycache__ .venv venv .tox Pods DerivedData coverage .next dist target
+vendor`, and any path with a `.claude` component. The seed hook skips those plus `build out obj tmp logs env`, at the
+first level only, because `src/build/` can be source. Every delivered
+FileChanged event costs one node process, about 43 ms on one machine over five
+runs. A nested
+`node_modules` under a watched directory still fires events, which the ledger
+drops after the spawn.
+
+The command splitter is a linear character scan. Two regexes that split on
+`\s*` before a literal were quadratic, measured at 3 s on a 40,000-space
+command, and are gone.
+
+The SubagentStop matcher is `^omc-slim:(fixer|designer)$`, and
+`check-coverage.sh` now fails a matcher that also accepts a bare name. A
+`--plugin-dir` session presents the same namespaced `agent_type`
+(RESEARCH.md:1318, every component listed under `omc-slim:`), so the bare-name
+branch was dead code and is gone. `skills/review/scripts/base.sh --out FILE`
+writes the diff to a file, so it never enters the orchestrator's context, and
+now includes untracked files as new-file diffs, with every path unquoted so
+a lane can open it, and a failed tracked diff fails the write. The lane pinned a bash bug on
+the way: `if ! { ...; } > FILE` does not observe a failed redirection.
+`codemap.mjs` refuses to write through a committed symlink at any file it
+writes, and `init` migrates a legacy `.slim/cartography.json` without
+overwriting existing state. Codemap's AGENTS.md block no longer writes a
+`${CLAUDE_PLUGIN_ROOT}` command into the user's repository. CI runs Node 22
+under a 30-minute cap. `.sota/` is gitignored as a local scan artefact.
+
+Identity changed on every surface. The output-style description no longer says
+"Workflow-manager orchestration", the main thread's Role line is a principal
+engineer, and the marketplace keywords dropped `orchestration`. The README no
+longer says read-only means read-only. Those agents have `Edit`, `Write` and
+`NotebookEdit` denied by the harness, and keep `Bash` for `git log` and `npm
+view`. A shell write there is forbidden by prose alone, and the README now says
+so.
+
+A register pass went over the eighteen prompt files and the four hooks.
+Em-dashes went from about 240 to zero in the prompt files' prose bodies; the 41 left sit in
+frontmatter descriptions, tables, fenced templates, two `passed — N/N` examples
+and the shared `Gate N — attempt M` marker. Sentences
+over 25 words fell from roughly 150 to about 25 that cannot split without a
+word change. Every passage narrating the plugin's own history left the prompts
+and the hooks. A comment now says what the code cannot, not what the code used
+to be.
+
+Review ran in two rounds. Round one: a two-lane contradiction sweep over all
+eighteen prompt files, a hostile review of the four hooks, a thirteen-claim
+check against the binary. It found 127 findings: 4 critical, 44 required, 79
+optional. Round two, a ten-lane review under the `review` skill and a
+fresh-context adversarial pass, found 103 more: 2 critical, 43 required, 58
+optional. All six critical and
+all but a named handful of the required are closed in this tree. Left open,
+with reasons. The deepwork roster line stays in the style although ROUTING.md
+says the style cannot make it fire; it still names the skill to the user. The
+"two scopes" paths name `.claude/` and `~/.claude/`, right for agents and
+skills and loose for MCP servers. CI runs every suite twice, once as a step and
+once inside `check-coverage.sh`, and the cap was raised rather than the
+duplication removed. The FileChanged-after-SubagentStop ordering and the
+per-event process cost belong to the harness. codemap follows a symlinked
+`.slim/` directory: it guards the file it writes, not the directory. A
+workspace child's root-level files are not watched. The transcript can lag a
+Stop by up to its flush interval.
+
+Hook suites: verify-deliverables 198 cases against 120 mutants, check-output-style
+24 against 25, seed-watch-paths 26 against 27, file-ledger 24 against 23.
+`base.test.sh` runs 29 cases, `codemap.test.mjs` 19, and the smoke-contracts
+self-test 36. The coverage gate pins 15 figure sites, up from 10.
+
+Static: 4,666 real tokens, 5,277 chars/4, down from 4,672 / 5,297 in this
+release's first draft and from 4,885 / 5,321 published for v0.9.8. That makes
+this the first release since v0.9.4 to shrink. On-invoke ceiling 33,995
+corrected, 37,676 chars/4. `review/SKILL.md` is 4,788 corrected, 5,245 chars/4.
+
+Still not done. FileChanged does not fire in a remote-workspace session, so the
+ledger is empty there and the scan runs without it. A plugin enabled
+mid-session has no watcher until restart. A subagent whose last act is a shell
+write can return before its row lands, so the no-write advisory can still fire
+on that write. A main-thread edit within two seconds before dispatch can still
+be credited to the subagent, the tolerance for coarse filesystem mtimes. A user
+save during a subagent run, inside the window, still silences the no-write
+advisory when that subagent also used a shell or MCP tool. An MCP test runner is
+still
+invisible to the argv0 matcher. The paid evals have not run: B1 (main-thread
+false pass, n=3), liveness, and the delegation instrument. This is not v1.0.
+
 ## v0.9.8
 
 Two complaints from the author, both about the plugin doing more than the work

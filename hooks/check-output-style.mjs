@@ -2,14 +2,14 @@
 /**
  * omc-slim — SessionStart forced-output-style collision check.
  *
- * omc-slim is an output style. Everything the orchestrator does — the roster,
- * the delegation contract, the register — lives in `output-styles/omc-slim.md`
- * and reaches the model only because `force-for-plugin: true` makes Claude Code
- * apply it. Lose that, and the plugin installs inert: the agents still load and
- * nothing routes work to them.
+ * omc-slim is an output style. Everything the discipline layer does — the roster,
+ * the register, the stop-before-the-wrong-thing rule — lives in
+ * `output-styles/omc-slim.md` and reaches the model only because
+ * `force-for-plugin: true` makes Claude Code apply it. Lose that, and the plugin
+ * installs inert: the agents still load and nothing tells the main thread they
+ * exist.
  *
- * Claude Code resolves it like this (read out of the 2.1.246 binary, same shape
- * in 2.1.239, 2.1.243 and 2.1.245):
+ * Claude Code resolves it like this (read out of the 2.1.246 binary):
  *
  *   let t = Object.values(e).filter(s => s.source === "plugin" && s.forceForPlugin === true);
  *   let n = t[0];
@@ -22,7 +22,7 @@
  * FIRST: the user's own `outputStyle` setting is never consulted while any
  * plugin forces a style. Verified directly — a project pinned to `Explanatory`,
  * omc-slim enabled, effective style `omc-slim:omc-slim`. So "I changed my
- * output style" cannot be what disabled the orchestrator, and this hook does
+ * output style" cannot be what disabled the plugin, and this hook does
  * not check for it.
  *
  * SECOND: `t[0]`. When two plugins both force a style, one wins on plugin load
@@ -30,26 +30,17 @@
  * `Multiple plugins have forced output styles: … Using: X` at WARN level, which
  * no user sees. That is the whole failure: a plugin installed for an unrelated
  * reason takes the slot, omc-slim's prompt never loads, and the only symptom is
- * that the orchestrator stops orchestrating.
+ * that specialists stop receiving work.
  *
  * So this hook reads the CAUSE off disk instead: another enabled plugin that also
  * sets `force-for-plugin`. That is a condition, not a verdict, so the message
  * says "may" and hands over the command that settles it.
  *
- * It does not read the EFFECT, and that is now a choice rather than a limit.
- * SessionStart still carries no output style — as of 2.1.251 the payload is
- * session_id, transcript_path, cwd, hook_event_name, source, plus agent_type,
- * model, session_title and four resume fields, and none of them is the style.
- * But two other surfaces do carry it: a StatusLine hook's stdin has
- * `output_style: {name}`, and the stream-json `system:init` frame and the
- * control-protocol `initialize` response carry `output_style` alongside
- * `available_output_styles` (all verified against 2.1.251, 2026-08-29).
- *
- * Adopting the StatusLine route would settle the question this hook can only
- * raise. It is not adopted here because a status line renders continuously
- * rather than once per session, and this plugin's cost pledge is about what runs
- * repeatedly. Recorded as an open decision rather than an impossibility, so no
- * later reader takes the silence for a dead end.
+ * It does not read the EFFECT: the SessionStart payload carries no output-style
+ * field. A StatusLine hook's stdin does (`output_style.name`), and
+ * `scripts/optional/statusline.sh` reads it. That route is not taken here
+ * because a status line runs continuously, and this plugin's cost pledge is
+ * about what runs repeatedly.
  *
  * Deliberately advisory, like the SubagentStop hook beside it: `systemMessage`
  * only, never `hookSpecificOutput.additionalContext`, and always exit 0. A guard
@@ -74,7 +65,7 @@ const SELF = "omc-slim";
  *
  * The identity that matters is the path, not the name. A stale duplicate install
  * or a same-name fork from another marketplace is a genuine rival for the forced
- * style slot, and exempting it on its bare name let it take the slot in silence.
+ * style slot.
  *
  * This file's own location is the authority — hooks/<this file>, so the plugin
  * root is two levels up. That needs no environment and cannot be pointed at
@@ -83,8 +74,7 @@ const SELF = "omc-slim";
  * failure being fixed.
  *
  * OMC_SLIM_SELF_ROOT overrides it, the same seam OMC_SLIM_DEBUG and the budget
- * overrides use. The test needs it because the mutation runner executes a copy
- * of this file from a temp directory, where "two levels up" is the temp root.
+ * overrides use.
  */
 const SELF_ROOT = (() => {
   const override = process.env.OMC_SLIM_SELF_ROOT;
@@ -105,11 +95,9 @@ const SELF_ROOT = (() => {
  * one is felt directly — this is the one hook where the budget is about the
  * person waiting, not about a pathological input.
  *
- * OMC_SLIM_STYLE_BUDGET_MS overrides it, so the test can set 0 and prove the
- * deadline is wired. Blank reads as unset: `Number("")` is 0, and an
- * exported-but-empty variable would otherwise expire the deadline before the
- * first read and mute the hook permanently. That exact bug shipped in the
- * sibling hook once; it is not going to ship twice.
+ * OMC_SLIM_STYLE_BUDGET_MS overrides it. Blank reads as unset: `Number("")` is
+ * 0, and an exported-but-empty variable would otherwise expire the deadline
+ * before the first read and mute the hook permanently.
  */
 const BUDGET_MS = (() => {
   const raw = process.env.OMC_SLIM_STYLE_BUDGET_MS;
@@ -126,12 +114,6 @@ const MAX_STYLES_PER_PLUGIN = 20;
 
 /**
  * One predicate for both scan loops, deliberately.
- *
- * The budget is checked in two places — once per plugin and once per style file
- * — and a separate `Date.now() >= deadline` in each meant no single mutation
- * could disable the deadline, so the mutation suite could not prove it was
- * wired at all. One function is one thing to break, and therefore one thing the
- * harness can catch.
  *
  * It records the expiry on the scan rather than only reporting it, so the two
  * call sites cannot end up disagreeing about whether the result is complete.
@@ -158,11 +140,10 @@ function claudeHome() {
 /**
  * `stat`, not `lstat`, and the distinction is load-bearing in both directions.
  *
- * The sibling hook lstats its transcript because that path is HANDED TO IT by
- * the harness, and following a symlink there turns the hook into an
- * arbitrary-path read — a real finding from a prior audit. Every path reached
- * from here is one this file BUILT, from claudeHome() or an installPath plus a
- * fixed filename, so there is no attacker-controlled component to follow.
+ * lstat is right for a path a hook is HANDED on stdin, where following a
+ * symlink turns the hook into an arbitrary-path read. Every path reached from
+ * here is one this file BUILT, from claudeHome() or an installPath plus a fixed
+ * filename, so there is no attacker-controlled component to follow.
  *
  * lstat reports the LINK, so a symlinked `~/.claude/settings.json` — the normal
  * dotfiles setup — failed `isFile()`, readJson returned null, enabledPlugins
@@ -324,7 +305,6 @@ function forcedStyleName(pluginRoot, scan) {
  * Returns `{ found, complete }`, or null when the world cannot be read at all.
  * `complete` is false when the time budget cut the scan short — the caller still
  * reports whatever rival is already in `found`, and says the list may be short.
- * Discarding it was silence with the evidence in hand.
  */
 function forcedStyles(cwd) {
   const enabled = enabledPlugins(cwd);
@@ -425,13 +405,11 @@ function main() {
   // people turn off. A scan cut short before it found any rival is silent for
   // the same reason: nothing established, nothing to say.
   //
-  // What a --plugin-dir session DOES now report is the INSTALLED omc-slim, when
-  // one is enabled alongside the working tree. That is not the self-warning this
-  // paragraph guards against — it is two distinct installs, both forcing a
-  // style, one of which really does lose. Verified here: launched from the cache
-  // path the hook is silent, launched from the working tree it names the cache
-  // copy. Disable the installed plugin for the session to silence it, which is
-  // the same remedy any other rival has.
+  // A --plugin-dir session that also has the installed omc-slim enabled reports
+  // the installed copy, because two distinct installs both forcing a style is a
+  // real collision, not the self-warning this paragraph guards against. Disable
+  // the installed plugin for the session to silence it, which is the same
+  // remedy any other rival has.
   if (rivals.length === 0) return emit(null);
 
   // A rival sharing our own bare name — a stale duplicate install, or the cache
@@ -453,7 +431,7 @@ function main() {
     `omc-slim: ${names} also forces an output style. Claude Code applies only one, ` +
       `picks it by plugin load order, and does not tell you which.` +
       cutShort +
-      ` If the orchestrator is not routing work to specialists, check which style won: ` +
+      ` If specialists are not receiving work, check which style won: ` +
       `claude -p "One line: which output style is active?"`,
   );
 }

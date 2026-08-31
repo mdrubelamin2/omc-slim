@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -369,12 +370,38 @@ function deepestFirst(a, b) {
   return depth(b) - depth(a) || a.localeCompare(b);
 }
 
+// A checkout can commit a symlink at any path this tool writes: a directory's
+// codemap.md, `.slim/codemap.json`, the legacy state file. writeFileSync follows
+// the link, so the write would land wherever it points, outside the repository
+// included. Only a regular file, or nothing, is written; a link is named and
+// left alone.
+function writeRegularFile(filePath, text) {
+  let existing;
+  try {
+    existing = lstatSync(filePath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  if (existing && !existing.isFile()) {
+    const kind = existing.isSymbolicLink() ? 'a symlink' : 'not a regular file';
+    console.error(`${filePath} is ${kind}; not written`);
+    return false;
+  }
+  writeFileSync(filePath, text);
+  return true;
+}
+
 export function migrateLegacyState(root) {
   const stateDir = path.join(root, STATE_DIR);
   const legacyPath = path.join(stateDir, LEGACY_STATE_FILE);
   const statePath = path.join(stateDir, STATE_FILE);
 
   if (existsSync(statePath) || !existsSync(legacyPath)) {
+    return false;
+  }
+  // rename moves the link itself, and the state file would then be a link too.
+  if (lstatSync(legacyPath).isSymbolicLink()) {
+    console.error(`${legacyPath} is a symlink; not migrated`);
     return false;
   }
 
@@ -401,7 +428,7 @@ export function loadState(root) {
 export function saveState(root, state) {
   const stateDir = path.join(root, STATE_DIR);
   mkdirSync(stateDir, { recursive: true });
-  writeFileSync(
+  return writeRegularFile(
     path.join(stateDir, STATE_FILE),
     `${JSON.stringify(state, null, 2)}\n`,
   );
@@ -506,9 +533,9 @@ export function createEmptyCodemap(folderPath, folderName, provenance, files) {
   // there is no state, so it has no grounds to certify a map it did not write —
   // re-stamping one here would silently claim that whatever is on disk describes
   // today's tree. `stale` reports the resulting mismatch instead.
-  if (existsSync(codemapPath)) return;
+  if (existsSync(codemapPath)) return 'kept';
 
-  writeFileSync(
+  return writeRegularFile(
     codemapPath,
     renderCodemap(folderName, { ...provenance, files }, EMPTY_BODY),
   );
@@ -527,7 +554,7 @@ export function refreshCodemap(folderPath, folderName, provenance, files) {
     ? stripProvenance(readFileSync(codemapPath, 'utf8'))
     : EMPTY_BODY;
 
-  writeFileSync(
+  return writeRegularFile(
     codemapPath,
     renderCodemap(folderName, { ...provenance, files }, body),
   );
@@ -614,6 +641,15 @@ export function cmdInit({ root, include = [], exclude = [], exception = [] }) {
     console.error(`Error: ${resolvedRoot} is not a directory`);
     return 1;
   }
+  // Existing state is the change baseline. Re-running init would reset it and
+  // hide everything that moved since the maps were written.
+  migrateLegacyState(resolvedRoot);
+  if (existsSync(path.join(resolvedRoot, STATE_DIR, STATE_FILE))) {
+    console.error(
+      `Error: ${STATE_DIR}/${STATE_FILE} already exists; run \`changes\` to see what moved, or delete it to start over`,
+    );
+    return 1;
+  }
 
   const includePatterns = include.length ? include : ['**/*'];
   const excludePatterns = exclude;
@@ -643,23 +679,29 @@ export function cmdInit({ root, include = [], exclude = [], exception = [] }) {
     provenance,
   );
 
-  saveState(resolvedRoot, state);
+  if (!saveState(resolvedRoot, state)) return 1;
   console.log(`Created ${STATE_DIR}/${STATE_FILE}`);
 
   const counts = ownFileCounts(resolvedRoot, selectedFiles, folders);
+  let written = 0;
+  let kept = 0;
+  let refused = 0;
   for (const folder of folders) {
     const folderPath =
       folder === '.' ? resolvedRoot : path.join(resolvedRoot, folder);
-    createEmptyCodemap(
+    const outcome = createEmptyCodemap(
       folderPath,
       folderLabel(resolvedRoot, folder),
       provenance,
       counts.get(folder) ?? 0,
     );
+    if (outcome === 'kept') kept += 1;
+    else if (outcome) written += 1;
+    else refused += 1;
   }
 
   console.log(
-    `Created ${folders.size} empty codemap.md files, stamped ${provenance.commit} (${provenance.date})`,
+    `Created ${written} empty codemap.md files (${kept} kept, ${refused} refused), stamped ${provenance.commit} (${provenance.date})`,
   );
   reportUnreadable(state.file_hashes);
   return 0;
@@ -872,25 +914,29 @@ export function cmdUpdate({ root }) {
     provenance,
   );
 
-  saveState(resolvedRoot, nextState);
+  if (!saveState(resolvedRoot, nextState)) return 1;
 
   const counts = ownFileCounts(resolvedRoot, selectedFiles, folders);
+  let restamped = 0;
+  let refused = 0;
   for (const folder of folders) {
     const folderPath =
       folder === '.' ? resolvedRoot : path.join(resolvedRoot, folder);
-    refreshCodemap(
+    const ok = refreshCodemap(
       folderPath,
       folderLabel(resolvedRoot, folder),
       provenance,
       counts.get(folder) ?? 0,
     );
+    if (ok) restamped += 1;
+    else refused += 1;
   }
 
   console.log(
     `Updated ${STATE_DIR}/${STATE_FILE} with ${selectedFiles.length} files`,
   );
   console.log(
-    `Re-stamped ${folders.size} codemap.md headers with ${provenance.commit} (${provenance.date})`,
+    `Re-stamped ${restamped} codemap.md headers (${refused} refused) with ${provenance.commit} (${provenance.date})`,
   );
   reportUnreadable(nextState.file_hashes);
   return 0;

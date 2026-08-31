@@ -10,14 +10,13 @@
     {
       "name": "omc-slim",
       "source": "./",
-      "description": "A discipline layer for Claude Code, not an orchestrator: a terse senior-engineer register, evidence gates on the model's own output, and a stop before it builds the wrong thing. Six specialists, six skills, two advisory hooks, and no runtime injection on the tool-call path.",
+      "description": "A discipline layer for Claude Code, not an orchestrator: a terse principal-engineer register, evidence gates on the model's own output, and a stop before it builds the wrong thing. Six specialists, six skills, five advisory hooks, and no runtime injection on the tool-call path.",
       "license": "MIT",
       "keywords": [
-        "orchestration",
-        "subagents",
-        "delegation",
+        "code-review",
+        "verification",
         "cost-efficiency",
-        "code-review"
+        "output-style"
       ],
       "homepage": "https://github.com/mdrubelamin2/omc-slim"
     }

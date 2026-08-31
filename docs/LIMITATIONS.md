@@ -28,9 +28,9 @@ The gap is narrower than that wording implied. `ast-grep` covers ~26
 languages, installs standalone, and is one `Bash` call away wherever a developer
 already has it. Measured on one machine during the 2026-08-26 sweep,
 `ast-grep outline` compressed 64,496 lines of TypeScript to 385. omc-slim cannot
-*depend* on it, because nothing guarantees it is present. But the honest
-limitation is that `explorer` does not currently reach for it even when it is,
-not that structural search is unavailable.
+*depend* on it, because nothing guarantees it is present. `explorer` reaches for
+it where it is installed and falls back to `Grep` where it is not, so the honest
+limitation is the fallback, not that structural search is unavailable.
 
 Two measured caveats if it is used: `ast-grep outline` degrades badly on
 prototype-assignment JavaScript (a 631-line CommonJS file outlined to three
@@ -69,6 +69,13 @@ is ignored, `explorer`'s instruction to "stop searching with turns in hand"
 budgets against a limit that does not exist, and no check would tell you. Treat
 the bound as declared intent rather than a guarantee.
 
+The read-only agents keep `Bash`. `explorer`, `librarian`, `oracle` and `tracer`
+have `Edit`, `Write` and `NotebookEdit` denied by the harness, and use the shell
+for `git log` and `npm view`. A shell write there is forbidden by
+prose only. That is what "read-only" means here. It is also what it means for
+Claude Code's own built-in Explore agent, which is called read-only and has
+Bash too.
+
 It changes your output style. `force-for-plugin` overrides your `outputStyle`
 while omc-slim is enabled. Disabling the plugin reverts it. Your own setting is
 never consulted while the plugin is on, so re-selecting a style will not get it
@@ -88,7 +95,7 @@ styles were deprecated around CC v2.0.30 and restored at v2.0.32 on community
 pushback; the `/output-style` command was then deprecated at v2.1.73 and removed
 at v2.1.91 — the docs say verbatim: *"deprecated in v2.1.73 and removed in
 v2.1.91. Use `/config`."* If Anthropic removes `force-for-plugin`, omc-slim's
-orchestration layer goes with it, and no hook can bring it back. The current
+discipline layer goes with it, and no hook can bring it back. The current
 signal points the other way. `keep-coding-instructions` shipped at v2.1.94, a
 built-in Concise style at v2.1.237, and a mid-session style-drift fix at
 v2.1.221, all investment rather than retreat
@@ -155,7 +162,7 @@ measured 2026-08-29 against the installed v0.9.1, `claude plugin details` report
 **1,461 always-on tokens** for the twelve components where our own basis measures
 **962** — roughly **42 tokens per component** of framing (name, type, list
 structure) that no measurement of the text can see. Across the roster that is
-about **500 tokens**, so the true always-on cost is nearer 5,400 than the ~4,885
+about **500 tokens**, so the true always-on cost is nearer 5,400 than the ~4,666
 this repository publishes.
 
 It is not folded into the headline, and the reason is a scar: 42 rests on a
@@ -188,7 +195,7 @@ the exact failure mode this project has criticised in others.
 next increase is visible while it happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md, frontmatter included, is 5,262 tokens on the chars/4 basis, ~4,998 corrected —
+SKILL.md, frontmatter included, is 5,245 tokens on the chars/4 basis, ~4,788 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**.
 
@@ -230,7 +237,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Twelve components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **38,242 chars/4, ~35,868 corrected**.
+The ceiling if every component fires once is **37,676 chars/4, ~33,995 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging
@@ -331,7 +338,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~5,321 tok** | see above |
+| **omc-slim** | **~5,277 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -340,7 +347,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 omc-slim is the most expensive row in that table. It has grown on net across
-every release: 2,774 at v0.1.0 against 5,321 today, though not monotonically.
+every release: 2,774 at v0.1.0 against 5,277 today, though not monotonically.
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is
@@ -363,10 +370,11 @@ short scripts."* Quoted from the harness text in `anthropics/claude-code#87971`,
 which carries 40 reactions; `#88041` and `#87575` report the same cause, the
 latter for `/rewind` silently failing on files a Bash command edited.
 
-`hooks/verify-deliverables.mjs` decides a subagent wrote something by watching
-`Edit`, `Write`, `NotebookEdit` and `MultiEdit`. Bash is inspected only for
-commands that look like a test or build run, never for writes. So an agent that
-does its whole job through a heredoc produces no write the hook can see.
+`hooks/verify-deliverables.mjs` decided a subagent wrote something by watching
+`Edit`, `Write`, `NotebookEdit` and `MultiEdit`. Bash was inspected only for
+commands that looked like a test or build run, never for writes. So an agent
+that did its whole job through a heredoc produced no write the hook could see,
+until v0.9.9.
 
 Tested on 2026-08-29 against the shipping hook, with a transcript whose only
 tool use is `cat > file <<E`. It reports: *"no successful Edit/Write-family tool
@@ -382,14 +390,80 @@ it requires the agent to name its mechanism.
 But the advisory was written for an occasional case and auto mode makes it the
 common one. A warning that is correct to ignore on most dispatches is a warning
 nobody reads, and a check that degrades to "cannot tell" by default is not a
-check. The fixer's name-the-mechanism rule now carries the whole weight, and that
-rule is prose, which is the layer this project says holds worst.
+check. The fixer's name-the-mechanism rule used to carry the whole weight.
 
-Not fixed here, and the reason is scope rather than difficulty. Detecting a
-mutating shell command means parsing arbitrary Bash, and a detector that is wrong
-in the permissive direction restores the false confidence the three-valued write
-check was built to remove. `PostToolUse` on `Bash`, or the `FileChanged` event
-present in 2.1.251, are the candidates. Neither is built, and no measurement says
-which is right.
+v0.9.9 closed the common path, not by parsing Bash, but by watching the disk.
+A `FileChanged` ledger records in-project writes from Edit, Auto-mode Bash, and
+an editor outside Claude. It lives outside the project, under
+`~/.claude/omc-slim/ledgers/` (or `$CLAUDE_CONFIG_DIR`), one file per project
+named by a hash of the project path. The first draft kept it in the project,
+which leaked absolute paths and session ids into any `git add -A`. A repository
+could also commit a symlink at that path. Nothing is written inside the project
+now. Each row is `{t, session_id, path, event}`. `t` is the written
+file's mtime rather than delivery time, because chokidar delivers an event 0.5
+to 0.7 s late. No row is written without a `session_id`.
 
-The plugin's own gates are unaffected: they read files on disk, not tool calls.
+The reader consults the ledger only when the subagent's own transcript shows a
+`Bash` or `mcp__*` tool use. An agent that never ran a shell cannot have made a
+write the transcript does not show. It requires the row's `session_id` to equal
+the payload's, `t` after the subagent's first transcript timestamp, and a path
+inside the project. It skips `unlink`. On a hit the hook abstains rather than
+accuses, whether the transcript showed no write or only writes outside the
+project. A write from another session, or from before the work began, cannot
+vouch for it.
+
+The claim scan also runs on `Stop` for the main thread. A miss reaches you as a
+`systemMessage` and never reaches the model. On Stop, `additionalContext`
+continues the turn under the same loop protections as `decision: "block"`
+(verified against 2.1.251), and this plugin refuses both. Only the current turn
+counts, so a pytest from turn 2 does not silence a claim at turn 40. `isMeta`
+entries, compaction summaries, `<task-notification>`, `<command-name>`,
+`<command-message>`, `<local-command-*>`, `<system-reminder>` and `[Request
+interrupted` user lines do not open a turn. If the transcript holds no assistant
+entry for the turn yet, Stop abstains. Both events abstain when the payload
+carries no `last_assistant_message`, which is the case when the final message
+has no text block. The transcript is flushed on a timer, so a check run seconds
+before the stop may not be in it yet. The advisory can then fire on a real run.
+
+Every shell command in the turn gets one of three verdicts. A known runner is a
+check only when its tool result came back clean, so a denied `npm test` does
+not count. A known non-runner (`git`, `echo`, `cat`, `ls`, `grep`, `sed`,
+`find`, `curl` and the like) is not a check. Anything else is unknown, and the
+advisory abstains when any unknown command ran. So `git log --oneline latest`
+is not a runner, `sudo env CI=1 timeout 60 pytest` is, and `./run_tests.sh` is
+read as a check by its name. An MCP test runner is invisible to the shell scan;
+the advisory names that case and tells you to ignore it. A runner the tables do
+not know reads as unknown and mutes the advisory, which is abstention rather
+than accusation.
+
+Watching is seeded at SessionStart, and only inside a project. `seed-watch-paths`
+names no roots for `$HOME`, for a filesystem root, or for a directory without a
+marker (`.git`, `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`,
+`Makefile` and sixteen more). It descends workspace directories (`packages/`,
+`apps/`, `libs/`, `services/`, `crates/`, `modules/`, `examples/`) to each
+child's subdirectories, so `packages/foo/src` is watched and
+`packages/foo/node_modules` is not. It names root-level source files too, and
+caps the list at 48 entries. A workspace child's own root-level files are not
+watched. Two skip sets exist on purpose. The ledger ignores 13 never-source
+names at any depth: `node_modules .git __pycache__ .venv venv .tox Pods
+DerivedData coverage .next dist target vendor`, and any path with a `.claude`
+component. The seed hook skips those plus
+`build out obj tmp logs env`, at the first level only, because `src/build/` can
+be source. Every delivered FileChanged event costs one node process, about 43
+ms on one machine over five runs; re-derive it with `/usr/bin/time -l node
+hooks/file-ledger.mjs < payload.json`. A nested `node_modules` under a watched
+directory still fires
+events, which the ledger drops after the spawn.
+
+FileChanged does not fire in a remote-workspace session, so the ledger is empty
+there and the claim scan runs without it. A plugin enabled mid-session has no
+watcher until restart. Two ordering residuals remain. A subagent whose last act
+is a shell write can return before its row lands, so the no-write advisory can
+still fire on that write. A main-thread edit within two seconds before
+dispatch can still be credited to the subagent; that is the tolerance for
+filesystems with coarse mtimes. And the older hole stands: a user save during a
+subagent run, inside the time window, still silences the no-write advisory when
+that subagent also used a shell or MCP tool. FileChanged has no `agent_id`, so
+the ledger cannot tell a
+subagent's write from yours. That is fail-open, and it is the charter. Paid
+eval B1 (main-thread false pass, n=3) has not run.

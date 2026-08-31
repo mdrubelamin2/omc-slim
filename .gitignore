@@ -10,3 +10,6 @@ node_modules/
 # Personal config snapshot — kept locally for diffing, never published.
 # UPSTREAM.tsv still pins it by sha256, so drift is still detected.
 docs/upstream/CLAUDE.md.snapshot
+
+# Local scan artefact: a point-in-time snapshot that nothing in the repository reads.
+.sota/

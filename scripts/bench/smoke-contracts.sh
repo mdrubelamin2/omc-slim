@@ -74,18 +74,20 @@ check_oracle() {
   return 0
 }
 
-# librarian: an external claim must arrive with a source, never recalled.
+# librarian: agents/librarian.md "## Output contract" — every load-bearing claim
+# carries a source, and a source is a URL or the installed copy on disk
+# (node_modules/…, site-packages/…, an absolute path). Recall carries neither.
 check_librarian() {
   local out; out="$(cat)"
-  printf '%s' "$out" | grep -qE 'https?://' \
-    || { echo "no source URL; librarian must cite, never recall"; return 1; }
+  printf '%s' "$out" | grep -qE 'https?://|node_modules/|site-packages/|(^|[[:space:]`(])/[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+' \
+    || { echo "no source URL or on-disk path; librarian must cite, never recall"; return 1; }
   return 0
 }
 
-# fixer: the output contract at agents/fixer.md:211-226 — summary, changes, and
-# a verification block that names what ran and what it said. The verification
-# block is the half that rots first, because an agent that just edited files
-# has already "finished" in its own telling.
+# fixer: the output contract at agents/fixer.md "## Register and output
+# contract" — summary, changes, and a verification block that names what ran and
+# what it said. The verification block is the half that rots first, because an
+# agent that just edited files has already "finished" in its own telling.
 check_fixer() {
   local out; out="$(cat)"
   printf '%s' "$out" | grep -q '<changes>' \
@@ -99,27 +101,36 @@ check_fixer() {
   return 0
 }
 
-# designer: agents/designer.md:82-86 — "when asked to review rather than build,
-# report concrete problems with locations", with its own example naming a
-# contrast ratio at Header.tsx:40 rather than "consider improving accessibility".
+# designer: agents/designer.md "## Report what you found, not what you feel" —
+# asked to audit, it ships the mechanical fixes and reports the rest with
+# locations and a measured number, its own example being a contrast ratio at
+# Header.tsx:40 rather than "consider improving accessibility". So the output
+# names the file, at file:line for a finding left open or as a <changes> entry
+# for one it fixed, and names a concrete interface property either way.
 #
 # NOT asserted here: that designer refuses non-UI work. agents/designer.md makes
-# no such promise — the refusal clause lives in agents/fixer.md:19-21, pointing
-# the other way. Asserting it would be asserting a contract that does not exist,
-# which is the one failure worse than no check. Review mode is the cheapest thing
-# the file does promise.
+# no such promise — the refusal clause lives in agents/fixer.md "## Hard limits",
+# pointing the other way. Asserting it would be asserting a contract that does
+# not exist, which is the one failure worse than no check. The audit is the
+# cheapest thing the file does promise.
 check_designer() {
   local out; out="$(cat)"
-  printf '%s' "$out" | grep -qE '[A-Za-z0-9_./-]+\.(tsx|jsx|ts|js|css|html|svelte):[0-9]+' \
-    || { echo "no file:line location; review mode must locate every problem"; return 1; }
+  local located="" fixed=""
+  printf '%s' "$out" | grep -qE '[A-Za-z0-9_./-]+\.(tsx|jsx|ts|js|css|html|svelte):[0-9]+' && located=1
+  printf '%s' "$out" | grep -q '<changes>' \
+    && printf '%s' "$out" | grep -qE '^[[:space:]]*-[[:space:]]*[A-Za-z0-9_./-]+\.(tsx|jsx|ts|js|css|html|svelte)([[:space:]]|$)' \
+    && fixed=1
+  [ -n "$located$fixed" ] \
+    || { echo "no file:line finding and no <changes> entry naming a file; an audit locates what it leaves and lists what it fixed"; return 1; }
   printf '%s' "$out" | grep -qiE 'contrast|ratio|focus|aria|semantic|keyboard|reduced-motion|tab order' \
     || { echo "no concrete interface property named; this is advice, not a finding"; return 1; }
   return 0
 }
 
-# tracer: agents/tracer.md:26-27 — at least three competing hypotheses, each with
-# evidence for AND against. One confident cause is the failure mode the agent
-# exists to prevent, so a single-hypothesis answer is a fail even if it is right.
+# tracer: agents/tracer.md "## Method" and "## Output" — at least three competing
+# hypotheses, each with evidence for AND against. One confident cause is the
+# failure mode the agent exists to prevent, so a single-hypothesis answer is a
+# fail even if it is right.
 check_tracer() {
   local out; out="$(cat)"
   local h
@@ -158,15 +169,18 @@ check_tracer() {
 # codemap is the one skill with evidence outside the text: its case asserts the
 # fixture filesystem was left alone, which no amount of format imitation fakes.
 
-# review: the required header at skills/review/SKILL.md:326-327, the lanes line
-# beside it, and a located finding. The fixture plants an unambiguous flaw, so
-# "no findings" is a miss, not a clean tree.
+# review: the two-line header at skills/review/SKILL.md "## Output" — the verdict
+# line, then the lanes line carrying the adversarial count — and a located
+# finding. The fixture plants an unambiguous flaw, so "no findings" is a miss,
+# not a clean tree.
 check_review() {
   local out; out="$(cat)"
   printf '%s' "$out" | grep -qE '^[[:space:]]*Review:[[:space:]]*(ship|fix first|needs a decision)' \
     || { echo "no 'Review: <verdict>' header; that line is the skill's output contract"; return 1; }
   printf '%s' "$out" | grep -qE '^[[:space:]]*Lanes:' \
     || { echo "no 'Lanes:' line; a lane silently skipped reads as a lane that found nothing"; return 1; }
+  printf '%s' "$out" | grep -qE '^[[:space:]]*Lanes:.*Adversarial:' \
+    || { echo "no 'Adversarial:' on the Lanes line; a pass nobody reports reads the same as one nobody ran"; return 1; }
   printf '%s' "$out" | grep -qE '[1-9][0-9]* finding' \
     || { echo "reported no findings; the fixture plants an interpolated SQL query"; return 1; }
   printf '%s' "$out" | grep -qE '[A-Za-z0-9_./-]+\.(py|js|ts|sh|mjs):[0-9]+' \
@@ -174,9 +188,10 @@ check_review() {
   return 0
 }
 
-# deepwork: the numbered stage map at skills/deepwork/SKILL.md:141-150. Every
-# stage names an artefact, so a prose plan with no numbering is the thing this
-# rejects — that is exactly what the skill replaces.
+# deepwork: the numbered stage map at skills/deepwork/SKILL.md "## 1. Write the
+# stage map before touching anything". Every stage names an artefact, so a prose
+# plan with no numbering is the thing this rejects — that is exactly what the
+# skill replaces.
 check_deepwork() {
   local out; out="$(cat)"
   local stages
@@ -188,9 +203,10 @@ check_deepwork() {
   return 0
 }
 
-# deep-interview: the ambiguity score table at skills/deep-interview/SKILL.md:39-51
-# and the total that gates it, reported "so the gate is visible, not implied".
-# It must also still be asking rather than building — the stop is the whole skill.
+# deep-interview: the ambiguity score table at skills/deep-interview/SKILL.md
+# "## Procedure", step 1, and the total that gates it, reported "so the gate is
+# visible, not implied". It must also still be asking rather than building — the
+# stop is the whole skill.
 check_deep_interview() {
   local out; out="$(cat)"
   local dim hits=0
@@ -206,10 +222,11 @@ check_deep_interview() {
   return 0
 }
 
-# verification-planning: skills/verification-planning/SKILL.md:14-55 — an evidence
-# path, and every check on it able to fail. The skill names its own anti-pattern
-# verbatim ("I reviewed it and it looks right" is not a check), so proposing that
-# as the evidence is a fail even when the phrase "evidence path" is present.
+# verification-planning: skills/verification-planning/SKILL.md "## Build an
+# evidence path" and "## What counts as evidence" — an evidence path, and every
+# check on it able to fail. The skill names its own anti-pattern verbatim ("I
+# reviewed it and it looks right" is not a check), so proposing that as the
+# evidence is a fail even when the phrase "evidence path" is present.
 #
 # This is the weakest case of the twelve: the skill specifies no output format,
 # so there is no artefact only it emits.
@@ -224,9 +241,9 @@ check_verification_planning() {
   return 0
 }
 
-# simplify: the finding tags at skills/simplify/SKILL.md:154-156. Tagging is what
-# separates this skill from a tidy-up — the tag names which rung of the ladder
-# fired, so untagged prose means the ladder was never climbed.
+# simplify: the finding tags at skills/simplify/SKILL.md "## Process". Tagging is
+# what separates this skill from a tidy-up — the tag names which rung of the
+# ladder fired, so untagged prose means the ladder was never climbed.
 check_simplify() {
   local out; out="$(cat)"
   printf '%s' "$out" | grep -qE '(delete|stdlib|native|yagni|shrink):' \
@@ -236,10 +253,11 @@ check_simplify() {
   return 0
 }
 
-# codemap: the gate at skills/codemap/SKILL.md:12-22 — say what it costs, say what
-# it will write, and get a yes FIRST. This is the only skill case with evidence
-# outside the text: the fixture must still be clean afterwards. A skill that
-# announced the gate and then wrote anyway fails on the filesystem, not the prose.
+# codemap: the gate at skills/codemap/SKILL.md "## Announce before you start" —
+# say what it costs, say what it will write, and get a yes FIRST. This is the
+# only skill case with evidence outside the text: the fixture must still be
+# clean afterwards. A skill that announced the gate and then wrote anyway fails
+# on the filesystem, not the prose.
 check_codemap() {
   local out; out="$(cat)"
   printf '%s' "$out" | grep -qiE 'expensive|cost|\$|minutes' \
@@ -706,6 +724,12 @@ name and description.
 Source: https://docs.claude.com/en/docs/claude-code/skills (read 2026-08-25)
 EOF
 
+  expect check_librarian accept "claim confirmed against the installed source" <<'EOF'
+Confirmed against `node_modules/express/index.d.ts`, no web pass: stable API.
+The listen callback takes no arguments in 4.x.
+- source: node_modules/express/index.d.ts  the listen() overloads
+EOF
+
   expect check_librarian reject "recalled, no source" <<'EOF'
 As far as I recall, when_to_use is supported and its text loads with the skill
 description at session start.
@@ -738,6 +762,19 @@ EOF
 Header.tsx:8 — the sign-in control is a div with onClick: no keyboard path and
 no role. Header.tsx:10 — #aaaaaa on #ffffff is 2.3:1, under the 4.5:1 minimum,
 and outline: none removes the focus ring with nothing replacing it.
+EOF
+
+  expect check_designer accept "audit that shipped the mechanical fixes" <<'EOF'
+<summary>
+The sign-in control is a real button with a visible focus ring and 7.0:1 contrast.
+</summary>
+<changes>
+- Header.tsx  div with onClick became a button; #aaaaaa became #595959 (7.0:1 on white); outline: none replaced by a 2px focus ring
+</changes>
+<verification>
+- performed: npx tsc --noEmit
+- result: passed — 1/1 file
+</verification>
 EOF
 
   expect check_designer reject "vague advice with no location" <<'EOF'
@@ -777,9 +814,18 @@ versions.py:8 sorts lexically. That is the cause. Add a numeric key.
 </conclusion>
 EOF
 
-  expect check_review accept "header, lanes, located finding" <<'EOF'
-Review: fix first — 2 findings (1 critical, 1 required, 0 optional)
-Lanes: correctness, completeness, simplicity, tests, security · skipped: data and schema (no migration)
+  expect check_review accept "two-line header, located finding" <<'EOF'
+Review: fix first [attempt 1 of 3]. 2 findings (1 critical, 1 required, 0 optional; 0 of them pre-existing)
+Lanes: correctness, completeness, simplicity, tests, security. Skipped: data and schema (no migration). Adversarial: nothing
+
+NEEDS A DECISION
+- [CRITICAL] (9/10) app/users.py:41 — the search term is interpolated into SQL
+  Fix: bind it as a parameter alongside LIMIT and OFFSET
+EOF
+
+  expect check_review reject "lanes line with no adversarial count" <<'EOF'
+Review: fix first. 2 findings (1 critical, 1 required, 0 optional; 0 of them pre-existing)
+Lanes: correctness, completeness, simplicity, tests, security. Skipped: data and schema (no migration)
 
 NEEDS A DECISION
 - [CRITICAL] (9/10) app/users.py:41 — the search term is interpolated into SQL
@@ -902,7 +948,7 @@ EOF
   done
 
   # review's `skill:1` case rests on the fixture clearing the ~50-changed-line
-  # threshold at skills/review/SKILL.md:117-121. Under it the skill correctly
+  # threshold at skills/review/SKILL.md "## 4. Lanes". Under it the skill correctly
   # runs its lanes in-thread and spawns nothing, and the case would then fail on
   # the fixture rather than on the contract — the worst kind of red.
   local changed
@@ -946,7 +992,7 @@ CASES=(
   "oracle|agent|check_oracle|-|12|Use the omc-slim oracle agent. Is shelling out to a destructive-then-restore mutation suite from inside a routine repository checker the right design here?"
   "librarian|agent|check_librarian|-|12|Use the omc-slim librarian agent. Is when_to_use a currently supported Claude Code skill frontmatter field, and when is its text loaded?"
   "fixer|agent|check_fixer|fixture_fixer|20|Use the omc-slim fixer agent with this spec: stats.py mean() divides by zero on an empty list. Add the guard in the shared function rather than in each of the three callers, and leave one runnable check behind."
-  "designer|agent|check_designer|fixture_designer|14|Use the omc-slim designer agent in review mode. Review Header.tsx and report the interface problems you find. Do not change the file."
+  "designer|agent|check_designer|fixture_designer|14|Use the omc-slim designer agent to audit Header.tsx: fix the interface problems that are mechanical, and report the rest with their locations."
   "tracer|agent|check_tracer|fixture_tracer|18|Use the omc-slim tracer agent. render([\"9.0\", \"10.0\"]) returns \"10.0\" before \"9.0\". I already tried fixing the sort and it is still broken. Why?"
 
   # --- Skills: output shape is the evidence, and it is weaker ----------------
@@ -1035,7 +1081,7 @@ print(st.get("spawned", 0), kinds, round(d.get("total_cost_usd") or 0, 4))
         fail=$((fail + 1)); continue
       fi
       case ",$kinds," in
-        *",$name,"*|*"omc-slim:$name"*) : ;;
+        *",omc-slim:$name,"*) : ;;
         *) echo "FAIL  spawned [$kinds], expected $name"; fail=$((fail + 1)); continue ;;
       esac
       evidence="agent ran"

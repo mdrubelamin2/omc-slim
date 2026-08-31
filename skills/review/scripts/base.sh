@@ -1,22 +1,40 @@
 #!/usr/bin/env bash
 # Resolve the diff base for a review, and print the change set against it.
 #
-# This lived as a snippet inside SKILL.md until v0.9.2, and it was wrong there:
-# the snippet tried `origin/HEAD` then fell back to the literal `main`, while the
-# prose beside it described a five-step chain. In any master-default repository
-# the snippet died with `fatal: ambiguous argument 'main'`. Prose and code cannot
-# be kept in step by good intentions, so the code moved somewhere it can have a
-# test — base.test.sh proves each rung of the chain, including the two that used
-# to fail.
-#
-# It also costs the skill 207 tokens of dense shell inside a 5,000-token
-# post-compaction re-attach budget, which is the second reason it is out here.
+#   base.sh [DIR] [--out FILE]
 #
 # Prints, in order: the ref it chose, the changed-line count, changed paths, and
 # the diff. Exits 0 with a message and no diff when there is nothing to review.
+#
+# With --out, the diff goes to FILE instead of stdout, with the commit list and
+# the --stat ahead of it and ten lines of context (-U10). A caller dispatching
+# review lanes hands each one the path, so the diff never passes through the
+# caller's own context and every lane reads the same bytes. Untracked files go
+# into FILE too, as new-file diffs, because lanes read FILE and nothing else.
+#
+# Exits 1, saying which on stderr, when DIR cannot be entered, when --out has no
+# value, or when FILE cannot be written. Everything else that ends a review early
+# (no repository, no base ref, nothing changed) is said on stdout with exit 0.
 set -uo pipefail
 
-cd "${1:-.}" || { echo "review-base: cannot enter ${1:-.}" >&2; exit 1; }
+DIR=.
+OUT=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --out)
+      [ $# -ge 2 ] || { echo "review-base: --out needs a file path" >&2; exit 1; }
+      OUT="$2"; shift 2 ;;
+    *) DIR="$1"; shift ;;
+  esac
+done
+# Resolved before the cd, so a relative FILE lands where the caller stands
+# rather than inside DIR.
+case "$OUT" in
+  '' | /*) ;;
+  *) OUT="$PWD/$OUT" ;;
+esac
+
+cd "$DIR" || { echo "review-base: cannot enter $DIR" >&2; exit 1; }
 
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
   echo "review-base: not a git repository — review the named files and say so"
@@ -24,15 +42,13 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 # A stale base produces phantom findings: problems already fixed on the base
-# branch look like problems in this diff. So the fetch is worth doing — but it
-# is also the only step here that can block, for git's own connect timeout of
-# 75 s or for as long as a VPN keeps the socket open, and `-q` with a discarded
-# stderr hid that anything was happening at all. It ran first, on every review.
+# branch look like problems in this diff. So the fetch is worth doing. It is
+# also the only step here that can block, for git's own connect timeout of 75 s
+# or for as long as a VPN keeps the socket open.
 #
-# Two halves to the fix. Bound it, so a dead remote costs seconds rather than
-# minutes; and say which of the three things happened, because a fetch that did
-# not run leaves a base that may be stale, and a silent skip is a stale base
-# nobody knows about.
+# So it is bounded, and a dead remote costs seconds rather than minutes. And it
+# says which of the three things happened: a fetch that did not run leaves a
+# base that may be stale, and a silent skip is a stale base nobody knows about.
 #
 # The bound is a background fetch plus a polling wait rather than `timeout(1)`:
 # that is GNU coreutils, and a default macOS install does not have it.
@@ -55,9 +71,9 @@ fetch_origin() {
       sleep 1
       kill -KILL "$pid" 2>/dev/null
       # Reap before claiming a timeout. The fetch can finish between the
-      # `kill -0` above and this branch, and the old code returned 124 for it —
-      # reporting a fresh base as a stale one, which sends the reviewer looking
-      # for phantom findings. If it did land, report what it actually returned.
+      # `kill -0` above and this branch, and calling that a timeout reports a
+      # fresh base as a stale one, which sends the reviewer looking for phantom
+      # findings. If it did land, report what it actually returned.
       local late=0
       wait "$pid" 2>/dev/null || late=$?
       [ "$late" -eq 0 ] && return 0
@@ -116,9 +132,13 @@ echo "base: $BASE ($(git rev-parse --short "$MERGE_BASE"))"
 
 # Untracked files are NOT in `git diff` at any base, so a brand-new file is
 # invisible to a review that reads the diff alone — and review runs before the
-# commit, which is exactly when new files exist. They are listed separately
-# rather than staged: `git add -N` would make them appear in the diff, and a
-# read-only review script must not write to the index.
+# commit, which is exactly when new files exist. They are listed separately, and
+# under --out diffed against /dev/null, rather than staged: `git add -N` would
+# make them appear in the diff, and a read-only review script must not write to
+# the index.
+# quotePath off everywhere a path is printed: a C-quoted name (non-ASCII, a
+# quote, a tab) is not a path a lane can open, in a header or in a list.
+git() { command git -c core.quotePath=false "$@"; }
 UNTRACKED=$(git ls-files --others --exclude-standard)
 
 if [ -z "$(git diff --name-only "$MERGE_BASE")" ] && [ -z "$UNTRACKED" ]; then
@@ -130,8 +150,43 @@ git diff --numstat "$MERGE_BASE" | awk '{n+=$1+$2} END{print "changed lines:", n
 git diff --name-only "$MERGE_BASE"
 
 if [ -n "$UNTRACKED" ]; then
-  echo "untracked, absent from the diff below — read each one directly:"
+  if [ -n "$OUT" ]; then
+    echo "untracked, included in FILE as new-file diffs:"
+  else
+    echo "untracked, absent from the diff below — read each one directly:"
+  fi
   printf '%s\n' "$UNTRACKED" | sed 's/^/  /'
 fi
 
-git diff "$MERGE_BASE"
+if [ -z "$OUT" ]; then
+  git diff "$MERGE_BASE"
+  exit 0
+fi
+
+# A function rather than a brace group: in bash, `if ! { ...; } > FILE` does not
+# see a failed redirection. The group reports status 1 and the `!` branch still
+# takes the success path, so an unwritable FILE gets announced as written.
+write_change_set() {
+  echo "commits:"
+  git log --oneline "$MERGE_BASE"..HEAD
+  echo
+  echo "stat:"
+  git diff --stat "$MERGE_BASE"
+  echo
+  git diff -U10 "$MERGE_BASE"
+  local rc=$?
+  # `--no-index` exits 1 whenever the two sides differ, which against /dev/null
+  # is always. Left as the function's status it would read as a failed write.
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    git diff --no-index -U10 -- /dev/null "$f" || :
+  done <<< "$UNTRACKED"
+  # The tracked diff's status is the function's status, not the loop's.
+  return "$rc"
+}
+
+if ! write_change_set > "$OUT"; then
+  echo "review-base: cannot write $OUT" >&2
+  exit 1
+fi
+echo "diff written to: $OUT"

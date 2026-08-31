@@ -37,7 +37,7 @@ Its `UserPromptSubmit` rule hook is deliberately not adopted: see
 aniruddha-adhikary/skills is a Joern/CPG static-analysis pack, so almost all of it
 is a different domain and was refused: three skills of graph-query mechanics, eight
 scripts, and a `traps.md` cataloguing one tool's quirks. Its `PreToolUse` guard hook
-was refused too, because this plugin ships two hooks and stays off the tool-call
+was refused too, because this plugin ships five hooks and stays off the tool-call
 path. So was its publication boundary, which git-ignores `research/` and `docs/`;
 the same figures are published here instead, with the script that re-derives them.
 What transferred was its central discipline, stated eight times across the pack: a
@@ -187,7 +187,7 @@ they are documented rather than prompted.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
 lives — 316 rows, and growing with each release:
 
-The roster it asserts is **six agents, six skills, two hooks**. It is stated here
+The roster it asserts is **six agents, six skills, five hooks**. It is stated here
 in prose because the check requires this file to carry it, and a sentence
 survives a compression pass better than a pasted line does.
 

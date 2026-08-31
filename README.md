@@ -1,14 +1,15 @@
 # omc-slim
 
-Claude Code plugin. It makes the main thread plan and delegate instead of diving
-straight into the code, and it stops the model claiming a test it never ran.
+Claude Code plugin. A discipline layer: it keeps a terse principal-engineer register,
+it stops the model claiming a test it never ran, and it stops before building
+the wrong thing.
 
 ```
 /plugin marketplace add mdrubelamin2/omc-slim
 /plugin install omc-slim@omc-slim
 ```
 
-That is the whole setup: six agents, six skills, two hooks and an output style
+That is the whole setup: six agents, six skills, five hooks and an output style
 turn on together.
 
 Or try it without installing:
@@ -20,32 +21,39 @@ claude --plugin-dir ./omc-slim
 
 ## What changes
 
+**A test it never ran cannot pass quietly.** A hook reads `last_assistant_message`
+and the session transcript on the main thread and on writer subagents. If it
+reported a passing suite and no test runner is in there, you are told. The hook
+tells you and not the model: on Stop, a message to the model continues the turn,
+and this plugin never continues a turn. Shell commands are matched on argv0, so
+`git log --oneline latest` no longer counts as a run. The worst case this guards
+against is measured: one benchmark had an agent report every task complete while
+19 of 45 held-out tests failed, on a transcript reading `5/5 tests pass` about a
+suite of eight.
+
 **It plans before it edits.** Ask for something that spans four files and you get
 a numbered stage map with a check per stage, shown before any work starts. Not
 fourteen edits and a summary that says it went well.
 
-**It cannot claim a test it never ran.** A hook reads the agent's own transcript.
-If it reported a passing suite and no test command is in there, you are told. The
-worst case this guards against is measured: one benchmark had an agent report
-every task complete while 19 of 45 held-out tests failed, on a transcript reading
-`5/5 tests pass` about a suite of eight.
-
-**Read-only means read-only.** The agents that research and search have `Edit`
-and `Write` denied at the harness level, not discouraged in a prompt. The same
-mechanism stops any agent spawning another, so a delegation cannot quietly become
-a tree that spends your budget.
+**Read-only agents cannot edit files.** The agents that research and search have
+`Edit` and `Write` denied at the harness level. They keep `Bash` for `git log`
+and `npm view`, and a shell write there is forbidden by their prompt, not by the
+harness. The same mechanism stops any agent spawning another, so a delegation
+cannot quietly become a tree that spends your budget.
 
 **It says what it could not check.** Reviews carry the quote that proves each
 finding, and a finding with no evidence is dropped rather than reported. Where
 something could not be verified, that is written down instead of smoothed over.
 
-**It stays out of the way.** ~4,885 tokens of always-on context, nothing injected
+**It stays out of the way.** ~4,666 tokens of always-on context, nothing injected
 per tool call, no MCP servers of its own, and it inherits whatever servers and
-skills your project already has. It writes no files unless you run one of the
-three that do.
+skills your project already has. It writes no files into your project unless you
+run one of the three that do. The FileChanged hook keeps a small ledger under
+`~/.claude/omc-slim/` (or `$CLAUDE_CONFIG_DIR`), never inside your project.
 
 One thing it does take over: your `outputStyle`, for as long as it is enabled.
-`/plugin disable omc-slim` gives that back.
+`/plugin disable omc-slim` gives that back. The ledger files under
+`~/.claude/omc-slim/ledgers/` are yours to delete.
 
 ## What you can ask for
 
@@ -103,10 +111,10 @@ disables it in `.claude/settings.local.json` wins, so nobody is trapped.
 
 ## What it costs
 
-**~4,885 tokens** of always-on context, and nothing injected per tool call. Treat
+**~4,666 tokens** of always-on context, and nothing injected per tool call. Treat
 it as a floor: the harness adds framing no text measurement sees, so the real
 figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)).
-`./scripts/measure-context.sh` re-derives it, and also prints **5,321 on a
+`./scripts/measure-context.sh` re-derives it, and also prints **5,277 on a
 chars/4 basis**, the estimate this project's version series is tracked on.
 
 Two settings of yours will save you more than this plugin costs, and neither is a
@@ -149,9 +157,16 @@ it does not: **[ROUTING.md](./docs/ROUTING.md)**.
 
 ## How it works
 
-The main thread plans and reconciles; specialists do the work. Neither hook can
-block anything: both emit a message, always exit 0, and stay quiet when they
-cannot tell.
+Five hook registrations across four scripts, all fail-open. None can block a
+turn. Two scripts speak: a style collision at session start; a verification
+claim with no runner, on the main thread and on writer subagents; and, on
+writer subagents, a write that never reached the project. The other two
+stay silent: one seeds filesystem watches inside a project, one keeps the
+ledger. A claim is judged only against commands the hook can classify; a runner
+it does not know abstains rather than accuses. The ledger is scoped to the
+session and to the time the subagent ran. It is consulted only when that
+subagent used a shell or an MCP tool. Nothing here injects into the model.
+FileChanged is silent, and a claim miss on Stop reaches you, not the model.
 
 Agents are scoped by what they must **not** do, never by a fixed tool list, so
 each one picks up whatever your project already provides:
@@ -165,11 +180,11 @@ each one picks up whatever your project already provides:
 
 ## How it is checked
 
-CI runs all seven `check-*.sh` scripts on every push, along with both hook suites
-and both mutation runners.
+CI runs all seven `check-*.sh` scripts on every push, along with all four hook
+suites and all four mutation runners.
 
-The hook suites run 38 and 24 cases, and the mutation runners then break those
-hooks 56 and 25 ways to prove the suites would notice. `COVERAGE.tsv` pins every
+The hook suites run 198, 24, 26 and 24 cases, and the mutation runners then break
+those hooks 120, 25, 27 and 23 ways to prove the suites would notice. `COVERAGE.tsv` pins every
 rule to the file that must carry it, and `REINFORCEMENT.tsv` pins the *reasoning*
 too, because one compression pass kept every pinned phrase and broke the
 behaviour anyway.
@@ -191,6 +206,8 @@ are waiting on exactly that: [RELEASE-READINESS.md](./docs/RELEASE-READINESS.md)
 | [BENCHMARK.md](./docs/BENCHMARK.md) | Three arms, n=3, committed harness, and the four measurement bugs found first |
 | [NATIVE.md](./docs/NATIVE.md) | Every component against what Claude Code already ships |
 | [CHANGELOG.md](./CHANGELOG.md) | Notable releases |
+| [BRUTAL-AUDIT-2026-08-31.md](./docs/BRUTAL-AUDIT-2026-08-31.md) | Hostile standing on the morning of v0.9.9, with a header saying what that release closed |
+| [ARCH-SPEC-2026-08-31.md](./docs/ARCH-SPEC-2026-08-31.md) | The design v0.9.9 implemented, with a header saying what landed, what changed on contact with the binary, and what was not built |
 
 The full record, including the competitive field, a brutal self-assessment and a
 session log naming the nine of twelve components that never fired, is in

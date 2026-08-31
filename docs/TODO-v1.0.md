@@ -548,7 +548,10 @@ same commit; "never blocks, always exit 0" stays load-bearing.
   it) — **heuristic, and documented as such**: this is the one R1 item
   whose false-positive elimination the harness cannot guarantee, and its
   test asserts the heuristic's behaviour, not a guarantee.
-- **FIX (C5, hooks.json AND verify-deliverables.mjs):** pin the matcher
+- **CLOSED (v0.9.9):** the matcher is pinned to the namespace as
+  `^omc-slim:(fixer|designer)$`, `ownAgentName` requires the same prefix, and a
+  `--plugin-dir` session presents it (RESEARCH.md:1318). The original item:
+  **FIX (C5, hooks.json AND verify-deliverables.mjs):** pin the matcher
   to this plugin's namespace *and* update the `.mjs` last-segment
   normalization (`:218–221`) that deliberately strips any prefix. Two
   layers must agree on what they cover. The fix first checks which
@@ -563,10 +566,11 @@ same commit; "never blocks, always exit 0" stays load-bearing.
 - **FIX (C4):** on deadline expiry, report rivals already found.
 - **FIX (cross-cutting 1):** `systemMessage` texts use type-marked
   references.
-- **CLOSED (Must 6, verified 2026-08-29):** both hooks carry an in-process
-  deadline (`SCAN_BUDGET_MS`, `BUDGET_MS`), each overridable so a test can set 0
-  and prove it is wired, and each covered by a mutant the suite kills. What it
-  cannot cover is stated in the file: a blocking read on fd 0, which no
+- **CLOSED (Must 6, verified 2026-08-29):** the two scanning hooks carry an
+  in-process deadline (`SCAN_BUDGET_MS`, `BUDGET_MS`), each overridable so a test
+  can set 0 and prove it is wired, and each covered by a mutant the suite kills.
+  `file-ledger` and `seed-watch-paths` do one bounded read each and carry none.
+  What it cannot cover is stated in the file: a blocking read on fd 0, which no
   in-process timer can preempt.
 
 ## Standing refusals (decided non-features; triggers observed via the incidents ledger, cross-cutting 8)
@@ -574,8 +578,12 @@ same commit; "never blocks, always exit 0" stays load-bearing.
 - **No mega-merge of frameworks** (part I §7). It reopens on independent
   benchmark evidence reversing the sophistication-vs-results
   correlation.
-- **No Stop hook / Todo Enforcer** (part II §3, oracle-upheld on spend).
-  It reopens at three ledger-recorded idle-abandonment incidents.
+- **No Stop-as-enforcer / Todo Enforcer** (part II §3, oracle-upheld on spend).
+  `decision: "block"` is still refused (oh-my-claudecode #959 / #2542). v0.9.9
+  reads Stop for a claim scan and emits `systemMessage` only: on Stop,
+  `additionalContext` is a continue (2.1.251), so it is refused with
+  `decision: "block"`. The refusal reopens at three ledger-recorded
+  idle-abandonment incidents, and only then as a continue.
 - **Nothing on the tool-call path** (tool-loop-guard, format gate, LSP
   feedback). It reopens on one ledger-recorded occurrence of the failure
   class, as opt-in only.
@@ -587,7 +595,8 @@ same commit; "never blocks, always exit 0" stays load-bearing.
 - **No automatic prompt compression** (LLMLingua class). It reopens on a
   published application to authored agent prompts with behaviour evals.
 - **Impossibility-class refusals, recorded so they are not re-litigated**
-  (part II §3): aider watch mode (no filesystem-change hook exists),
+  (part II §3): aider watch mode (expired: `FileChanged` shipped in 2.1.251 and
+  is consumed in v0.9.9 as a 0-token ledger),
   Cline Memory Bank / beads (covered by CC auto-memory and the progress
   file, both prior refusals, per part II §3), Cursor glob rules / goose
   session-to-recipe (need attachment/transcript machinery a plugin does

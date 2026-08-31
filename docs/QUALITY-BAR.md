@@ -164,9 +164,26 @@ Run these in sequence. Each is falsifiable and most cost nothing.
 | 8 | One fresh-install session on a clean machine | If nothing visible happens, D1 has failed |
 | 9 | One adversarial-install session | Another plugin forcing a style; a gated Agent tool. Does the user find out? |
 | 10 | The delegation claim measured, or dropped | Transcript-verified, against a task where delegation could pay, with an arm that has delegation denied. Without that arm you cannot tell the prompt from the routing |
+| 11 | The self-cert hook covers the worker that writes | v0.9.9: Stop on the main thread tells the user, argv0 matching through wrappers, a session-scoped FileChanged ledger. Paid eval B1 unrun. |
+| 12 | Official catalog listing, or a dated reason to stay off it | 291 plugins in the 2026-08-30 catalog. omc-slim is not one. Superpowers has 1,081,334 unique installs |
+| 13 | Unused components are labelled wagers or removed | Two dogfood sessions used 3 of 12. The other nine still load descriptions every turn |
+| 14 | One identity sentence on GitHub, marketplace, output-style description, and README | v0.9.9: style, marketplace, plugin.json, README, and GitHub description agree on discipline layer. |
 
-omc-slim passes 1 through 7 and has never run 8, 9 or 10. All three cost money,
-which is the honest reason and not a good one.
+Standing 2026-08-29: claimed pass on 1–7, 8–10 unrun.
+
+Standing 2026-08-31, after v0.9.9: checkpoint 1 matches the measured figure
+in-repo (4,666 real / 5,277 chars/4). The GitHub description is the
+maintainer's to update after the tag. Checkpoint 11 is implemented, unpaid.
+Checkpoints 2, 8, 9, 10 still unrun. Checkpoint 12: still not in the official
+catalog. Checkpoint 14: identity agrees across style, marketplace, plugin.json,
+README, and GitHub. The contradiction sweep ran on this build: 127 findings, 4
+critical, 44 required, 79 optional. A ten-lane review under the `review` skill
+and a fresh-context adversarial pass then found 103 more: 2 critical, 43
+required, 58 optional. All six critical are closed; the required items still
+open are named in the CHANGELOG. Not v1.0. The merge-everything
+refusal stands. Headline-hole cover is in the tree. Worker JSON fences and paid
+evals from [ARCH-SPEC-2026-08-31.md](./ARCH-SPEC-2026-08-31.md) are not. Full
+restatement: [BRUTAL-AUDIT-2026-08-31.md](./BRUTAL-AUDIT-2026-08-31.md).
 
 ---
 

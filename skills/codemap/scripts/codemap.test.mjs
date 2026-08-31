@@ -43,6 +43,16 @@
  *  14. invoked through a symlink it still does the work, instead of exiting 0
  *      having written nothing
  *
+ * ...and the state baseline:
+ *
+ *  15. `init` migrates legacy `.slim/cartography.json` and refuses to overwrite
+ *      state that exists, so a re-run cannot reset the change baseline
+ *
+ * ...and containment, since the tool writes into the user's checkout:
+ *
+ *  16. a committed symlink at a path it writes is refused and named, never
+ *      written through, and the run goes on without it
+ *
  * Self-contained: builds fixtures in a temp dir and removes them. No
  * dependencies beyond node built-ins.
  *
@@ -776,6 +786,38 @@ const cases = [
     },
   },
   {
+    name: 'init migrates legacy state and refuses to overwrite existing state',
+    check() {
+      const root = fixture('legacy-state', { 'src/a.js': 'a' });
+      mkdirSync(path.join(root, '.slim'), { recursive: true });
+      writeFileSync(
+        path.join(root, '.slim', 'cartography.json'),
+        JSON.stringify({ files: {}, folders: {} }),
+      );
+      const init = run('init', '--root', root);
+      if (init.status === 0) {
+        return `init overwrote migrated state:\n${init.output}`;
+      }
+      if (!existsSync(path.join(root, '.slim', 'codemap.json'))) {
+        return `legacy state was not migrated:\n${init.output}`;
+      }
+      if (existsSync(path.join(root, '.slim', 'cartography.json'))) {
+        return 'legacy file left behind after migration';
+      }
+      if (!/already exists/.test(init.output)) {
+        return `no refusal naming the existing state:\n${init.output}`;
+      }
+      const fresh = fixture('fresh-state', { 'src/a.js': 'a' });
+      const first = run('init', '--root', fresh);
+      if (first.status !== 0) return `first init failed:\n${first.output}`;
+      const second = run('init', '--root', fresh);
+      if (second.status === 0) {
+        return `second init reset the baseline:\n${second.output}`;
+      }
+      return null;
+    },
+  },
+  {
     // The main guard compared `path.resolve(process.argv[1])`, which keeps
     // symlinks, against `import.meta.url`, which Node has already resolved. Run
     // through a link — a symlinked ${CLAUDE_PLUGIN_ROOT}, an npx or bin shim —
@@ -800,6 +842,50 @@ const cases = [
       }
       if (!existsSync(path.join(root, 'src', 'codemap.md'))) {
         return `no codemap.md was written:\n${output}`;
+      }
+      return null;
+    },
+  },
+  {
+    // A checkout can commit `src/codemap.md` as a symlink to a file the user
+    // owns. writeFileSync follows it, so `init` would create the link's target
+    // and `update` would overwrite it, both outside the repository. Two links:
+    // a dangling one, which is the write init would otherwise make, and a live
+    // one, which is the write update would otherwise make.
+    name: 'a symlinked codemap.md is refused by name, not written through',
+    check() {
+      const root = fixture('symlinked-map', {
+        'src/a.js': 'a',
+        'lib/b.js': 'b',
+      });
+      const outside = path.join(workspace, 'symlinked-map-targets');
+      mkdirSync(outside, { recursive: true });
+      const absent = path.join(outside, 'absent.md');
+      const kept = path.join(outside, 'keep.md');
+      writeFileSync(kept, 'the user\'s own file\n');
+      symlinkSync(absent, path.join(root, 'src', 'codemap.md'));
+      symlinkSync(kept, path.join(root, 'lib', 'codemap.md'));
+
+      const init = run('init', '--root', root);
+      if (init.status !== 0) return `init failed:\n${init.output}`;
+      if (existsSync(absent)) return 'init wrote through the dangling link';
+      if (!/src\/codemap\.md is a symlink; not written/.test(init.stderr)) {
+        return `stderr does not name the refused link:\n${init.output}`;
+      }
+      if (!/\(\d+ kept, 1 refused\)/.test(init.output)) {
+        return `stdout does not count the refusal:\n${init.output}`;
+      }
+      if (!existsSync(path.join(root, '.slim', 'codemap.json'))) {
+        return `the rest of init did not run:\n${init.output}`;
+      }
+
+      const update = run('update', '--root', root);
+      if (update.status !== 0) return `update failed:\n${update.output}`;
+      if (readFileSync(kept, 'utf8') !== 'the user\'s own file\n') {
+        return 'update wrote through the live link';
+      }
+      if (!/lib\/codemap\.md is a symlink; not written/.test(update.stderr)) {
+        return `stderr does not name the refused link:\n${update.output}`;
       }
       return null;
     },

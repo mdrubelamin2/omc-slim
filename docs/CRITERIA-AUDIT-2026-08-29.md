@@ -116,7 +116,7 @@ Tightened to: "and", not "or". Both surfaces, or the criterion is unmet.
 
 Effect on the score: half MET, unchanged in substance, now unambiguous. The
 stolen slot is proved by `check-adversarial.sh` 9/9 against a real rival plugin.
-The gated Agent tool has its mechanism shipped at `output-styles/omc-slim.md:17`
+The gated Agent tool has its mechanism shipped at `output-styles/omc-slim.md:14`
 and no live run behind it.
 
 ### 6. Criterion 1 lets the winning metric be chosen after the run

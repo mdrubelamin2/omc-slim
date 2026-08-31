@@ -230,12 +230,13 @@ plugin agent is `omc-slim:fixer`.
 | matcher | fires? |
 |---|---|
 | `fixer\|designer` | **no** |
-| `omc-slim:fixer\|omc-slim:designer` | yes |
-| `^(.*:)?(fixer\|designer)$` | yes ← what we ship |
+| `^omc-slim:(fixer\|designer)$` | yes ← what we ship |
 
-We ship the third form because it survives the plugin being installed under a
-different name. The second form works today and breaks silently on a rename.
-Silent non-firing is the failure mode this project exists to avoid.
+The plugin name comes from `plugin.json`, not from where the plugin is
+installed, and a `--plugin-dir` session presents the same `omc-slim:fixer`. A
+fork that renames the plugin owns the matcher. Evidence for the `--plugin-dir`
+spelling: RESEARCH.md:1318, a live `--plugin-dir` session listing every
+component under `omc-slim:`.
 
 ### `transcript_path` is the PARENT session, not the subagent
 
@@ -289,28 +290,40 @@ telling it *you are running low on room* is anxiety and does not. Over-correctin
 past that line broke `observer` routing once: its reason to exist disappeared
 along with the framing.
 
-### Both hooks are advisory and fail open
+### All five hooks are advisory and fail open
 
-`verify-deliverables` (SubagentStop) and `check-output-style` (SessionStart) are
-the only hooks that ship. Neither returns a `permissionDecision`, so neither can
-block. Every error path exits 0 emitting nothing. A broken guard must never break
-a session.
+`check-output-style` and `seed-watch-paths` (SessionStart), `file-ledger`
+(FileChanged), and `verify-deliverables` (SubagentStop on `fixer`/`designer`,
+and Stop on the main thread). None returns a `permissionDecision`, so none can
+block. Stop never returns `decision: "block"`. Every error path exits 0 emitting
+nothing. A broken guard must never break a session.
+
+FileChanged and `seed-watch-paths` emit no model-visible text. Neither
+`verify-deliverables` event emits `additionalContext`. On SubagentStop it
+re-enters the finishing child (oh-my-claudecode #3209 / #3233). On Stop it
+continues the turn under the same loop protections as `decision: "block"`
+(2.1.251 binary; hooks docs, Stop decision control).
+
+The ledger lives outside the project, at
+`<CLAUDE_CONFIG_DIR or ~/.claude>/omc-slim/ledgers/<sha256 of the resolved project path, 16 hex chars>.jsonl`.
+A row is `{t, session_id, path, event}` with `t` the written file's mtime, and
+no row is written without a `session_id`. The reader's `ledgerPathFor` mirrors
+the writer's instead of importing it. The mutation runner copies one hook file
+into a temp directory, where a shared module would not resolve.
 
 `systemMessage` goes to the **user**, not the model, so you cannot verify a hook
 fired by asking the model whether it saw a warning. Run it with `OMC_SLIM_DEBUG=1`
 and read stderr, which names which "cannot tell" path it took.
 
-`node hooks/verify-deliverables.test.mjs` and `node hooks/check-output-style.test.mjs`
-run each hook as a child process against isolated fixtures and assert its
-observable contract, including the exact set of keys it may emit. Run the matching
-one after any edit to a hook. Neither is wired into CI; `check-coverage.sh` runs
-both.
+All four hook suites and their mutation runners run in CI via
+`.github/workflows/gates.yml`. `check-coverage.sh` re-runs them to pin the counts
+in the README. Run the matching suite after any edit to a hook.
 
-The two `*.mutate.mjs` runners check those suites the only way that means
+The `*.mutate.mjs` runners check those suites the only way that means
 anything: they break each hook on purpose and require the harness to catch every
 mutant. Run one after adding or weakening a case. A suite that still passes when
 the hook is broken is worse than none, because it looks like evidence. Add a
-mutant whenever you add a branch to a hook. Both share `hooks/mutate-runner.mjs`,
+mutant whenever you add a branch to a hook. They share `hooks/mutate-runner.mjs`,
 which writes mutants to a temp copy and asserts by sha256 that the tracked hook
 was never touched.
 
@@ -319,6 +332,10 @@ ways" through eight releases that took it to twenty-three, because nothing check
 a number written in words in a maintainer document. `check-coverage.sh` derives
 both totals and asserts the README carries them; the README is the place to quote
 them.
+
+On Stop the hook reads the transcript tail backwards from the last human turn,
+and the whole file only when there is none. Measured on a 42 MB session: 0.04 s and 59 MB per Stop,
+against 0.29 to 0.35 s and 263 MB for a whole-file read.
 
 ### A silent third-party collision is the one failure the plugin cannot self-report
 
@@ -380,14 +397,18 @@ even working?" report; the README answers it with a one-line check.
 - `output-styles/` at plugin root is the documented default location; declaring
   `outputStyles` in `plugin.json` is only needed to override it.
 - Listing MCP tool names that do not resolve causes no error.
+- `skills/codemap/SKILL.md` carries no `disable-model-invocation`. It was tried
+  in v0.9.0 and reverted. The key removes the skill from context rather than
+  hiding it from the menu, and lost the one unprompted routing win ROUTING.md
+  records. The announce-and-confirm gate in the body is the protection.
 
 ## Known gaps
 
-- **No AST-aware search.** Upstream omo-slim used `ast_grep_search`; Claude Code
-  has no equivalent, so those references map to `Grep`. Structural queries are
-  weaker than upstream.
-- **No per-agent `temperature`.** Upstream ran `designer` at 0.7 deliberately.
-  Compensated for in prose, which is not the same thing.
+- **No AST-aware search in the harness.** `explorer` reaches for `ast-grep` where
+  it is installed; where it is not, structural queries fall back to `Grep`.
+- **No per-agent `temperature`.** Upstream removed its own literals in
+  `c7690923`, so there is no deliberate 0.7 left to compensate for. The gap is
+  real and the old justification is not.
 
 ---
 
@@ -600,9 +621,10 @@ different names for one source: `omc` in `COVERAGE.tsv`, `oh-my-claudecode` in
 
 Do not turn the path check into a link checker. The `internal references`
 block resolves `${CLAUDE_PLUGIN_ROOT}` paths only. A general markdown link check
-was written first and rejected: `skills/codemap/SKILL.md:168` shows sample output
-containing `src/payments/codemap.md`, illustrating what codemap writes in the
-user's repo, and a link checker calls all six of those broken on day one.
+was written first and rejected: the sample codemap under `## Codemap Content` in
+`skills/codemap/SKILL.md` contains `src/payments/codemap.md`, illustrating what
+codemap writes in the user's repo, and a link checker calls all six of those
+broken on day one.
 
 The check earned its place on first use: it caught that `surgical-edits`, adopted
 from `CLAUDE.md`, had been lost from the output style during the v0.3.0
@@ -2092,11 +2114,12 @@ return `hookSpecificOutput.watchPaths`, so a plugin can register watches at
 session start and extend them as it goes.
 
 The refusal's own trigger — *"reopens only if the platform ships the missing
-capability"* — has therefore fired. It is reopened as an open question, not as
-adopted work: `FileChanged` is off the tool-call path, but it fires per write,
-and "nothing injects per tool call" is a pledge about what runs repeatedly rather
-than about which event name carries it. The question is spend, and it belongs to
-the same argument the Todo Enforcer lost.
+capability"* — fired. v0.9.9 adopted it as a 0-token ledger, not as a
+per-write injection. FileChanged has no `additionalContext` and no decision
+control. SessionStart seeds `watchPaths` for source directories inside a project, with a workspace descent; `hooks/seed-watch-paths.mjs` states the gate.
+Watching cwd itself was refused: it would include `node_modules` and `.git`.
+The spend argument that kept this an open question does not apply to a hook that
+injects nothing.
 
 The lesson is about the record rather than the feature. **An impossibility claim
 is the shortest-lived kind of claim a plugin can publish**, because it is a
@@ -2113,7 +2136,7 @@ Ordered, because two of these are only correct in this order.
    defect that survived precisely because a reviewer was told to set it.
 2. `./scripts/check-reinforcement.sh`, `./scripts/check-shell.sh`,
    `./scripts/check-evals.sh`, `./scripts/check-prose.sh`.
-3. Both hook suites and both mutation runners; `skills/codemap/scripts/codemap.test.mjs`;
+3. All four hook suites and all four mutation runners; `skills/codemap/scripts/codemap.test.mjs`;
    `skills/review/scripts/base.test.sh`.
 4. **The contradiction sweep**, over the shipped prompt surface. It is a release
    gate, not an action item. On its first run as a gate it found eleven

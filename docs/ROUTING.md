@@ -138,7 +138,7 @@ adding more would make this worse for everything you have installed.
 project explicitly pinned to `Explanatory`. Effective style `omc-slim:omc-slim`
 in each.
 
-So changing your output style does not turn the orchestrator off. Installing a
+So changing your output style does not turn the plugin off. Installing a
 second plugin that also sets `force-for-plugin` can. Claude Code applies one of
 them and says nothing. The `SessionStart` hook warns you when that is possible.
 

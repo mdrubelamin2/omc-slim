@@ -34,24 +34,27 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     # A hung node process inherits GitHub's 6-hour job default, and the mutant
-    # runners spawn 81 of them. The whole suite is minutes; anything past this
-    # is a hang, and a hang that reports as a hang beats one that burns the
-    # runner pool until someone notices.
-    timeout-minutes: 20
+    # runners spawn one process per mutant. A job is about a quarter of an hour:
+    # the hook suites and their mutants run once in their own step and again
+    # inside check-coverage.sh. Anything past this is a hang, and a hang that
+    # reports as a hang beats one that burns the runner pool until someone
+    # notices.
+    timeout-minutes: 30
     env:
       OMC_SLIM_SKIP_REMOTE: "1"
     steps:
       - uses: actions/checkout@v4
         with:
-          # check-coverage.sh and simplify's Chesterton-fence rule both reason
-          # from `git log -S --reverse`. On a shallow clone the pickaxe returns
-          # one commit and reads like a definitive origin — the exact trap
-          # skills/simplify/SKILL.md tells its readers to check for.
+          # No gate reads git history. The full clone is kept so a gate that
+          # one day does is not born on a shallow clone, where `git log -S`
+          # returns one commit and reads like a definitive origin, and so the
+          # pickaxe works for a maintainer running the simplify skill in this
+          # checkout.
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - uses: actions/setup-python@v5
         with:
@@ -66,8 +69,12 @@ jobs:
         run: |
           node hooks/verify-deliverables.test.mjs
           node hooks/check-output-style.test.mjs
+          node hooks/seed-watch-paths.test.mjs
+          node hooks/file-ledger.test.mjs
           node hooks/verify-deliverables.mutate.mjs
           node hooks/check-output-style.mutate.mjs
+          node hooks/seed-watch-paths.mutate.mjs
+          node hooks/file-ledger.mutate.mjs
 
       - name: Component suites
         run: |

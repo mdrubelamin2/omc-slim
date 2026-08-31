@@ -7,13 +7,40 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/check-output-style.mjs\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/seed-watch-paths.mjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/file-ledger.mjs\"",
+            "timeout": 5
           }
         ]
       }
     ],
     "SubagentStop": [
       {
-        "matcher": "^(omc-slim:)?(fixer|designer)$",
+        "matcher": "^omc-slim:(fixer|designer)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/verify-deliverables.mjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
         "hooks": [
           {
             "type": "command",

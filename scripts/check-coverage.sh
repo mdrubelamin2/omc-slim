@@ -159,7 +159,7 @@ for kind, (text, actual) in rosters.items():
     for g in ghosts:
         print(f'  GHOST         {kind} roster names {g}, which is not a {kind}'); bad += 1
     if not absent and not ghosts:
-        print(f'{len(actual)}/{len(actual)} {kind}s present in the orchestrator roster.')
+        print(f'{len(actual)}/{len(actual)} {kind}s present in the output-style roster.')
 if bad:
     print('\nFix output-styles/omc-slim.md, then re-run.')
     raise SystemExit(1)
@@ -397,6 +397,12 @@ sites = [
     ('docs/ASSESSMENT-2026-08-29.md', f'It is {corrected} tokens'),
     ('docs/LIMITATIONS.md',           f'the ~{corrected} this repository publishes'),
     ('docs/ASSESSMENT-2026-08-29.md', f'on-invoke bodies up to {ceiling_corr}'),
+    ('docs/NATIVE.md', f'ships ~{corrected} always-on tokens'),
+    # QUALITY-BAR states the basis a checkpoint was met on; RELEASE-READINESS
+    # measures the ratchet against its 4,197 floor. Both are present tense.
+    ('docs/QUALITY-BAR.md', f'({corrected} real / {total} chars/4)'),
+    ('docs/RELEASE-READINESS.md',
+     f'is {corrected}, {int(real_measured) - 4197:,} above that floor'),
 ]
 
 bad = 0
@@ -432,10 +438,10 @@ PY
 # hooks.json, or a roster updated everywhere except the prose.
 #
 # Scoped to plugin-internal paths deliberately. A general markdown link check was
-# written first and rejected: skills/codemap/SKILL.md:168-170 shows sample output
-# containing `src/payments/codemap.md`, illustrating what codemap writes in the
-# user's repo. A link checker calls those three broken on day one, and a check
-# that is born red is a check nobody reads.
+# written first and rejected: the sample codemap under `## Codemap Content` in
+# skills/codemap/SKILL.md names `src/payments/codemap.md`, illustrating what
+# codemap writes in the user's repo. A link checker calls those three broken on
+# day one, and a check that is born red is a check nobody reads.
 python3 - "$ROOT" <<'PY' || exit 1
 import glob, json, os, re, subprocess, sys
 root = sys.argv[1]
@@ -518,14 +524,22 @@ if matched == len(roster_sites):
 # The README quotes how many cases the hook suite runs and how many mutants the
 # mutation suite kills.
 suite_counts = []
-# Both hooks are enrolled. A second hook whose suite nobody runs is the state
+# Every hook's suite is enrolled. A hook whose suite nobody runs is the state
 # this gate exists to prevent, and its counts drift out of the README exactly
 # the way the first hook's did.
+# The case patterns are anchored to a whole line because the suites name their
+# cases after the strings they parse, and one of those names is
+# `"45/45 passed, 0 failed." is a claim`. An unanchored search read that case
+# name as the suite total, and "45" happened to appear in the README.
 SUITES = [
-    ('test cases', 'hooks/verify-deliverables.test.mjs', r'(\d+)/(\d+) passed'),
+    ('test cases', 'hooks/verify-deliverables.test.mjs', r'^(\d+)/(\d+) passed$'),
     ('mutants', 'hooks/verify-deliverables.mutate.mjs', r'score: (\d+)/(\d+) killed'),
-    ('test cases', 'hooks/check-output-style.test.mjs', r'(\d+)/(\d+) passed'),
+    ('test cases', 'hooks/check-output-style.test.mjs', r'^(\d+)/(\d+) passed$'),
     ('mutants', 'hooks/check-output-style.mutate.mjs', r'score: (\d+)/(\d+) killed'),
+    ('test cases', 'hooks/seed-watch-paths.test.mjs', r'^(\d+)/(\d+) passed$'),
+    ('mutants', 'hooks/seed-watch-paths.mutate.mjs', r'score: (\d+)/(\d+) killed'),
+    ('test cases', 'hooks/file-ledger.test.mjs', r'^(\d+)/(\d+) passed$'),
+    ('mutants', 'hooks/file-ledger.mutate.mjs', r'score: (\d+)/(\d+) killed'),
 ]
 for label, script, pattern in SUITES:
     try:
@@ -543,8 +557,12 @@ for label, script, pattern in SUITES:
         # path the hook calls itself. Neither can change a result today, because
         # the suites set both explicitly per spawn — which is exactly how the
         # first two got here, and why the set is a set rather than two names.
+        # CLAUDE_CONFIG_DIR decides where the ledger hook writes; the suites set
+        # it per case, and an ambient one aims the hook at the caller's own
+        # config directory.
         leaky = {'OMC_SLIM_HOOK_PATH', 'OMC_SLIM_SCAN_BUDGET_MS',
-                 'OMC_SLIM_STYLE_BUDGET_MS', 'OMC_SLIM_SELF_ROOT'}
+                 'OMC_SLIM_STYLE_BUDGET_MS', 'OMC_SLIM_SELF_ROOT',
+                 'CLAUDE_CONFIG_DIR'}
         env = {k: v for k, v in os.environ.items() if k not in leaky}
         # The guard has to clear the runner's own worst case, not a typical run:
         # 23 mutants x its 120s per-mutant ceiling is 46 min. 60 min is a hang
@@ -564,7 +582,7 @@ for label, script, pattern in SUITES:
         print(f'  SUITE FAILED  {script} did not run: {exc}')
         bad += 1
         continue
-    m = re.search(pattern, out)
+    m = re.search(pattern, out, re.M)
     if not m:
         print(f'  SUITE FAILED  {script} printed no "{label}" total')
         bad += 1
@@ -753,7 +771,7 @@ for name in sorted(components):
         # A component naming itself is not an inbound edge.
         if rel == f'agents/{name}.md' or rel.startswith(f'skills/{name}/'):
             continue
-        # The orchestrator roster lists everything by definition, so it cannot
+        # The output-style roster lists everything by definition, so it cannot
         # be the edge that proves reachability.
         if rel.startswith('output-styles/'):
             continue
@@ -879,8 +897,9 @@ NSPY
 # suite, which builds a master-default repository as its first case and carries a
 # negative control so a match means something.
 #
-# Not enrolled in the README hook counts above: those describe the two hooks, and
-# folding a third suite into that sentence would make it wrong in a different way.
+# Not enrolled in the README hook counts above: those describe the hook suites,
+# and folding a component suite into that sentence would make it wrong in a
+# different way.
 # Both component suites, not just the one. codemap.mjs is 800+ lines, is the only
 # thing here that writes into the USER's repository, and its suite was reachable
 # from CI and from nothing else — so a local `check-coverage.sh` reported green
@@ -980,8 +999,14 @@ for pat in matchers:
         bad += 1
         continue
     for w in WRITERS:
-        if rx.search(w) or rx.search(f'omc-slim:{w}'):
+        if rx.search(f'omc-slim:{w}'):
             covered.add(w)
+        # A bare name is another plugin's agent, so a matcher that accepts it
+        # runs this hook on a subagent whose contract it does not know.
+        if rx.search(w):
+            print(f'  OVERBROAD     hooks.json SubagentStop matcher {pat!r} matches bare {w!r}')
+            print("                  a bare name is another plugin's agent")
+            bad += 1
 for w in sorted(WRITERS - covered):
     print(f'  UNCOVERED     hooks.json SubagentStop does not match {w!r}')
     print('                  the deliverable check silently stops running for it')
