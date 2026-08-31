@@ -29,7 +29,6 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "^omc-slim:(fixer|designer)$",
         "hooks": [
           {
             "type": "command",

@@ -143,7 +143,7 @@ def section(start, end):
 rosters = {
     'agent': (section('**Agents**', '**Skills**'),
               {os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'agents/*.md'))}),
-    'skill': (section('**Skills**', 'roster is a floor'),
+    'skill': (section('**Skills**', 'A brief carries'),
               {os.path.basename(os.path.dirname(f))
                for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))}),
 }
@@ -955,8 +955,6 @@ REQUIRED = {
     'librarian': {'Edit', 'Write', 'NotebookEdit', 'Agent', 'Task'},
     'oracle':    {'Edit', 'Write', 'NotebookEdit', 'Agent', 'Task'},
     'tracer':    {'Edit', 'Write', 'NotebookEdit', 'Agent', 'Task'},
-    'fixer':     {'Agent', 'Task', 'WebSearch'},
-    'designer':  {'Agent', 'Task', 'WebSearch'},
 }
 
 present = {os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'agents/*.md'))}

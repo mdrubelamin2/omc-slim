@@ -10,7 +10,7 @@ You help users understand and map repositories by creating hierarchical codemaps
 
 ## Announce before you start
 
-This skill is expensive: it reads the whole tree and spawns one fixer per directory. On a few-hundred-file repository that is real money and several minutes. It also **writes files into the user's repository**: a `codemap.md` in every mapped directory, `.slim/codemap.json`, and a section in root `AGENTS.md`.
+This skill is expensive: it reads the whole tree and spawns one writer agent per directory. On a few-hundred-file repository that is real money and several minutes. It also **writes files into the user's repository**: a `codemap.md` in every mapped directory, `.slim/codemap.json`, and a section in root `AGENTS.md`.
 
 So: say what it will cost and what it will write, and get a yes first. Reaching for it unprompted is correct; doing so silently is not. Proposing and running are different acts, and only the first is yours.
 
@@ -57,7 +57,7 @@ This creates:
 - `.slim/codemap.json` - File and folder hashes for change detection
 - Empty `codemap.md` files in all relevant subdirectories, each opening with a provenance header naming the commit, date and file count it was written against
 
-4. **Delegate codemap writing to Fixer agents** - Dispatch one fixer per folder, using the brief in "Dispatching a codemap fixer" below.
+4. **Delegate codemap writing** - Dispatch one general-purpose writer per folder, using the brief in "Dispatching a codemap writer" below.
 
 ### Step 3: Detect Changes (If state already exists)
 
@@ -74,7 +74,7 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" changes \
    - Modified files
    - Affected folders
 
-3. **Only update affected codemaps.** `changes` now prints two sections, and they get different treatment. Dispatch **one fixer per directory whose own files changed**, using the same brief. The **ancestor directories** below that only re-aggregate their children's summaries go to **one** dispatch, deepest first.
+3. **Only update affected codemaps.** `changes` now prints two sections, and they get different treatment. Dispatch **one writer per directory whose own files changed**, using the same brief. The **ancestor directories** below that only re-aggregate their children's summaries go to **one** dispatch, deepest first.
 
 ### Checking freshness
 
@@ -121,18 +121,18 @@ This is idempotent - repeated codemap runs will detect the existing section and 
 
 ### Step 6: Run `update`
 
-Run `update` on both paths, after the fixers return **and** after Step 4 writes the root map. It saves the new hashes *and* re-stamps every `codemap.md` provenance header, which is the run's statement that the maps are current. Run it before the fixers and it certifies maps nobody touched. Run it before Step 4 and it certifies the root map. The root folder always carries a header for it, and Step 4 has not written it yet.
+Run `update` on both paths, after the writers return **and** after Step 4 writes the root map. It saves the new hashes *and* re-stamps every `codemap.md` provenance header, which is the run's statement that the maps are current. Run it before the writers and it certifies maps nobody touched. Run it before Step 4 and it certifies the root map. The root folder always carries a header for it, and Step 4 has not written it yet.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" update \
   --root ./
 ```
 
-## Dispatching a codemap fixer
+## Dispatching a codemap writer
 
-Fixer writes these files, because the alternatives cannot. Explorer, oracle and tracer are read-only, so they can survey a directory but never produce the file. Designer writes, but only UI.
+A general-purpose writer produces these files; the plugin's own agents are read-only, so they can survey a directory but never produce the file.
 
-Fixer executes a specification and does not research one, so the brief below is the specification. It fixes the output path, the required headings, the exact files to read, and a check the fixer can actually run. Send one brief per directory.
+The writer executes a specification and does not research one, so the brief below is the specification. It fixes the output path, the required headings, the exact files to read, and a check the writer can actually run. Send one brief per directory.
 
 Get the exact file list from the script rather than improvising it. A map that describes files nobody opened is the failure this command exists to stop:
 
@@ -164,7 +164,7 @@ The `omc-slim:review` skill is the exception that proves it. Its `file:line` gat
 
 ## Codemap Content
 
-Fixers write the `codemap.md` files during this workflow, one per directory. Use precise technical terminology to document the implementation:
+Writers produce the `codemap.md` files during this workflow, one per directory. Use precise technical terminology to document the implementation:
 
 - **Responsibility** - Define the specific role of this directory using standard software engineering terms (e.g., "Service Layer", "Data Access Object", "Middleware").
 - **Design** - Identify and name specific patterns used (e.g., "Observer", "Singleton", "Factory", "Strategy"). Detail the abstractions and interfaces.

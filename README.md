@@ -9,7 +9,7 @@ the wrong thing.
 /plugin install omc-slim@omc-slim
 ```
 
-That is the whole setup: six agents, six skills, five hooks and an output style
+That is the whole setup: four agents, six skills, five hooks, four commands and an output style
 turn on together.
 
 Or try it without installing:
@@ -45,7 +45,7 @@ cannot quietly become a tree that spends your budget.
 finding, and a finding with no evidence is dropped rather than reported. Where
 something could not be verified, that is written down instead of smoothed over.
 
-**It stays out of the way.** ~4,666 tokens of always-on context, nothing injected
+**It stays out of the way.** ~2,039 tokens of always-on context, nothing injected
 per tool call, no MCP servers of its own, and it inherits whatever servers and
 skills your project already has. It writes no files into your project unless you
 run one of the three that do. The FileChanged hook keeps a small ledger under
@@ -61,12 +61,12 @@ Ask in plain language. You should not need to name any of them.
 
 | Agent | Ask it | What comes back |
 |---|---|---|
-| [explorer](./agents/explorer.md) | *"Where is the retry logic?"* | A `file:line` map, not prose. The first call for any where/what/which question |
+| [explorer](./agents/explorer.md) | *"Where is the retry logic?"* | A `file:line` map, not prose, when a survey outgrows a few greps |
 | [librarian](./agents/librarian.md) | *"Is this still the recommended API?"* | Current docs and real usage, read off disk before anything written about it |
-| [fixer](./agents/fixer.md) | *"Rename this across nine files."* | A spec you already decided on, executed. Not research, not architecture |
-| [designer](./agents/designer.md) | *"This form looks wrong."* | Layout, hierarchy, spacing, colour, motion, responsive behaviour |
 | [oracle](./agents/oracle.md) | *"Is this design going to hold up?"* | A second opinion on an architecture or security call. Escalation, not a default step |
 | [tracer](./agents/tracer.md) | *"I have fixed this twice and it keeps coming back."* | Three competing hypotheses, ranked by what would falsify them |
+
+The agents do not need the output style to be reachable. `/omc-slim:explorer`, `/omc-slim:librarian`, `/omc-slim:tracer` and `/omc-slim:oracle` dispatch them from any session, with your text as the brief. The skills already work the same way by name: `/omc-slim:review`, `/omc-slim:deepwork` and the rest.
 
 | Skill | Ask it | What it does |
 |---|---|---|
@@ -111,11 +111,10 @@ disables it in `.claude/settings.local.json` wins, so nobody is trapped.
 
 ## What it costs
 
-**~4,666 tokens** of always-on context, and nothing injected per tool call. Treat
+**~2,039 tokens** of always-on context, and nothing injected per tool call. Treat
 it as a floor: the harness adds framing no text measurement sees, so the real
 figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)).
-`./scripts/measure-context.sh` re-derives it, and also prints **5,277 on a
-chars/4 basis**, the estimate this project's version series is tracked on.
+`./scripts/measure-context.sh` re-derives it, and also prints **2,310 on a chars/4 basis**, the estimate this project's version series is tracked on.
 
 Two settings of yours will save you more than this plugin costs, and neither is a
 plugin change:
@@ -174,8 +173,8 @@ each one picks up whatever your project already provides:
 | Your project has | What happens |
 |---|---|
 | A documentation MCP for your stack | `librarian` becomes authoritative on it and stops reaching for web search |
-| A code-generation or linting MCP | `fixer` and `designer` write current idioms instead of recalled ones |
-| A browser-automation MCP | `designer` can verify what it built instead of guessing |
+| A code-generation or linting MCP | writer briefs execute current idioms instead of recalled ones |
+| A browser-automation MCP | UI work can verify what it built instead of guessing |
 | Skills in `.claude/skills/` **or** `~/.claude/skills/` | Every subagent sees both automatically |
 
 ## How it is checked

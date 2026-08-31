@@ -145,7 +145,7 @@ Machine-written code has its own set. Memoising everything "just in case": **ove
 
 ## Interface
 
-Judgement calls go to the designer; these are the mechanical ones.
+Judgement calls need a designer or the user; these are the mechanical ones.
 
 - Focus removed (`outline: none`) with no replacement
 - Touch target under 24×24 CSS px: the WCAG 2.2 AA floor (2.5.8). 44×44 is the AAA enhanced target (2.5.5) and the Apple convention, not the AA floor
@@ -196,7 +196,7 @@ The lane table in `SKILL.md` partitions by *topic*, and every topic reads the sa
 
 ## Briefing the adversarial pass
 
-The one step that cannot be done in the context that produced the change, and the one with no component behind it. Every agent this plugin ships is wrong for it by construction. `omc-slim:explorer` returns locations and proposes nothing, `omc-slim:librarian` researches outside the repository, `omc-slim:fixer` and `omc-slim:designer` write. And `omc-slim:oracle` judges a decision rather than a diff and says so in its own description. So it is a general-purpose agent with the brief below. And the brief lives here rather than in the orchestrator's head because an improvised one drifts toward confirming what the lanes already found.
+The one step that cannot be done in the context that produced the change, and the one with no component behind it. Every agent this plugin ships is wrong for it by construction: `omc-slim:explorer` returns locations and proposes nothing, `omc-slim:librarian` researches outside the repository, `omc-slim:tracer` diagnoses a named failure, and `omc-slim:oracle` judges a decision rather than a diff and says so in its own description. So it is a general-purpose agent with the brief below. And the brief lives here rather than in the orchestrator's head because an improvised one drifts toward confirming what the lanes already found.
 
 Give it four things and withhold a fifth.
 

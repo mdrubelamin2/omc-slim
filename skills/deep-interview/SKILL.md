@@ -69,7 +69,7 @@ Loop at most **four rounds**. If the total is still above 4 after four rounds, s
 
 ### 4. Write the spec
 
-Write it to `docs/specs/<slug>.md` (or a path the user prefers). The spec is what the next component consumes: the `omc-slim:deepwork` skill when the work spans subsystems and must land together. The `omc-slim:fixer` agent when it is a specified change, and the `omc-slim:verification-planning` skill when the acceptance criteria need an evidence path before anyone builds. Hand over the file, not a summary of it.
+Write it to `docs/specs/<slug>.md` (or a path the user prefers). The spec is what the next component consumes: the `omc-slim:deepwork` skill when the work spans subsystems and must land together. A general-purpose writer briefed with the spec when it is a specified change, and the `omc-slim:verification-planning` skill when the acceptance criteria need an evidence path before anyone builds. Hand over the file, not a summary of it.
 
 ```markdown
 # <Title>

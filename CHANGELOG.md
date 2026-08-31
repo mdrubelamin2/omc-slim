@@ -3,6 +3,60 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.10.0
+
+The complaint was a question: does this plugin make Claude overthink, overdo,
+oververify and overcost? Four independent analyses said yes and named the same
+three sentences. Completeness ranked above cost. Install read as a standing
+request to dispatch. Concision was told it never applies to verification. The
+evidence agreed. The approval gate is the one large measured win: +14.50
+points for +0.60M tokens. The register is where the committed benchmark's 18%
+saving lives. Delegation is where the category loses: the heavy parent scored
+below baseline at 48% more cost, and the leader spent +625k tokens for a lift
+that was not significant.
+
+So the default flipped. Cost follows demand. Four rules size everything, the
+main thread is the default, and nothing dispatches silently. The content list is the only self-escalator: auth, money, permissions,
+secrets, migrations, deletes, published shapes. It escalates to an offer plus
+self-run checks.
+deep-interview is offered in one line and runs on a yes. review, deepwork,
+simplify, verification-planning and codemap run when named, which for three of
+them is what ROUTING.md already showed they did. The style body fell from
+4,234 to 1,426 tokens on the chars/4 basis; always-on from 4,666 to 2,039
+real.
+
+Two agents left. oracle was cut in the first draft on an idle-in-dogfood
+statistic, then restored the same day: NATIVE.md:152 carries the measured
+assigned-opposition mechanism (99.2% disagreement against a 48.3% baseline,
+where merely instructing dissent matched baseline), the architecture slice
+has no native owner, and usage showed deepwork's gates invoking it to real
+effect. It keeps its deepwork gate and is offered elsewhere. fixer's contract compressed into a forty-token writer
+brief inside the style. designer's slot belongs to the official
+frontend-design skill at 83 tokens. librarian, tracer, oracle and explorer stay, and
+explorer's fate still belongs to the dated ablation in NATIVE.md. The
+SubagentStop hook now watches every subagent rather than the two departed
+writers, so v0.9.9's fake-pass coverage does not regress.
+
+The four agents also became commands. `/omc-slim:explorer`, `librarian`,
+`tracer` and `oracle` dispatch them from any session, so the roster no longer
+needs the output style to be reachable. A command loads nothing until typed.
+
+review took B7 early. On a diff this session wrote, the self-run covers the
+lanes and never the verdict; the fresh-context adversarial pass carries the
+sign-off. The five-dispatch floor on a ten-line authored diff is gone.
+ROUTING.md's CLAUDE.md paragraph made deepwork mandatory for any multi-file
+task, the one place this plugin instructed over-firing in writing. It became
+an offer.
+
+The registries moved with the design. 53 COVERAGE rows and 35 REINFORCEMENT
+rows left with the components and prose that carried them. 21 patterns
+re-anchored, 4 rules re-homed into the style's writer brief, 12 new rows pin
+the flip itself so a later edit cannot quietly restore the push. Gates at
+release: coverage 15/15 figures with 4/4 agents and 6/6 skills, reinforcement
+83/83, shell 20/20, hooks 4/4, adversarial 9/9. The suite that would prove the flip behaviourally, one-line-typo and
+explain-this-function, still cannot run: `claude plugin eval` remains early access. Structure is checked;
+behaviour is not. That debt stays named.
+
 ## v0.9.9
 
 Two complaints, both from the audit run on the morning of the release. The

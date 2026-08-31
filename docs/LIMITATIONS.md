@@ -161,9 +161,8 @@ output style body plus the text of twelve descriptions. The harness charges more
 measured 2026-08-29 against the installed v0.9.1, `claude plugin details` reports
 **1,461 always-on tokens** for the twelve components where our own basis measures
 **962** — roughly **42 tokens per component** of framing (name, type, list
-structure) that no measurement of the text can see. Across the roster that is
-about **500 tokens**, so the true always-on cost is nearer 5,400 than the ~4,666
-this repository publishes.
+structure) that no measurement of the text can see. Across the ten-component roster that is
+about **420 tokens**, so the true always-on cost is nearer 2,460 than the ~2,039 this repository publishes.
 
 It is not folded into the headline, and the reason is a scar: 42 rests on a
 single observation of a number the harness itself labels an estimate, and this
@@ -195,7 +194,7 @@ the exact failure mode this project has criticised in others.
 next increase is visible while it happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md, frontmatter included, is 5,245 tokens on the chars/4 basis, ~4,788 corrected —
+SKILL.md, frontmatter included, is 5,253 tokens on the chars/4 basis, ~4,797 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**.
 
@@ -234,10 +233,10 @@ prose described, and a script is the only form of that logic a test can reach.
 The per-skill cap is not the binding one. Re-attached skills share a **combined
 25,000-token budget**, filled from the most recently invoked, so on a long
 session older skills are dropped entirely rather than truncated
-([docs](https://code.claude.com/docs/en/skills)). Twelve components against
+([docs](https://code.claude.com/docs/en/skills)). Ten components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **37,676 chars/4, ~33,995 corrected**.
+The ceiling if every component fires once is **30,619 chars/4, ~27,626 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging
@@ -338,7 +337,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~5,277 tok** | see above |
+| **omc-slim** | **~2,310 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -347,7 +346,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 omc-slim is the most expensive row in that table. It has grown on net across
-every release: 2,774 at v0.1.0 against 5,277 today, though not monotonically.
+every release: 2,774 at v0.1.0 against 2,310 today, though not monotonically.
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

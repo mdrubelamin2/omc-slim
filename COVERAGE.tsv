@@ -25,15 +25,13 @@
 # Whitespace is normalised first, so line-wrapped prose still matches.
 #
 # origin	rule	where	pattern
-CLAUDE.md	ownership-no-exits	output-styles	descriptions, never exits
-CLAUDE.md	no-early-stop	output-styles	good stopping point
+CLAUDE.md	ownership-no-exits	output-styles	with evidence, is a result
 CLAUDE.md	no-permission-to-continue	output-styles	permission to continue
-CLAUDE.md	looks-right-is-not-a-check	output-styles	"Looks right" is not a check
+CLAUDE.md	looks-right-is-not-a-check	output-styles	a check that cannot fail is not evidence
 CLAUDE.md	read-artefact-not-memory	output-styles	assumption stated as a finding
-CLAUDE.md	surgical-edits	output-styles	unrequested
+CLAUDE.md	surgical-edits	output-styles	Changes trace to the request
 CLAUDE.md	finish-agreed-scope	output-styles	ships whole
-CLAUDE.md	research-before-edit	output-styles	Read the artefact first
-CLAUDE.md	no-shallow-reasoning	output-styles	Brevity applies to solutions, never to reading
+CLAUDE.md	research-before-edit	output-styles	Read the artefact before concluding
 fable-mode	stage-map-first	deepwork	Write the stage map before touching anything
 fable-mode	one-artefact-per-stage	deepwork	Every stage produces one verifiable artefact
 fable-mode	merge-uncheckable-stages	deepwork	producing no artefact at all merges into the next
@@ -53,20 +51,11 @@ fable-mode	domain-variations	deepwork/depth.md	Domain variations
 fable-mode	when-not-to-use	deepwork	When NOT to use this
 fable-mode	not-a-capability-transplant	deepwork	does not make the underlying reasoning better
 fable-mode	verify-before-flagging	verification-planning	Absence of evidence is not the finding
-fable-mode	verify-before-flagging	oracle	Absence of evidence is not the finding
 fable-mode	verify-before-flagging	tracer	Absence of evidence is not the finding
-fable-mode	find-replace-word-boundaries	fixer	word boundaries
-audit	stale-recall-external	output-styles	Your recalled knowledge is stale
-audit	prior-art-before-inventing	output-styles	Look for prior art first
-audit	lazy-is-not-shallow	output-styles	never the depth of the reading
+audit	stale-recall-external	output-styles	plausibly changed since training
+audit	prior-art-before-inventing	output-styles	prior art beats inventing
 audit	no-green-washing	output-styles	wearing a passing badge
-audit	verification-floor	output-styles	zero validation
-audit	roster-is-not-a-ceiling	output-styles	floor, not a ceiling
-audit	deferred-tools-are-findable	output-styles	unsearched tool is invisible
-audit	verification-floor	fixer	zero validation
-audit	verification-floor	designer	zero validation
-audit	stale-recall-external	fixer	Recalled API knowledge is stale
-audit	escalate-unconfirmable-fact	fixer	which fact you need
+audit	verification-floor	output-styles	one check that can fail
 audit	prior-art-before-inventing	librarian	Prior art is part of the job
 audit	one-level-is-enforced	deepwork	enforced, not advisory
 audit	scope-allows-large-work	simplify	that **is** the scope
@@ -74,12 +63,9 @@ audit	codemap-announce-cost	codemap	Announce before you start
 omo-slim	parallel-structure-scan	deepwork	Scan structure in the same message
 omo-slim	oracle-rereview-budget	deepwork	at most two re-reviews
 omo-slim	phase-checkpoint-commit	deepwork	Checkpoint at a delivery boundary
-audit	deepwork-crosscutting-trigger	output-styles	across several subsystems at once
+audit	deepwork-crosscutting-trigger	output-styles	only correct once every layer lands
 audit	deepwork-crosscutting-trigger	deepwork	every affected layer lands together
 audit	deepwork-gate-is-conjunction	deepwork	Both conditions, not either
-audit	invoke-beats-improvising	output-styles	beats improvising the same procedure worse
-audit	plan-before-first-edit	output-styles	Plan before the first edit, not after it
-audit	discovery-covers-both-scopes	output-styles	arrive from **two scopes**
 audit	discovery-covers-both-scopes	librarian	never assume the repository is the whole inventory
 omc-official	no-hardcoded-project-dialect	simplify	Conventions come from the repository
 addy	chestertons-fence	simplify	Chesterton's Fence
@@ -112,7 +98,6 @@ audit	finish-the-deletion	simplify	Finish the deletion
 audit	name-blast-radius	simplify	blast radius stated
 audit	abstraction-pays-rent-now	simplify	pays rent when a second
 audit	exported-wrapper-is-api	simplify	deleting it is an API change
-audit	skills-compete-with-synonyms	output-styles	compete with dozens of near-synonyms
 gstack	diff-against-merge-base	review	merge-base
 gstack	fetch-base-first-or-phantom-findings	review	stale base = phantom findings
 gstack	base-branch-resolution-cascade	review	then `origin/HEAD`, then `main`, then `master`
@@ -171,7 +156,7 @@ addy	wrong-stack-advice-forbidden	review/checklists.md	Fit the advice to the act
 addy	over-memoisation-is-a-defect	review/checklists.md	over-memoisation costs more than it saves
 addy	project-budget-overrides-defaults	review/performance.md	overrides every number here
 omc	no-self-approval-same-context	review	cannot do to yourself
-omc	no-self-approval-orchestrator	output-styles	cannot be the pass that clears it
+omc	no-self-approval-orchestrator	output-styles	the step you cannot do to yourself
 omc	do-not-pre-filter-during-discovery	review	Filter at the end, never while looking
 omc	soft-filter-is-ranking-guidance	review	not permission to look less hard
 omc	pre-commitment-predictions	review	First, predict
@@ -209,17 +194,12 @@ audit	always-on-lane-reports-nothing	review	An always-on lane that found nothing
 wait-what	simplified-technical-english	output-styles	Simplified Technical English (ASD-STE100)
 wait-what	one-idea-per-sentence	output-styles	One idea per sentence
 wait-what	active-voice-named-actor	output-styles	name who does what
-wait-what	one-word-one-meaning	output-styles	One word, one meaning
-wait-what	project-vocabulary	output-styles	the project's own words for its own concepts
-wait-what	no-noun-stacks	output-styles	break noun stacks apart
-wait-what	orient-before-concluding	output-styles	before a conclusion the reader cannot place
-caveman	lite-keeps-grammar	output-styles	terseness is fewer sentences, never broken ones
-wait-what	hard-sentence-ceiling	output-styles	never past twenty-five
-wait-what	no-parenthetical-lists	output-styles	A parenthetical list becomes its own sentence
+caveman	lite-keeps-grammar	output-styles	complete sentences and ordinary grammar
+wait-what	hard-sentence-ceiling	output-styles	at most twenty-five words
 eli5	close-with-what-now	output-styles	what the user does next
-eli5	evidence-in-the-close	output-styles	never a claim standing in for it
-eli5	three-options-at-most	output-styles	three options at most
-eli5	narrowing-is-your-job	output-styles	not done the narrowing yourself
+eli5	evidence-in-the-close	output-styles	never a claim
+eli5	three-options-at-most	output-styles	at most three options
+eli5	narrowing-is-your-job	output-styles	which one you would pick
 audit	comment-volume-is-a-smell	simplify	Comment volume is its own smell
 audit	stale-comment-contradiction	simplify	Comment that contradicts the code
 audit	narration-comments	simplify	The tell of generated code
@@ -235,32 +215,18 @@ audit	review-the-set-not-the-diff	review	review the set, not the diff
 audit	missed-member-absent-from-diff	review	absent from the diff by definition
 audit	completeness-lane-generalised	review/checklists.md	A member the change forgot is not in the diff
 audit	enumerate-from-goal-not-old-impl	review/checklists.md	from the goal, not from the old implementation
-audit	fixer-project-rules-outrank-habits	fixer	The project's rules outrank your habits
-audit	fixer-canonical-example-is-the-spec	fixer	nearest existing implementation of the pattern
-audit	fixer-second-dialect-is-a-regression	fixer	A second dialect of an established pattern
-audit	fixer-do-not-reopen-closed-bug	fixer	Do not re-open a closed bug
-audit	fixer-blame-before-removing-a-guard	fixer	a commit that says *fix* is a regression waiting
-audit	fixer-prior-art-for-approach	fixer	applies to the approach, not only the signature
-audit	fixer-no-narration-comments	fixer	plainest tell of generated code
-audit	fixer-linear-flow	fixer	every indent level is a branch the reader must hold
-audit	fixer-single-reason-to-change	fixer	cannot name without "and" is two
-audit	fixer-modular-one-direction	fixer	Modular, pointing one way
-audit	fixer-dry-of-knowledge	fixer	DRY of knowledge, not of characters
-audit	fixer-self-explanatory-names	fixer	Reaching for a comment to explain *what* a line
-audit	fixer-no-boolean-flag-params	fixer	No boolean flag parameters
-audit	fixer-do-not-leave-it-to-simplify	fixer	leave `omc-slim:simplify` to clean up after you
-audit	fixer-no-thinking-out-loud	fixer	never think out loud in the file
+audit	fixer-canonical-example-is-the-spec	output-styles	match the nearest existing pattern
+audit	fixer-do-not-reopen-closed-bug	output-styles	fix causes not symptoms
 # ballast (svy04) — a memory/verification plugin. Five rules fit a delegation
 # plugin; the memory tree, skill-forge and the label taxonomy were refused.
-ballast	constraints-dont-travel	output-styles	do not travel to a specialist
-ballast	external-checks-expire	output-styles	Time changes them too
+ballast	constraints-dont-travel	output-styles	the specialist sees only the brief
 ballast	progress-file-dead-ends	deepwork	what was tried and failed
 ballast	next-first-action-is-executable	deepwork	executable without reading anything but this file
 ballast	zero-context-executor	verification-planning	receives it and nothing else
 # aniruddha-adhikary/skills — a Joern/CPG static-analysis pack. Four rules fit a
 # delegation plugin; the CPG domain, a second hook and its publication boundary
 # were refused.
-ani-skills	vacuous-pass-is-not-a-pass	output-styles	a suite that matched zero tests still exits green
+ani-skills	vacuous-pass-is-not-a-pass	output-styles	Read the count, not the colour
 ani-skills	vacuous-check-counts-its-inputs	verification-planning	looks exactly like a check that passed
 ani-skills	empty-search-needs-a-known-positive	verification-planning	run that same search for something you know is there
 ani-skills	dead-is-a-claim-about-a-search	simplify	is a claim about your search
@@ -268,9 +234,7 @@ ani-skills	dead-is-a-claim-about-a-search	simplify	is a claim about your search
 # Its own benchmark measures a prompt instruction, not the binary, so the
 # doctrine transferred and the 46k lines of Go did not. Five rules fit; the
 # residue manifest, the memory tree and its state directory were refused.
-powerball	implementation-can-fake-it	fixer	shaped to the test's own inputs
-powerball	config-is-as-protected-as-code	fixer	Whatever grades the code is as protected as the code
-powerball	bugfix-ships-its-reproduction	fixer	watch it fail against the unfixed code
+powerball	bugfix-ships-its-reproduction	output-styles	against the unfixed code
 powerball	tolerated-red-check-is-unread	verification-planning	a check you have stopped reading
 powerball	new-guard-proved-against-known-bad	verification-planning	run it against a state where the fault existed
 # obra/superpowers — a 14-skill agentic framework, read whole at b36e0829.
@@ -282,17 +246,13 @@ powerball	new-guard-proved-against-known-bad	verification-planning	run it agains
 superpowers	brief-with-evidence-not-verdict	review	Brief a lane with evidence, never with a verdict
 superpowers	brief-with-evidence-not-verdict	deepwork	evidence, never a verdict
 superpowers	readonly-does-not-move-git-state	explorer	they discard uncommitted work that is not yours
-superpowers	readonly-does-not-move-git-state	oracle	they discard uncommitted work that is not yours
 superpowers	readonly-does-not-move-git-state	tracer	they discard uncommitted work that is not yours
 superpowers	deleting-config-selects-the-default	simplify	Deleting a config key selects the default
 superpowers	rebuttal-relocates-never-vanishes	simplify	An argument that defends a rule moves
 superpowers	change-not-live-in-this-session	verification-planning	not live in the session that made them
 audit	exemption-scopes-length-only	output-styles	exempts length, and nothing else
 audit	safety-never-simplified-away	output-styles	Never simplified away
-audit	no-context-anxiety	output-styles	Do not manage the context window
-audit	todo-continuity	output-styles	appended, not substituted
-audit	parallel-writer-scoping	output-styles	only where file scopes do not overlap
-audit	design-handoff-intent	output-styles	are intentional
+audit	no-context-anxiety	output-styles	manage the context window
 research	review-pre-existing-is-a-flag	review	Pre-existing is a flag, not a level
 research	review-fix-as-verification	review	drop it from the list and carry the count
 research	review-nit-cap	review	Report at most five nits
@@ -318,19 +278,11 @@ research	verification-structural-red	verification-planning	Structural red is not
 research	explorer-positive-control	explorer	Prove the instrument before you report a negative
 research	explorer-search-funnel	explorer	Open wide, then narrow
 research	explorer-cap-yields-to-completeness	explorer	The cap does not apply to an enumeration
-research	oracle-assigned-opposition	oracle	Argue the other side, as an assignment
-research	oracle-one-pass-not-debate	oracle	One pass, not a debate
 research	tracer-categories-differ-in-kind	tracer	They must differ in kind, not in detail
 research	tracer-predeclare-falsifiers	tracer	what would confirm and what would falsify each one
 research	tracer-undetermined-verdict	tracer	is not `ruled out`
 research	librarian-conditional-web-pass	librarian	That is a condition, not a ritual
 research	librarian-silent-disk	librarian	Disk can be silent rather than empty
-research	designer-dated-defaults	designer	The current defaults, and why naming them matters
-research	designer-two-pass-plan	designer	Plan the system, critique the plan, then build
-research	designer-motion-floor	designer	Frequency gate first
-research	designer-craft-floor	designer	Elevation declared once
-research	designer-browser-surfaces	designer	The browser surfaces nobody draws
-research	designer-semantic-a11y-floor	designer	The semantic floor automated tools cannot reach
 research	codemap-cite-symbols	codemap	Cite symbols, never line numbers
 research	deep-interview-files-and-interfaces	deep-interview	## Files and interfaces
 research	deep-interview-gate-is-measured	deep-interview	That is now measured
@@ -342,22 +294,26 @@ research	compaction-eviction-risk	docs/LIMITATIONS.md	30% on average after compa
 research	env-tool-search	README.md	ENABLE_TOOL_SEARCH
 research	env-subagent-cache-ttl	README.md	subagentPromptCacheTtl
 research	keep-cut-audit-applied	docs/RESEARCH-2026-08-26.md	The keep/cut audit, applied
-audit	fixer-grep-every-caller	fixer	grep every caller of the function you are
-audit	fixer-toolset-both-scopes	fixer	it comes from both the project's
-audit	fixer-deferred-tools	fixer	an unsearched tool is invisible
-audit	designer-deferred-tools	designer	an unsearched tool is invisible
-audit	size-ladder	output-styles	Rigour is a dial, not a floor
-audit	size-content-override	output-styles	Content overrides size
-audit	small-owes-one-check	output-styles	not a plan for one
-audit	comments-are-last-resort	output-styles	The default count for a
-audit	comments-no-history	output-styles	Git owns history
-audit	brief-carries-size-tier	output-styles	Name the size tier as well
-audit	fixer-no-history-comments	fixer	Never write history into a source file
-audit	designer-comments-last-resort	designer	the default count is zero
+audit	fixer-grep-every-caller	output-styles	read every caller first
+audit	size-ladder	output-styles	Four rules size everything
+audit	size-content-override	output-styles	the only self-escalator
+audit	small-owes-one-check	output-styles	No plan, no review, no dispatch
+audit	comments-are-last-resort	output-styles	Comments default to zero
 audit	review-delete-added-narration	review/checklists.md	Delete them; git owns history
 audit	simplify-conversational-comment	simplify	A conversation, not a comment
 audit	no-tooling-is-a-question	output-styles	No tooling is a question, not a gap to fill
 audit	ask-before-first-check	output-styles	ask before building the first check
-audit	fixer-no-tooling-stop	fixer	stop rather than install something
-audit	designer-no-build-say-so	designer	say so instead of adding one
 audit	vp-no-commands-ask	verification-planning	never specifies a runner the user has not chosen
+audit	cost-follows-demand	output-styles	Cost follows demand
+audit	correctness-then-cost	output-styles	correctness first, then cost
+audit	interview-is-offered-not-run	output-styles	run it only on a yes
+audit	question-never-interviewed	output-styles	A question is answered, never interviewed
+audit	named-skill-is-the-budget	output-styles	demand is the budget
+audit	offers-not-silent-dispatch	output-styles	Never silently dispatch
+audit	scaled-preflight-questions	output-styles	what full set does the request imply
+audit	review-self-run-covers-lanes	review	A self-run covers the lanes, never the verdict
+audit	resize-down-too	output-styles	work that shrinks re-sizes down
+fable-mode	verify-before-flagging	oracle	Absence of evidence is not the finding
+superpowers	readonly-does-not-move-git-state	oracle	they discard uncommitted work that is not yours
+research	oracle-assigned-opposition	oracle	Argue the other side, as an assignment
+research	oracle-one-pass-not-debate	oracle	One pass, not a debate
