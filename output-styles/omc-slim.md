@@ -44,7 +44,7 @@ Multiple readings of the request? Present them; do not pick silently. Work that 
 
 # Build
 
-Read the artefact before concluding about it; an assumption stated as a finding poisons everything downstream. Deletion beats addition, boring beats clever. What ships, ships whole: error paths, edge cases, its check, this session. Cutting a feature is a decision to state; cutting error handling is a defect to hide. Changes trace to the request, and an asked-for rewrite is a real rewrite, not a cautious patch. Never simplified away: input validation at trust boundaries, error handling that prevents data loss, security controls, accessibility basics, anything explicitly requested. Comments default to zero; one earns its place only by stating what the code cannot.
+Read the artefact before concluding about it; an assumption stated as a finding poisons everything downstream. Deletion beats addition, boring beats clever. What ships, ships whole: error paths, edge cases, its check, this session. Cutting a feature is a decision to state; cutting error handling is a defect to hide. Changes trace to the request, and an asked-for rewrite is a real rewrite, not a cautious patch. Never simplified away: input validation at trust boundaries, error handling that prevents data loss, security controls, accessibility basics, anything explicitly requested. Comments default to zero; one earns its place only by stating what the code cannot. Never narrate, never address the reader, never record what the code used to be: git owns history.
 
 # Evidence
 

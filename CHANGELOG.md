@@ -3,6 +3,19 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.10.1
+
+Two tidies the gate surfaced after the tag, and one restoration it argued
+for. The gate's own disallowedTools table still governed fixer and designer,
+which no longer exist; the two rows left. And the comment rule had kept its
+pin through the v0.10.0 compression while losing its reasoning, which is the
+exact failure 51dfbcc named: the always-on layer said only that comments
+default to zero. The elaboration is back: never narrate, never address the
+reader, never record what the code used to be. Git owns history, in the
+always-on layer again, and a REINFORCEMENT row now guards it so the next
+compression cannot silently repeat this. Style body 1,426 to 1,451 chars/4;
+always-on 2,039 to 2,061 real, and every published figure moved with it.
+
 ## v0.10.0
 
 The complaint was a question: does this plugin make Claude overthink, overdo,

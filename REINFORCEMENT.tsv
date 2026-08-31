@@ -126,3 +126,4 @@ oracle-advises-never-implements	oracle	You advise; a briefed writer implements	N
 oracle-root-causes	oracle	Find root causes, not symptoms	Grep every caller before blaming one
 oracle-claims-carry-locations	oracle	A claim about code without a location is a guess	Cite `file.ts:line`
 oracle-verdict-first	oracle	Rank findings by severity	Lead with the verdict|do not pad with minor style notes when the question was architectural
+comments-are-last-resort	output-styles	Comments default to zero	Never narrate, never address the reader|git owns history
