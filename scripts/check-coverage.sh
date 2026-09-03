@@ -443,7 +443,7 @@ PY
 # codemap writes in the user's repo. A link checker calls those three broken on
 # day one, and a check that is born red is a check nobody reads.
 python3 - "$ROOT" <<'PY' || exit 1
-import glob, json, os, re, subprocess, sys
+import concurrent.futures, glob, json, os, re, shutil, subprocess, sys
 root = sys.argv[1]
 bad = 0
 
@@ -532,8 +532,8 @@ suite_counts = []
 # `"45/45 passed, 0 failed." is a claim`. An unanchored search read that case
 # name as the suite total, and "45" happened to appear in the README.
 SUITES = [
-    ('test cases', 'hooks/verify-deliverables.test.mjs', r'^(\d+)/(\d+) passed$'),
     ('mutants', 'hooks/verify-deliverables.mutate.mjs', r'score: (\d+)/(\d+) killed'),
+    ('test cases', 'hooks/verify-deliverables.test.mjs', r'^(\d+)/(\d+) passed$'),
     ('test cases', 'hooks/check-output-style.test.mjs', r'^(\d+)/(\d+) passed$'),
     ('mutants', 'hooks/check-output-style.mutate.mjs', r'score: (\d+)/(\d+) killed'),
     ('test cases', 'hooks/seed-watch-paths.test.mjs', r'^(\d+)/(\d+) passed$'),
@@ -541,58 +541,39 @@ SUITES = [
     ('test cases', 'hooks/file-ledger.test.mjs', r'^(\d+)/(\d+) passed$'),
     ('mutants', 'hooks/file-ledger.mutate.mjs', r'score: (\d+)/(\d+) killed'),
 ]
-for label, script, pattern in SUITES:
+JS_RUNTIME = shutil.which('bun') or 'node'
+SUITE_LANES = min(len(SUITES), max(1, (os.cpu_count() or 2)))
+
+leaky = {'OMC_SLIM_HOOK_PATH', 'OMC_SLIM_SCAN_BUDGET_MS',
+         'OMC_SLIM_STYLE_BUDGET_MS', 'OMC_SLIM_SELF_ROOT',
+         'CLAUDE_CONFIG_DIR'}
+suite_env = {k: v for k, v in os.environ.items() if k not in leaky}
+
+def run_suite(entry):
+    label, script, pattern = entry
     try:
-        # OMC_SLIM_HOOK_PATH redirects the suite at a different file. The
-        # mutation runner sets it deliberately for its sandbox; anything in the
-        # caller's shell would make this gate test some other file and pass.
-        # That is the same failure the sandbox rewrite closed, moved from disk
-        # to environment, so strip it rather than trust the caller.
-        # OMC_SLIM_SCAN_BUDGET_MS is stripped for the same reason: an ambient
-        # value changes what the suite measures, and a blank one used to mute
-        # the hook outright.
-        # OMC_SLIM_STYLE_BUDGET_MS and OMC_SLIM_SELF_ROOT are stripped for the
-        # same reason and were missed when each was introduced: the first
-        # expires the style scan's deadline, the second overrides which install
-        # path the hook calls itself. Neither can change a result today, because
-        # the suites set both explicitly per spawn — which is exactly how the
-        # first two got here, and why the set is a set rather than two names.
-        # CLAUDE_CONFIG_DIR decides where the ledger hook writes; the suites set
-        # it per case, and an ambient one aims the hook at the caller's own
-        # config directory.
-        leaky = {'OMC_SLIM_HOOK_PATH', 'OMC_SLIM_SCAN_BUDGET_MS',
-                 'OMC_SLIM_STYLE_BUDGET_MS', 'OMC_SLIM_SELF_ROOT',
-                 'CLAUDE_CONFIG_DIR'}
-        env = {k: v for k, v in os.environ.items() if k not in leaky}
-        # The guard has to clear the runner's own worst case, not a typical run:
-        # 23 mutants x its 120s per-mutant ceiling is 46 min. 60 min is a hang
-        # guard, not a budget — a real run is under two minutes.
-        proc = subprocess.run(['node', os.path.join(root, script)],
+        proc = subprocess.run([JS_RUNTIME, os.path.join(root, script)],
                               capture_output=True, text=True, timeout=3600,
-                              env=env)
-        out = proc.stdout
-        # The runner prints its score BEFORE it exits non-zero on a failed
-        # restore, so matching the score line alone reports green while a mutant
-        # sits on disk. Read the exit code, not just the output.
-        if proc.returncode != 0:
-            print(f'  SUITE FAILED  {script} exited {proc.returncode}')
-            bad += 1
-            continue
+                              env=suite_env)
     except Exception as exc:
-        print(f'  SUITE FAILED  {script} did not run: {exc}')
-        bad += 1
-        continue
-    m = re.search(pattern, out, re.M)
+        return label, script, None, f'  SUITE FAILED  {script} did not run: {exc}'
+    if proc.returncode != 0:
+        return label, script, None, f'  SUITE FAILED  {script} exited {proc.returncode}'
+    m = re.search(pattern, proc.stdout, re.M)
     if not m:
-        print(f'  SUITE FAILED  {script} printed no "{label}" total')
-        bad += 1
-        continue
+        return label, script, None, f'  SUITE FAILED  {script} printed no "{label}" total'
     got, total = int(m.group(1)), int(m.group(2))
     if got != total:
-        print(f'  SUITE FAILED  {script}: {got}/{total} {label}')
-        bad += 1
-        continue
-    suite_counts.append((label, script, total))
+        return label, script, None, f'  SUITE FAILED  {script}: {got}/{total} {label}'
+    return label, script, total, None
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=SUITE_LANES) as pool:
+    for label, script, total, failure in pool.map(run_suite, SUITES):
+        if failure:
+            print(failure)
+            bad += 1
+            continue
+        suite_counts.append((label, script, total))
 
 # The same sample block quotes the row total. Enrol it too, or the counts and the
 # total drift apart independently.
@@ -905,19 +886,40 @@ NSPY
 # from CI and from nothing else — so a local `check-coverage.sh` reported green
 # over a broken codemap. The hook suites above are enrolled with README counts
 # because those counts are published; these two are enrolled for the exit code.
-for suite in "bash $ROOT/skills/review/scripts/base.test.sh" \
-             "node $ROOT/skills/codemap/scripts/codemap.test.mjs" \
-             "bash $ROOT/scripts/check-adversarial.sh" \
-             "bash $ROOT/scripts/optional/statusline.test.sh"; do
+JS_RUNTIME=$(command -v bun || command -v node)
+COMPONENT_OUT=$(mktemp -d)
+trap 'rm -rf "$COMPONENT_OUT"' EXIT
+COMPONENT_SUITES=(
+  "bash $ROOT/skills/review/scripts/base.test.sh"
+  "$JS_RUNTIME $ROOT/skills/codemap/scripts/codemap.test.mjs"
+  "bash $ROOT/scripts/check-adversarial.sh"
+  "bash $ROOT/scripts/optional/statusline.test.sh"
+)
+for index in "${!COMPONENT_SUITES[@]}"; do
+  (
+    suite="${COMPONENT_SUITES[$index]}"
+    if suite_out=$($suite 2>&1); then
+      echo "$suite_out" > "$COMPONENT_OUT/$index.out"
+    else
+      echo "$suite_out" > "$COMPONENT_OUT/$index.out"
+      touch "$COMPONENT_OUT/$index.failed"
+    fi
+  ) &
+done
+wait
+component_failed=0
+for index in "${!COMPONENT_SUITES[@]}"; do
+  suite="${COMPONENT_SUITES[$index]}"
   name=$(basename "${suite##* }")
-  if suite_out=$($suite 2>&1); then
-    echo "$suite_out" | tail -1 | sed "s|^|${name}: |"
-  else
+  if [ -e "$COMPONENT_OUT/$index.failed" ]; then
     echo "  SUITE FAILED  $name"
-    echo "$suite_out" | tail -12 | sed 's/^/                  /'
-    exit 1
+    tail -12 "$COMPONENT_OUT/$index.out" | sed 's/^/                  /'
+    component_failed=1
+  else
+    tail -1 "$COMPONENT_OUT/$index.out" | sed "s|^|${name}: |"
   fi
 done
+[ "$component_failed" -eq 0 ] || exit 1
 
 # --- the harness-enforced mechanisms, asserted -----------------------------
 # Every other block in this file checks that a LISTED thing still exists. None

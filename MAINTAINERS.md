@@ -324,8 +324,16 @@ anything: they break each hook on purpose and require the harness to catch every
 mutant. Run one after adding or weakening a case. A suite that still passes when
 the hook is broken is worse than none, because it looks like evidence. Add a
 mutant whenever you add a branch to a hook. They share `hooks/mutate-runner.mjs`,
-which writes mutants to a temp copy and asserts by sha256 that the tracked hook
-was never touched.
+which writes each mutant to its own temp copy and asserts by sha256 that the
+tracked hook was never touched.
+
+Mutants run in parallel, one lane per core minus one, and `check-coverage.sh`
+runs the eight hook suites concurrently under `bun` when it is on PATH and
+`node` otherwise. Whichever runtime starts a suite is the one the hook runs
+under, because the harness spawns it with `process.execPath`. That is why CI
+runs every suite under both: `hooks.json` ships `node`, so the node pass is the
+authoritative one, and bun is the fast local loop. Keep it that way unless
+`hooks.json` changes.
 
 Do not paste the mutant count into prose here. This section said "fifteen
 ways" through eight releases that took it to twenty-three, because nothing checks

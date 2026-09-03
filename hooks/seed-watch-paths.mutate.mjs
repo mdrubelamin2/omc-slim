@@ -128,7 +128,7 @@ const MUTANTS = [
 ];
 
 process.exit(
-  runMutants({
+  await runMutants({
     hook: join(HERE, "seed-watch-paths.mjs"),
     test: join(HERE, "seed-watch-paths.test.mjs"),
     mutants: MUTANTS,

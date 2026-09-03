@@ -131,3 +131,7 @@ rigor-never-scales-down	output-styles	Rigor never scales down	a small task is a 
 blunt-no-flattery	output-styles	Be blunt with the person and brutal with the work	No flattery, no praise for the request, no agreement you do not hold|once, then build what they reaffirm
 deepwork-lane-brief-zero-comments	deepwork	Every writer lane's brief says: add zero comments	Subagents do not inherit the output style|the brief carries it
 three-shapes-never-written	output-styles	Three shapes are never yours to write	a catch that swallows an error or logs and continues|a failure that becomes a default value|a status envelope around something that throws|hides a defect from the caller
+linear-modular-small	output-styles	one unit does one thing	one fact has one owner|are the floor, not aspirations|a second caller exists today
+established-solution-first	output-styles	Take the established solution first	the standard library before a dependency|costs more than it saves
+chestertons-fence	output-styles	until you know why it went in	whose test had to be edited changed behaviour|revert it
+speed-needs-a-number	output-styles	Buy speed with a measurement	owes no benchmark

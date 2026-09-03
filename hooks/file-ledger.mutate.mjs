@@ -107,7 +107,7 @@ const MUTANTS = [
 ];
 
 process.exit(
-  runMutants({
+  await runMutants({
     hook: join(HERE, "file-ledger.mjs"),
     test: join(HERE, "file-ledger.test.mjs"),
     mutants: MUTANTS,

@@ -12,7 +12,7 @@
  * Not a test file. `runMutants` is called by *.mutate.mjs, never run directly.
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   readFileSync,
   writeFileSync,
@@ -21,7 +21,7 @@ import {
   readdirSync,
   statSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { availableParallelism, tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { basename, join } from "node:path";
 
@@ -95,7 +95,52 @@ for (const [expected, run] of [
  * @param {Array}  target.mutants  [label, find, replace, consequence][]
  * @returns {number} the process exit code the caller should use
  */
-export function runMutants({ hook, test, mutants }) {
+const MUTANT_TIMEOUT_MS = 120_000;
+const LANES = Math.max(1, availableParallelism() - 1);
+
+function runHarness(test, variant) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [test], {
+      encoding: "utf8",
+      env: { ...process.env, OMC_SLIM_HOOK_PATH: variant },
+    });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGTERM");
+    }, MUTANT_TIMEOUT_MS);
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      resolve({ status: null, signal: null, error, stdout, stderr });
+    });
+    child.on("close", (status, signal) => {
+      clearTimeout(timer);
+      const error = timedOut
+        ? Object.assign(new Error("spawn ETIMEDOUT"), { code: "ETIMEDOUT" })
+        : undefined;
+      resolve({ status, signal, error, stdout, stderr });
+    });
+  });
+}
+
+async function inLanes(items, lanes, work) {
+  const results = new Array(items.length);
+  let next = 0;
+  const lane = async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await work(items[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(lanes, items.length) }, lane));
+  return results;
+}
+
+export async function runMutants({ hook, test, mutants }) {
   const pristine = readFileSync(hook, "utf8");
   const pristineSha = sha(pristine);
 
@@ -132,45 +177,50 @@ export function runMutants({ hook, test, mutants }) {
   // Neither killed nor survived. See the classification below.
   const unusable = [];
 
-  console.log(`mutants: ${mutants.length}\n`);
+  console.log(`mutants: ${mutants.length} across ${LANES} lane(s)\n`);
 
-  for (const [label, find, replace, consequence] of mutants) {
-    // `find` must appear verbatim in the hook. A missing anchor is reported
-    // rather than skipped — a mutant that stops applying is a mutant that stops
-    // testing.
+  const outcomes = await inLanes(mutants, LANES, async (mutant, index) => {
+    const [label, find, replace, consequence] = mutant;
     if (!pristine.includes(find)) {
-      console.log(`  ANCHOR-MISS  ${label}`);
-      survivors.push([label, consequence, "anchor no longer matches the hook"]);
-      continue;
+      return {
+        line: `  ANCHOR-MISS  ${label}`,
+        survivor: [label, consequence, "anchor no longer matches the hook"],
+      };
     }
 
-    // Named after the hook, because the harness resolves its own default from
-    // its filename and a mismatch would silently test the wrong file.
-    const variant = join(sandbox, basename(hook));
+    const lane = mkdtempSync(join(sandbox, `m${index}-`));
+    const variant = join(lane, basename(hook));
     writeFileSync(variant, pristine.replace(find, replace));
-    const run = spawnSync(process.execPath, [test], {
-      encoding: "utf8",
-      timeout: 120_000,
-      env: { ...process.env, OMC_SLIM_HOOK_PATH: variant },
-    });
+    const run = await runHarness(test, variant);
+    rmSync(lane, { recursive: true, force: true });
 
     const output = (run.stdout || "") + (run.stderr || "");
     const failures = (output.match(/^FAIL/gm) || []).length;
-
     const { outcome, why } = classify(run);
 
     if (outcome === "unusable") {
-      unusable.push([label, consequence, why]);
-      console.log(
-        `  UNUSABLE  ${label.padEnd(46)} ${why} <-- neither killed nor survived`,
-      );
-    } else if (outcome === "survived") {
-      survivors.push([label, consequence, why]);
-      console.log(`  SURVIVED  ${label.padEnd(46)} <-- hole in the tests`);
-    } else {
-      killed++;
-      console.log(`  KILLED    ${label.padEnd(46)} ${failures} case(s) failed`);
+      return {
+        line: `  UNUSABLE  ${label.padEnd(46)} ${why} <-- neither killed nor survived`,
+        unusable: [label, consequence, why],
+      };
     }
+    if (outcome === "survived") {
+      return {
+        line: `  SURVIVED  ${label.padEnd(46)} <-- hole in the tests`,
+        survivor: [label, consequence, why],
+      };
+    }
+    return {
+      line: `  KILLED    ${label.padEnd(46)} ${failures} case(s) failed`,
+      killed: true,
+    };
+  });
+
+  for (const outcome of outcomes) {
+    console.log(outcome.line);
+    if (outcome.killed) killed++;
+    if (outcome.survivor) survivors.push(outcome.survivor);
+    if (outcome.unusable) unusable.push(outcome.unusable);
   }
 
   // The tracked hook was only ever read, so there is nothing to restore. Assert

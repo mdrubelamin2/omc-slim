@@ -321,3 +321,10 @@ audit	rigor-never-scales-down	output-styles	Rigor never scales down
 audit	blunt-no-flattery	output-styles	Be blunt with the person and brutal with the work
 audit	deepwork-lane-brief-zero-comments	deepwork	Every writer lane's brief says: add zero comments
 audit	three-shapes-never-written	output-styles	Three shapes are never yours to write
+audit	linear-modular-small	output-styles	one unit does one thing
+audit	principles-are-the-floor	output-styles	are the floor, not aspirations
+audit	abstraction-pays-rent-today	output-styles	a second caller exists today
+audit	no-magic-literals	output-styles	is a named constant
+audit	established-solution-first	output-styles	Take the established solution first
+audit	chestertons-fence	output-styles	until you know why it went in
+audit	speed-needs-a-number	output-styles	owes no benchmark

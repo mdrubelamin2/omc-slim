@@ -56,6 +56,10 @@ jobs:
         with:
           node-version: "22"
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4"
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -67,21 +71,27 @@ jobs:
 
       - name: Hook suites and their mutants
         run: |
-          node hooks/verify-deliverables.test.mjs
-          node hooks/check-output-style.test.mjs
-          node hooks/seed-watch-paths.test.mjs
-          node hooks/file-ledger.test.mjs
-          node hooks/verify-deliverables.mutate.mjs
-          node hooks/check-output-style.mutate.mjs
-          node hooks/seed-watch-paths.mutate.mjs
-          node hooks/file-ledger.mutate.mjs
+          failed=0
+          for runtime in node bun; do
+            pids=()
+            for suite in verify-deliverables check-output-style seed-watch-paths file-ledger; do
+              $runtime "hooks/$suite.test.mjs" & pids+=($!)
+              $runtime "hooks/$suite.mutate.mjs" & pids+=($!)
+            done
+            for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+          done
+          exit $failed
 
       - name: Component suites
         run: |
-          node skills/codemap/scripts/codemap.test.mjs
-          bash skills/review/scripts/base.test.sh
-          ./scripts/check-adversarial.sh
-          bash scripts/optional/statusline.test.sh
+          pids=()
+          node skills/codemap/scripts/codemap.test.mjs & pids+=($!)
+          bash skills/review/scripts/base.test.sh & pids+=($!)
+          ./scripts/check-adversarial.sh & pids+=($!)
+          bash scripts/optional/statusline.test.sh & pids+=($!)
+          failed=0
+          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+          exit $failed
 
       - name: Coverage, reinforcement, shell, evals
         run: |

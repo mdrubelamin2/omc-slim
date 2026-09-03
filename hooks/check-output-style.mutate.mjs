@@ -138,7 +138,7 @@ const MUTANTS = [
 ];
 
 process.exit(
-  runMutants({
+  await runMutants({
     hook: join(HERE, "check-output-style.mjs"),
     test: join(HERE, "check-output-style.test.mjs"),
     mutants: MUTANTS,

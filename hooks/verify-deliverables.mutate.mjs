@@ -574,7 +574,7 @@ const MUTANTS = [
 ];
 
 process.exit(
-  runMutants({
+  await runMutants({
     hook: join(HERE, "verify-deliverables.mjs"),
     test: join(HERE, "verify-deliverables.test.mjs"),
     mutants: MUTANTS,

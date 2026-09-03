@@ -3,6 +3,78 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.11.1
+
+The Build layer gained a craft floor, in seven sentences. The style already
+said what not to ship: swallowed errors, defaults that hide failures,
+comments. It said nothing about the shape of the code itself, so DRY, KISS,
+YAGNI and SOLID were left to whatever the model happened to bring. They are
+named once as the floor, and the behaviour behind them is stated rather than
+implied: one unit does one thing, one fact has one owner, one name carries
+its intent; an abstraction pays rent when a second caller exists today; a
+file that stops holding one idea gets split; a meaningful literal is a named
+constant and a magic number in a branch is a defect. Reinvention is priced:
+the established solution first, the standard library before a dependency,
+your own only when the dependency costs more than it saves. Two rules were
+lifted out of `simplify`, which nothing invokes while code is being typed:
+Chesterton's Fence, and the rule that a refactor whose test had to be edited
+changed behaviour and gets reverted.
+
+The draft was twice this size, and the cuts are the point. Guard clauses
+over nesting, matching the neighbouring conventions, and reading your own
+diff line by line all came out: the first two are already what a strong
+model does unprompted, the third duplicates the Role layer's own-work rule
+and invites the over-verifying v0.10.0 was built to stop. The performance
+rule was rewritten for the same reason. "Performance is measured, never
+guessed" reads as an order to benchmark everything and would put a profiler
+on a one-line edit against `Cost follows demand`; it now says buy speed with
+a measurement, and a change that claims no speed owes no benchmark. The rule
+gates optimisation rather than mandating measurement.
+
+Build is two paragraphs, split by consequence rather than by which release
+wrote them. The first holds the rules whose breach ships or hides a defect:
+read the artefact, changes trace to the request, ships whole, never
+simplified away, the three shapes never to write, and zero comments. The
+second holds craft, which decides how good the code is once it is correct:
+deletion and Chesterton's Fence and the abstraction test in one sentence
+because they answer one question, then linear-modular-small, the four
+acronyms, named constants, the established solution, and speed. No rule was
+cut and none was weakened. Every pinned pattern was checked present after
+the move, and the reorder cost one token. One cost is real and
+worth naming: check-reinforcement.sh scopes a neighbourhood to the
+containing paragraph, so merging widens the window every Build rule is
+checked in. The gate got weaker in exchange for the section reading as one
+instruction rather than two.
+
+The gate got 3.5x faster, measured. `check-coverage.sh` ran in about 900
+seconds and now runs in 255, and none of that came from the runtime being
+faster. The mutation runner executed its mutants one at a time; it now runs
+one lane per core minus one, each mutant in its own temp sandbox rather than
+sharing a single directory. `file-ledger.mutate.mjs` went 37.4s to 6.4s for
+the same 23/23 killed. The eight hook suites, which are independent
+processes, ran in sequence and now run concurrently, longest first.
+
+Bun is used where it is free. It measured about 2.2x faster than node on
+every hook suite, so `check-coverage.sh` picks it up from PATH and falls
+back to node. It does not touch `hooks.json`: the harness spawns the hook
+with `process.execPath`, so the runtime that starts a suite is the runtime
+the hook runs under, and shipped hooks still run under node. CI now runs
+every suite under both, node as the authoritative pass. Nothing about
+installing this plugin changed, and no user needs bun.
+
+One defect in that work is worth recording because it nearly shipped. The
+first CI draft ended each parallel step with `wait $(jobs -p) || exit 1`,
+which returns the status of the last process waited for. Any earlier suite
+could have failed and the step would have gone green. It now waits on each
+pid and keeps a failure flag.
+
+Cost: 164 real tokens, 2,303 to 2,467 always-on, +7.1%, for the one layer
+that had no rules at all. Stated, not re-baselined. The ratchet floor of
+4,197 is unchanged; v0.11.1 sits 1,730 below it. Seven rules are pinned in
+COVERAGE.tsv and four reinforcement rows in REINFORCEMENT.tsv, so a later
+compression cannot keep the acronyms and drop the behaviour that makes them
+fire.
+
 ## v0.11.0
 
 Asked for a brutal principal engineer that always goes hard, and for zero
