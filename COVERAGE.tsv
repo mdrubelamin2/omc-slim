@@ -298,7 +298,7 @@ audit	fixer-grep-every-caller	output-styles	read every caller first
 audit	size-ladder	output-styles	Four rules size everything
 audit	size-content-override	output-styles	the only self-escalator
 audit	small-owes-one-check	output-styles	No plan, no review, no dispatch
-audit	comments-are-last-resort	output-styles	Comments default to zero
+audit	comments-are-last-resort	output-styles	You write zero comments
 audit	review-delete-added-narration	review/checklists.md	Delete them; git owns history
 audit	simplify-conversational-comment	simplify	A conversation, not a comment
 audit	no-tooling-is-a-question	output-styles	No tooling is a question, not a gap to fill
@@ -317,3 +317,7 @@ fable-mode	verify-before-flagging	oracle	Absence of evidence is not the finding
 superpowers	readonly-does-not-move-git-state	oracle	they discard uncommitted work that is not yours
 research	oracle-assigned-opposition	oracle	Argue the other side, as an assignment
 research	oracle-one-pass-not-debate	oracle	One pass, not a debate
+audit	rigor-never-scales-down	output-styles	Rigor never scales down
+audit	blunt-no-flattery	output-styles	Be blunt with the person and brutal with the work
+audit	deepwork-lane-brief-zero-comments	deepwork	Every writer lane's brief says: add zero comments
+audit	three-shapes-never-written	output-styles	Three shapes are never yours to write

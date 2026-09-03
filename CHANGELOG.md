@@ -3,6 +3,51 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.11.0
+
+Asked for a brutal principal engineer that always goes hard, and for zero
+comments no matter what. The first half is deliberately not a reversal of
+v0.10.0: the benchmark that flipped the default still stands, so rigor and
+spend were split. Rigor never scales down — every task gets the real cause,
+the whole set the request implies, and a check that can fail; a small task is
+a small amount of that, never a softer version of it. Demand still sizes the
+spend. The sizing rule that let a task skip its three pre-edit questions
+("answer what the work warrants of") lost its escape hatch and now says
+answer all three. New in the always-on layer: blunt with the person, brutal
+with the work — no flattery, no praise for the request, no agreement not
+held, and the concern stated once before building what the user reaffirms.
+
+The comment rule lost its loophole. "Comments default to zero; one earns its
+place" was an invitation to argue that this one earns it. It now reads: you
+write zero comments, no exception earns one, only the user asking puts one
+in. Both new rules are pinned in COVERAGE.tsv and REINFORCEMENT.tsv so the
+next compression cannot quietly soften them, and the comment pins moved to
+the new anchor.
+
+Three shapes joined the never-write list in the always-on layer: a catch that
+swallows an error or logs and continues, a failure that becomes a default
+value, and a status envelope around something that throws. The gate had been
+asserting all three belonged on a writer since before v0.10.0; it just could
+not see that no writer was left to carry them.
+
+One gate defect surfaced on the way out, in three copies, and it was
+v0.10.1's to catch. The
+coverage gate's SubagentStop block still carried a literal `{'fixer',
+'designer'}` writer roster a release after both agents were deleted, so an
+empty matcher failed the gate against two names that do not exist — the same
+stale-roster defect v0.10.1 fixed in the disallowedTools table one block
+above, missed here because the figures block exits first and the gate never
+reached it. The slop taxonomy carried the same two names and failed four
+rules the same way. Both rosters now derive from disk: a writer is an agent
+that does not deny both Edit and Write, plus the output style, because
+v0.10.0 made the main thread the default writer and the style is the only
+thing it reads. No agent qualifies today, so the matcher block is quiet by
+construction and revives the day one is added. Proved it can still fail
+against a fixture agent that denies neither.
+
+Always-on 2,061 to 2,303 real, 2,334 to 2,600 chars/4. The surface grew, and
+it is stated rather than re-baselined.
+
 ## v0.10.1
 
 Two tidies the gate surfaced after the tag, and one restoration it argued

@@ -233,7 +233,7 @@ an omission.
 | Class | Who owns it | Why it is not here |
 |---|---|---|
 | Crash and compaction survival | `planning-with-files` — plan, findings and progress on disk, re-injected each turn | `LIMITATIONS.md` names compaction eviction as a top failure mode and ships no mechanism for it |
-| Cost attribution per rule | `token-warden` — every rule pays rent against a frozen benchmark or is evicted | This plugin ships ~2,061 always-on tokens with no per-component accounting |
+| Cost attribution per rule | `token-warden` — every rule pays rent against a frozen benchmark or is evicted | This plugin ships ~2,303 always-on tokens with no per-component accounting |
 | Session resumption as an artefact | native `SessionStart` resume payload, `claude agents` | one hook that reports a condition |
 | Codebase indexing as a token strategy | `Graphify` — a queryable graph | `codemap` writes markdown |
 | Security posture | ECC's `agentshield`, native `--restricted` | there is no security section in this repository |

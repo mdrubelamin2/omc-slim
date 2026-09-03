@@ -986,7 +986,19 @@ for name in sorted(present & set(REQUIRED)):
 # suite carries a dedicated mutant for that identical defect one layer down —
 # now guarding nothing.
 cfg = json.load(open(os.path.join(root, 'hooks/hooks.json')))
-WRITERS = {'fixer', 'designer'}
+# Derived from disk, never a literal list. It was {'fixer', 'designer'} until
+# v0.11.0, and both agents had been deleted a release earlier — so an empty
+# matcher was failing this gate against two names that no longer exist, the same
+# stale-roster defect v0.10.1 fixed one table above and missed here. A writer is
+# an agent that does not deny both Edit and Write; when none do, this block goes
+# quiet by construction and revives the day one is added.
+WRITERS = set()
+for f in sorted(glob.glob(os.path.join(root, 'agents/*.md'))):
+    fm = re.search(r'^disallowedTools:\s*\[([^\]]*)\]',
+                   open(f, encoding='utf-8').read(), re.M)
+    denied = {t.strip() for t in fm.group(1).split(',')} if fm else set()
+    if not {'Edit', 'Write'} <= denied:
+        WRITERS.add(os.path.basename(f)[:-3])
 matchers = [g.get('matcher', '') for g in cfg['hooks'].get('SubagentStop', [])]
 covered = set()
 for pat in matchers:
@@ -1211,7 +1223,19 @@ estate = {}
 for pat in ('agents/*.md', 'skills/*/*.md', 'output-styles/*.md'):
     for f in glob.glob(os.path.join(root, pat)):
         estate[os.path.relpath(f, root)] = open(f, encoding='utf-8').read()
-writers = [k for k in estate if k in ('agents/fixer.md', 'agents/designer.md')]
+# Derived, never a literal list. It named fixer and designer until v0.11.0, both
+# deleted a release earlier, so four 'writer'-scoped rules could never pass —
+# the third copy of one stale roster in this file. A writer is any agent that
+# does not deny both Edit and Write, plus the output style, because v0.10.0 made
+# the main thread the default writer and the style is the only thing it reads.
+writers = ['output-styles/omc-slim.md']
+for k, v in estate.items():
+    if not k.startswith('agents/'):
+        continue
+    fm = re.search(r'^disallowedTools:\s*\[([^\]]*)\]', v, re.M)
+    denied = {t.strip() for t in fm.group(1).split(',')} if fm else set()
+    if not {'Edit', 'Write'} <= denied:
+        writers.append(k)
 
 bad = 0
 for name, pattern, scope in TAXONOMY:

@@ -172,7 +172,7 @@ Run these in sequence. Each is falsifiable and most cost nothing.
 Standing 2026-08-29: claimed pass on 1–7, 8–10 unrun.
 
 Standing 2026-08-31, after v0.9.9: checkpoint 1 matches the measured figure
-in-repo (2,061 real / 2,334 chars/4). The GitHub description is the
+in-repo (2,303 real / 2,600 chars/4). The GitHub description is the
 maintainer's to update after the tag. Checkpoint 11 is implemented, unpaid.
 Checkpoints 2, 8, 9, 10 still unrun. Checkpoint 12: still not in the official
 catalog. Checkpoint 14: identity agrees across style, marketplace, plugin.json,

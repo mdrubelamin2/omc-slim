@@ -169,6 +169,8 @@ A confirmation-shaped review confirms; only a seat that reads the history can ov
 
 **Find-and-replace safety.** Anchor on word boundaries, and check the result. The writer lane running the bulk edits carries that procedure in its brief.
 
+**Every writer lane's brief says: add zero comments.** Subagents do not inherit the output style, so the always-on comment rule reaches a lane only when the brief carries it. A lane briefed without it writes the narration the style forbids, and the gate then pays to remove it.
+
 **Progress file, which is also the handover.** Write this file at every phase boundary and before any handover, so a fresh session can continue from it. Compaction keeps what was built and loses what was decided against. Work spanning sessions keeps a log at `docs/deepwork/<task-slug>.md`. It holds current understanding, confirmed findings, phase status, validation results, open questions, what was tried and failed, and the next first action. Reference files by path, never paste contents. Update after decisions, reviews, phase completions and scope changes; re-read it before continuing.
 
 A dead end nobody wrote down gets walked a second time by whoever picks the work up next. One line each is enough. The next first action must be executable without reading anything but this file. "Carry on with the migration" fails that test, "re-run the seed script against staging and compare row counts" passes.
