@@ -52,11 +52,7 @@ import {
   openSync,
   readFileSync,
   readSync,
-  realpathSync,
 } from "node:fs";
-import { createHash } from "node:crypto";
-import { homedir } from "node:os";
-import { basename, dirname, join, resolve, sep } from "node:path";
 
 /**
  * Cap on the bytes read from a transcript: the tail behind the last human user
