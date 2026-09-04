@@ -534,18 +534,11 @@ suite_counts = []
 SUITES = [
     ('mutants', 'hooks/verify-deliverables.mutate.mjs', r'score: (\d+)/(\d+) killed'),
     ('test cases', 'hooks/verify-deliverables.test.mjs', r'^(\d+)/(\d+) passed$'),
-    ('test cases', 'hooks/check-output-style.test.mjs', r'^(\d+)/(\d+) passed$'),
-    ('mutants', 'hooks/check-output-style.mutate.mjs', r'score: (\d+)/(\d+) killed'),
-    ('test cases', 'hooks/seed-watch-paths.test.mjs', r'^(\d+)/(\d+) passed$'),
-    ('mutants', 'hooks/seed-watch-paths.mutate.mjs', r'score: (\d+)/(\d+) killed'),
-    ('test cases', 'hooks/file-ledger.test.mjs', r'^(\d+)/(\d+) passed$'),
-    ('mutants', 'hooks/file-ledger.mutate.mjs', r'score: (\d+)/(\d+) killed'),
 ]
 JS_RUNTIME = shutil.which('bun') or 'node'
 SUITE_LANES = min(len(SUITES), max(1, (os.cpu_count() or 2)))
 
 leaky = {'OMC_SLIM_HOOK_PATH', 'OMC_SLIM_SCAN_BUDGET_MS',
-         'OMC_SLIM_STYLE_BUDGET_MS', 'OMC_SLIM_SELF_ROOT',
          'CLAUDE_CONFIG_DIR'}
 suite_env = {k: v for k, v in os.environ.items() if k not in leaky}
 
@@ -593,8 +586,9 @@ for label, script, total in suite_counts:
 if len(suite_counts) == len(SUITES) and not bad:
     cases = sum(t for label, _, t in suite_counts if label == 'test cases')
     mutants = sum(t for label, _, t in suite_counts if label == 'mutants')
+    suites = len(suite_counts) // 2
     print(f'{cases} hook test cases and {mutants} mutants across '
-          f'{len(suite_counts) // 2} suites, each total stated in README.')
+          f'{suites} suite{"" if suites == 1 else "s"}, each total stated in README.')
 
 if bad:
     raise SystemExit(1)
@@ -892,7 +886,6 @@ trap 'rm -rf "$COMPONENT_OUT"' EXIT
 COMPONENT_SUITES=(
   "bash $ROOT/skills/review/scripts/base.test.sh"
   "$JS_RUNTIME $ROOT/skills/codemap/scripts/codemap.test.mjs"
-  "bash $ROOT/scripts/check-adversarial.sh"
   "bash $ROOT/scripts/optional/statusline.test.sh"
 )
 for index in "${!COMPONENT_SUITES[@]}"; do

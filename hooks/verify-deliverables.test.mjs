@@ -11,21 +11,7 @@
  * OMC_SLIM_DEBUG=1 and read the verdict from its `command:` trace on stderr.
  *
  * Fixtures use the real transcript shape ($.message.content[]) so the depth
- * bound in collectBlocks is exercised as it is in production. Write blocks carry
- * the path field the real tool uses — `notebook_path` for NotebookEdit,
- * `file_path` for the rest — because the hook reads it.
- *
- * Every SubagentStop payload carries a decoy `transcript_path` — the parent
- * session, which the hook must never read. It only discriminates where the two
- * verdicts differ: in the warning cases it holds a successful write, so a hook
- * reading the parent falls silent; in the case with no agent transcript at all
- * it holds none, so a hook falling back to the parent warns. Elsewhere both
- * readings are silent and the decoy proves nothing.
- *
- * Every spawn gets its own CLAUDE_CONFIG_DIR under the fixture root, so the
- * FileChanged ledger the hook looks for is the one the case wrote, never the
- * developer's own. The coverage gate strips the variable from the suite's
- * environment for the same reason.
+ * bound in collectBlocks is exercised as it is in production.
  *
  * Self-contained: builds its fixtures in a temp dir and removes them. No
  * dependencies beyond node built-ins.
@@ -68,9 +54,6 @@ const OLD_CAP_BYTES = 2 * 1024 * 1024;
 const CAP_BYTES = 64 * 1024 * 1024;
 const OVER_CAP_BYTES = 65 * 1024 * 1024;
 
-/** MAX_LEDGER_BYTES in the hook: a ledger over this is not read. */
-const LEDGER_CAP_BYTES = 1024 * 1024;
-
 /** TAIL_CHUNK_BYTES in the hook; a fixture past this makes Stop's backward read cross a boundary. */
 const CHUNK_BYTES = 1024 * 1024;
 
@@ -82,15 +65,14 @@ const CHUNK_BYTES = 1024 * 1024;
 const TIMING_BUDGET_MS = 500;
 
 /**
- * The only two fields the hook may emit, on either event. Anything else is a
- * contract breach: `hookSpecificOutput.additionalContext` re-enters a finishing
- * subagent on SubagentStop and continues the turn on Stop.
+ * The only two fields the hook may emit. Anything else is a contract breach:
+ * `hookSpecificOutput.additionalContext` continues the turn on Stop.
  */
 const ALLOWED_FIELDS = new Set(["systemMessage", "suppressOutput"]);
 
 const WRITE_ID = "toolu_01A";
 
-/** The session every SubagentStop payload belongs to; ledger rows are scoped to it. */
+/** The session every payload belongs to. */
 const SESSION_ID = "sess-0001";
 
 /**
@@ -130,15 +112,10 @@ function assistantBash(id, command) {
   return assistantTool(id, "Bash", { command, description: "run it" });
 }
 
-/** One MCP tool call: a write the transcript cannot show, like Bash. */
-function assistantMcp(id) {
-  return assistantTool(id, "mcp__filesystem__write_file", { path: "src/x.ts", content: "x" });
-}
-
 /** One dispatch to another agent, whose own transcript this hook cannot see. */
 function assistantDispatch(id) {
   return assistantTool(id, "Task", {
-    subagent_type: "omc-slim:fixer",
+    subagent_type: "general-purpose",
     prompt: "run the suite and report",
   });
 }
@@ -261,17 +238,6 @@ function compactSummary() {
   };
 }
 
-/** The same line dated, as every real message line is. */
-function stamped(line, ms) {
-  return { ...line, timestamp: new Date(ms).toISOString() };
-}
-
-/** The same line with one extra object between `message` and `content`. */
-function nestedOneLevelDeeper(line) {
-  const { role, content } = line.message;
-  return { ...line, message: { role, envelope: { content } } };
-}
-
 /** Assistant turns that invoke no tool at all, up to the byte count asked for. */
 function paddedLines(targetBytes) {
   const pad = "x".repeat(2000);
@@ -316,67 +282,6 @@ function configDirFor(root) {
   return join(root, "claude-config");
 }
 
-/** The ledger path the hook derives for a project at `root`; kept in step with hooks/file-ledger.mjs. */
-function ledgerPathFor(root) {
-  const key = createHash("sha256").update(realpathSync(root)).digest("hex").slice(0, 16);
-  return join(configDirFor(root), "omc-slim", "ledgers", `${key}.jsonl`);
-}
-
-function writeLedger(root, entries) {
-  writeLedgerText(root, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
-}
-
-function writeLedgerText(root, text) {
-  const path = ledgerPathFor(root);
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, text);
-}
-
-/** A ledger row this agent could have caused: its session, a moment ago, a change inside the project. */
-function inSessionRow(root, overrides = {}) {
-  return {
-    t: Date.now(),
-    session_id: SESSION_ID,
-    path: inProject(root),
-    event: "change",
-    ...overrides,
-  };
-}
-
-/** The same row with no session_id: a shape the writer never produces. */
-function unscopedRow(root) {
-  const row = inSessionRow(root);
-  delete row.session_id;
-  return row;
-}
-
-/**
- * A fixer that did its work through the shell and left no write block: the
- * shape the ledger exists for. Every line is dated, as real lines are, so the
- * hook can place the ledger row against the transcript's start.
- */
-function shellOnlyTranscript(root, startedMs, lastText = "I rewrote it with sed.") {
-  return writeTranscript(root, "agent.jsonl", [
-    stamped(assistantBash("b1", "sed -i 's/a/b/' src/x.ts"), startedMs),
-    stamped(toolResultOk("b1"), startedMs + 1),
-    stamped(assistantText(lastText), startedMs + 2),
-  ]);
-}
-
-/**
- * A fixer whose one Write went to /tmp and whose real work went through the
- * shell: the outside-write state, with a ledger row that may contradict it.
- */
-function scratchAndShellTranscript(root, startedMs) {
-  return writeTranscript(root, "agent.jsonl", [
-    stamped(assistantWrite(WRITE_ID, "Write", SCRATCH_PATH), startedMs),
-    stamped(toolResultOk(WRITE_ID), startedMs + 1),
-    stamped(assistantBash("b1", "sed -i 's/a/b/' src/x.ts"), startedMs + 2),
-    stamped(toolResultOk("b1"), startedMs + 3),
-    stamped(assistantText("Notes in /tmp; the fix went in with sed."), startedMs + 4),
-  ]);
-}
-
 /** One line of `bytes` bytes and no newline: a tail Stop's backward read must not join chunk by chunk. */
 function singleLineTranscript(root, bytes) {
   const path = join(root, "one-line.jsonl");
@@ -400,30 +305,6 @@ function sparseTranscript(root, bytes) {
     closeSync(fd);
   }
   return path;
-}
-
-/**
- * The parent session. Contains a successful IN-PROJECT write the hook must never
- * credit — in-project so that a hook reading the parent falls fully silent, which
- * is what makes the decoy discriminate in the warning cases.
- */
-function writeDecoy(root) {
-  return writeTranscript(root, "parent-session.jsonl", [
-    assistantWrite("toolu_parent", "Edit", inProject(root)),
-    toolResultOk("toolu_parent"),
-  ]);
-}
-
-/**
- * A parent session with no successful write, for the case that has no agent
- * transcript. There, "read the parent instead" and "cannot tell" are both
- * silent against the ordinary decoy; only a parent holding no write separates
- * them, by making the wrong reading warn.
- */
-function writeQuietDecoy(root) {
-  return writeTranscript(root, "parent-session.jsonl", [
-    assistantText("the main thread only read files."),
-  ]);
 }
 
 // --- runner -------------------------------------------------------------------
@@ -459,13 +340,9 @@ function spawnHook(buildStdin, debugFlag, extraEnv = {}) {
     const env = {
       ...process.env,
       OMC_SLIM_DEBUG: debugFlag,
-      // The hook derives the ledger path from this. Under the fixture root, so
-      // the ledger it reads is the one the case wrote and never the developer's.
       CLAUDE_CONFIG_DIR: configDirFor(root),
       ...extraEnv,
     };
-    // Not a seam of this hook; a value in the caller's shell must not reach it.
-    delete env.OMC_SLIM_LEDGER_PATH;
     const res = spawnSync(process.execPath, [HOOK], {
       input: buildStdin(root),
       encoding: "utf8",
@@ -534,60 +411,6 @@ const OUTSIDE_PHRASE = "landed outside the";
 /** State 3, which is about the report rather than about the files. */
 const CLAIM_PHRASE = "reported a verification result";
 
-function warningViolation(out, expected, rejected) {
-  const { systemMessage } = out;
-  if (typeof systemMessage !== "string")
-    return "expected a systemMessage, got none";
-  if (!systemMessage.includes(expected))
-    return `systemMessage did not say "${expected}": ${systemMessage}`;
-  if (systemMessage.includes(rejected))
-    return `systemMessage used the other state's wording: ${systemMessage}`;
-  return null;
-}
-
-/** State 1: no successful write-family tool use anywhere. */
-function expectWarning(res) {
-  const violation = contractViolation(res);
-  if (violation) return violation;
-  return warningViolation(parseStdout(res.stdout), NO_WRITE_PHRASE, OUTSIDE_PHRASE);
-}
-
-/** State 2: writes succeeded, every one of them outside the project root. */
-function expectOutsideWarning(res) {
-  const violation = contractViolation(res);
-  if (violation) return violation;
-  return warningViolation(parseStdout(res.stdout), OUTSIDE_PHRASE, NO_WRITE_PHRASE);
-}
-
-/**
- * A warning naming one specific agent. Pins two things a plain warning does not:
- * that the namespace is stripped before the user sees it, and that every agent
- * in WRITE_AGENTS is actually reached — `designer` is registered in hooks.json
- * and would otherwise be untested.
- */
-function expectWarningNaming(agentName) {
-  return (res) => {
-    const violation = expectWarning(res);
-    if (violation) return violation;
-    const { systemMessage } = parseStdout(res.stdout);
-    if (!systemMessage.includes(`the ${agentName} agent`))
-      return `expected "the ${agentName} agent", got: ${systemMessage}`;
-    return null;
-  };
-}
-
-/** The same, for the outside-the-project state. */
-function expectOutsideWarningNaming(agentName) {
-  return (res) => {
-    const violation = expectOutsideWarning(res);
-    if (violation) return violation;
-    const { systemMessage } = parseStdout(res.stdout);
-    if (!systemMessage.includes(`the ${agentName} agent`))
-      return `expected "the ${agentName} agent", got: ${systemMessage}`;
-    return null;
-  };
-}
-
 /** The claim advisory, and neither write-state phrase beside it. */
 function claimViolation(out) {
   const { systemMessage } = out;
@@ -628,33 +451,11 @@ function expectStopClaim(res) {
   return null;
 }
 
-/**
- * Both states at once, in ONE message. Two systemMessages cannot happen — a hook
- * emits one JSON object — so the failure this guards against is the second
- * advisory being dropped, or the first being replaced by it.
- */
-function expectCombinedWarning(res) {
-  const violation = contractViolation(res);
-  if (violation) return violation;
-  const { systemMessage } = parseStdout(res.stdout);
-  if (typeof systemMessage !== "string")
-    return "expected a systemMessage, got none";
-  for (const phrase of [NO_WRITE_PHRASE, CLAIM_PHRASE]) {
-    if (!systemMessage.includes(phrase))
-      return `systemMessage dropped "${phrase}": ${systemMessage}`;
-  }
-  return null;
-}
-
 /** Tracing must go to stderr only: a stray console.log corrupts the JSON. */
 function expectDebugTrace(res) {
   const violation = outputViolation(res);
   if (violation) return violation;
-  const warning = warningViolation(
-    parseStdout(res.stdout),
-    NO_WRITE_PHRASE,
-    OUTSIDE_PHRASE,
-  );
+  const warning = claimViolation(parseStdout(res.stdout));
   if (warning) return warning;
   if (!res.stderr.startsWith("[omc-slim]"))
     return `expected an [omc-slim] trace on stderr, got: ${res.stderr || "(empty)"}`;
@@ -722,12 +523,10 @@ function expectNonCheck(res) {
  * payload with no cwd at all. `lastMessage` null models a payload without
  * `last_assistant_message`, the shape a final message with no text block has.
  */
-function payload(agentType, agentTranscript, root, cwd = root, lastMessage = null) {
+function payload(agentTranscript, root, cwd = root, lastMessage = null) {
   return JSON.stringify({
-    agent_type: agentType,
-    agent_transcript_path: agentTranscript,
-    transcript_path: writeDecoy(root),
-    hook_event_name: "SubagentStop",
+    transcript_path: agentTranscript,
+    hook_event_name: "Stop",
     session_id: SESSION_ID,
     ...(cwd === null ? {} : { cwd }),
     ...(lastMessage === null ? {} : { last_assistant_message: lastMessage }),
@@ -759,7 +558,7 @@ function claimAfterCommand(command, claim = "All tests passing.", result = toolR
       result("bash1"),
       assistantText(claim),
     ]);
-    return payload("omc-slim:fixer", transcript, root, root, claim);
+    return payload(transcript, root, root, claim);
   };
 }
 
@@ -770,7 +569,7 @@ function claimOnly(text) {
       ...cleanInProjectWrite(root),
       assistantText(text),
     ]);
-    return payload("omc-slim:fixer", transcript, root, root, text);
+    return payload(transcript, root, root, text);
   };
 }
 
@@ -958,187 +757,10 @@ const NOT_CLAIMS = [
 // --- cases --------------------------------------------------------------------
 
 const cases = [
-  {
-    // A workspace link, a nix or Bazel symlink farm, or a linked package
-    // directory: the path is inside the project and resolves outside it. The
-    // resolved-only test called that "landed outside the project directory —
-    // nothing in the project changed", which is false in both clauses about a
-    // file the user can see in their own tree.
-    name: "a write through a symlinked directory inside the project is not outside it",
-    run: () =>
-      runHook((root) => {
-        const outside = mkdtempSync(join(tmpdir(), "omc-outside-"));
-        symlinkSync(outside, join(root, "linked"), "dir");
-        writeFileSync(join(outside, "a.ts"), "x");
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite("w1", "Write", join(root, "linked", "a.ts")),
-          toolResultOk("w1"),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectSilence,
-  },
 
-  {
-    name: "fixer that wrote nothing is flagged",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("I looked at the file and it seems fine."),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectWarning,
-  },
-  {
-    name: "fixer with a successful in-project write stays silent",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "Edit", inProject(root)),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectSilence,
-  },
-  {
-    // `agent_type` is `<plugin name>:<agent>` in a marketplace install and in a
-    // `--plugin-dir` session alike; this is the spelling the hook is written for.
-    name: "the namespaced omc-slim:fixer is covered, and named bare",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("nothing to do here."),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectWarningNaming("fixer"),
-  },
-  {
-    // hooks.json never runs the hook for a bare name, and the hook's own layer
-    // agrees: a `fixer` with no namespace is some other plugin's agent, or
-    // nobody's, and has not agreed to this brief.
-    name: "a bare fixer is another plugin's or nobody's, and stays silent",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("nothing to do here."),
-        ]);
-        return payload("fixer", transcript, root);
-      }),
-    check: expectSilence,
-  },
-  {
-    // A designer that gives up before touching anything is a no-write outcome
-    // that warrants the warning: a designer always writes, since it has no
-    // review-only mode.
-    name: "designer is checked too, not just fixer",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("the build failed, so I stopped before changing anything."),
-        ]);
-        return payload("omc-slim:designer", transcript, root);
-      }),
-    check: expectWarningNaming("designer"),
-  },
-  {
-    // `Write` is the tool a fixer reaches for most. Without a fixture of its
-    // own, dropping it from the set kills no test and no mutant while turning
-    // every Write-only run into a false accusation.
-    name: "Write counts as a write",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "Write", inProject(root)),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectSilence,
-  },
-  {
-    // NotebookEdit is the one write tool that does not use `file_path`: its
-    // schema says `notebook_path`. A fixture spelling it `file_path` would not
-    // notice the hook reading the wrong field.
-    //
-    // Written OUTSIDE the project on purpose, which makes one fixture prove two
-    // things: dropping NotebookEdit from WRITE_TOOLS produces the no-write
-    // message, and failing to read `notebook_path` produces silence. Both differ
-    // from the outside-the-project message this expects.
-    name: "NotebookEdit counts as a write, and its path is notebook_path",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "NotebookEdit", SCRATCH_PATH),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectOutsideWarningNaming("fixer"),
-  },
-  {
-    name: "MultiEdit counts as a write",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "MultiEdit", inProject(root)),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectSilence,
-  },
-  {
-    name: "read-only agent is exempt",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("here is what I found."),
-        ]);
-        return payload("omc-slim:explorer", transcript, root);
-      }),
-    check: expectSilence,
-  },
-  {
-    name: "denied write is not a deliverable",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID),
-          toolResultDenied(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectWarning,
-  },
-  {
-    name: "missing agent transcript stays silent",
-    run: () =>
-      runHook((root) =>
-        JSON.stringify({
-          agent_type: "omc-slim:fixer",
-          transcript_path: writeQuietDecoy(root),
-        }),
-      ),
-    check: expectSilence,
-  },
   {
     name: "malformed stdin does not crash",
     run: () => runHook(() => "{ not json"),
-    check: expectSilence,
-  },
-  {
-    name: "write nested one level deeper is still found",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          nestedOneLevelDeeper(assistantWrite(WRITE_ID, "Edit", inProject(root))),
-          nestedOneLevelDeeper(toolResultOk(WRITE_ID)),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
     check: expectSilence,
   },
   {
@@ -1155,20 +777,42 @@ const cases = [
           throw new Error(
             `fixture is ${size} bytes, under the old ${OLD_CAP_BYTES}-byte cap`,
           );
-        return payload("omc-slim:fixer", transcript, root);
+        return payload(transcript, root, root, "All tests pass.");
       }),
-    check: expectWarning,
+    check: expectClaimWarning,
   },
   {
     name: "debug tracing goes to stderr, never stdout",
     run: () =>
       runHookWithDebug((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("I looked at the file and it seems fine."),
+          assistantBash("bash1", "git status"),
+          toolResultOk("bash1"),
+          assistantText("All tests pass."),
         ]);
-        return payload("omc-slim:fixer", transcript, root);
+        return payload(transcript, root, root, "All tests pass.");
       }),
     check: expectDebugTrace,
+  },
+  {
+    // The over-cap fixture above holds no newline, so it trips the long-line
+    // bail before the byte cap is ever consulted. This one is all newlines and
+    // no human user line, so the backward walk runs until the cap stops it.
+    // Removing the cap reads the whole file and the claim then speaks.
+    name: "no human user line within the cap: the backward read stops",
+    run: () =>
+      runHook((root) => {
+        const transcript = writeTranscript(
+          root,
+          "no-human.jsonl",
+          paddedLines(CAP_BYTES + CHUNK_BYTES),
+        );
+        const size = statSync(transcript).size;
+        if (size <= CAP_BYTES)
+          throw new Error(`fixture is ${size} bytes, under the ${CAP_BYTES}-byte cap`);
+        return payload(transcript, root, root, "All tests pass.");
+      }),
+    check: expectSilence,
   },
   {
     name: "transcript over the 64 MB cap is not read",
@@ -1180,7 +824,7 @@ const cases = [
           throw new Error(
             `fixture is ${size} bytes, under the ${CAP_BYTES}-byte cap`,
           );
-        return payload("omc-slim:fixer", transcript, root);
+        return payload(transcript, root);
       }),
     check: expectSilence,
   },
@@ -1197,7 +841,7 @@ const cases = [
         spawnSync("mkfifo", [fifo]);
         if (!lstatSync(fifo).isFIFO())
           throw new Error("fixture is not a FIFO");
-        return payload("omc-slim:fixer", fifo, root);
+        return payload(fifo, root);
       }),
     check: expectSilence,
   },
@@ -1215,9 +859,11 @@ const cases = [
     run: () =>
       runHookWithNoScanBudget((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("I read the file and decided nothing needed changing."),
+          assistantBash("bash1", "git status"),
+          toolResultOk("bash1"),
+          assistantText("All tests pass."),
         ]);
-        return payload("omc-slim:fixer", transcript, root);
+        return payload(transcript, root, root, "All tests pass.");
       }),
     check: expectSilence,
   },
@@ -1231,11 +877,13 @@ const cases = [
     run: () =>
       runHookWithBlankScanBudget((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("I read the file and decided nothing needed changing."),
+          assistantBash("bash1", "git status"),
+          toolResultOk("bash1"),
+          assistantText("All tests pass."),
         ]);
-        return payload("omc-slim:fixer", transcript, root);
+        return payload(transcript, root, root, "All tests pass.");
       }),
-    check: expectWarningNaming("fixer"),
+    check: expectClaimWarning,
   },
   {
     // Same shape, one step further out: a value that is not a number must fall
@@ -1245,117 +893,13 @@ const cases = [
     run: () =>
       runHookWithJunkScanBudget((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("I read the file and decided nothing needed changing."),
+          assistantBash("bash1", "git status"),
+          toolResultOk("bash1"),
+          assistantText("All tests pass."),
         ]);
-        return payload("omc-slim:fixer", transcript, root);
+        return payload(transcript, root, root, "All tests pass.");
       }),
-    check: expectWarningNaming("fixer"),
-  },
-  {
-    // C8. A successful Write to /tmp is not a deliverable: the agent "wrote a
-    // file" and the project is untouched. It is a warning, but NOT the no-write
-    // warning, which would be false here. expectOutsideWarning rejects the other
-    // state's wording, so a hook that collapses the two states into one fails.
-    name: "a successful write outside the project is reported as such",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "Write", SCRATCH_PATH),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectOutsideWarningNaming("fixer"),
-  },
-  {
-    // BOTH sides of the containment test must be symlink-resolved, or it is a
-    // string comparison between two spellings of the same directory — on macOS
-    // `/tmp` is `/private/tmp` and the OS temp dir is under `/var` ->
-    // `/private/var`, so this is the ordinary case, not an exotic one.
-    //
-    // The payload's cwd and the written path go through two DIFFERENT symlinks
-    // to one directory, deliberately: resolving only the root leaves the two
-    // aliases unequal, and so does resolving only the path. Either half missing
-    // turns a write the agent was asked to make into an accusation, and neither
-    // half can hide behind a platform where the temp dir happens to be real.
-    name: "a symlinked project root still contains its own writes",
-    run: () =>
-      runHook((root) => {
-        const project = join(root, "project");
-        mkdirSync(join(project, "src"), { recursive: true });
-        const cwdAlias = join(root, "by-cwd");
-        const writeAlias = join(root, "by-write");
-        symlinkSync(project, cwdAlias);
-        symlinkSync(project, writeAlias);
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "Write", join(writeAlias, "src", "x.ts")),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root, cwdAlias);
-      }),
-    check: expectSilence,
-  },
-  {
-    // `/` already ends in the separator. Appending another one makes the prefix
-    // `//`, which no path starts with, so every write under a project rooted
-    // there is called outside it.
-    name: "a project rooted at / still contains a write under /tmp",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "Write", join("/tmp", basename(root), "x")),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root, "/");
-      }),
-    check: expectSilence,
-  },
-  {
-    // No cwd means the root cannot be resolved, so no write can be placed. The
-    // hook must fall back to the pre-path behaviour — any successful write
-    // counts — rather than guess that a scratch path is outside a project it
-    // cannot locate. The fixture writes to /tmp precisely so that a hook which
-    // guesses warns here and fails.
-    name: "a payload with no cwd cannot place writes, and says nothing",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "Write", SCRATCH_PATH),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root, null);
-      }),
-    check: expectSilence,
-  },
-  {
-    // A write tool_use whose input carries no path at all. Unplaceable is not
-    // outside: treating it as outside turns any tool shape this hook does not
-    // know about into an accusation.
-    name: "a successful write with no path in its input stays silent",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantWrite(WRITE_ID, "Write", null),
-          toolResultOk(WRITE_ID),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectSilence,
-  },
-  {
-    // `otherco:fixer` is another plugin's agent, following another plugin's
-    // brief. Warning it about omc-slim's deliverable rule is over-reach.
-    // hooks.json is pinned to the same namespace; this proves the two layers
-    // agree.
-    name: "another plugin's namespaced agent is not ours to police",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("I reviewed it and changed nothing."),
-        ]);
-        return payload("otherco:fixer", transcript, root);
-      }),
-    check: expectSilence,
+    check: expectClaimWarning,
   },
 
   // --- state 3: a verification result nothing in the transcript ran ----------
@@ -1417,7 +961,7 @@ const cases = [
         const transcript = writeTranscript(root, "agent.jsonl", [
           ...cleanInProjectWrite(root),
         ]);
-        return payload("omc-slim:fixer", transcript, root, root, "");
+        return payload(transcript, root, root, "");
       }),
     check: expectSilence,
   },
@@ -1433,7 +977,7 @@ const cases = [
           ...cleanInProjectWrite(root),
           assistantText("All tests pass."),
         ]);
-        return payload("omc-slim:fixer", transcript, root);
+        return payload(transcript, root);
       }),
     check: expectSilence,
   },
@@ -1449,14 +993,14 @@ const cases = [
           toolResultOk("task1"),
           assistantText("All tests pass."),
         ]);
-        return payload("omc-slim:fixer", transcript, root, root, "All tests pass.");
+        return payload(transcript, root, root, "All tests pass.");
       }),
     check: expectSilence,
   },
   {
-    // SubagentStop carries `last_assistant_message`, and it is the only text
-    // the hook reads. The transcript's own last text is innocuous here, so a
-    // hook reading the transcript instead falls silent and fails this case.
+    // `last_assistant_message` is the only text the hook reads. The
+    // transcript's own last text is innocuous here, so a hook reading the
+    // transcript instead falls silent and fails this case.
     name: "the payload's last_assistant_message is what gets read",
     run: () =>
       runHook((root) => {
@@ -1464,7 +1008,7 @@ const cases = [
           ...cleanInProjectWrite(root),
           assistantText("I made the change."),
         ]);
-        return payload("omc-slim:fixer", transcript, root, root, "Typecheck clean.");
+        return payload(transcript, root, root, "Typecheck clean.");
       }),
     check: expectClaimWarning,
   },
@@ -1488,22 +1032,9 @@ const cases = [
           toolResultDenied("task1"),
           assistantText("The suite passes."),
         ]);
-        return payload("omc-slim:fixer", transcript, root, root, "The suite passes.");
+        return payload(transcript, root, root, "The suite passes.");
       }),
     check: expectClaimWarning,
-  },
-  {
-    // Both states at once — nothing written AND a result reported that nothing
-    // ran. Both are worth saying; the user gets one message, not two.
-    name: "a write state and a claim state arrive as one message",
-    run: () =>
-      runHook((root) => {
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          assistantText("Build succeeded."),
-        ]);
-        return payload("omc-slim:fixer", transcript, root, root, "Build succeeded.");
-      }),
-    check: expectCombinedWarning,
   },
   {
     // No agent transcript means no evidence either way. The payload still
@@ -1513,8 +1044,9 @@ const cases = [
     run: () =>
       runHook((root) =>
         JSON.stringify({
-          agent_type: "omc-slim:fixer",
-          transcript_path: writeQuietDecoy(root),
+          hook_event_name: "Stop",
+          transcript_path: join(root, "does-not-exist.jsonl"),
+          cwd: root,
           last_assistant_message: "All tests pass.",
         }),
       ),
@@ -1610,210 +1142,6 @@ const cases = [
     check: expectSilence,
   })),
 
-  // --- the FileChanged ledger: a write this transcript cannot show -----------
-  // Auto-mode Bash (or an MCP server) wrote a project file and FileChanged
-  // recorded it. The transcript has no Edit/Write. Accusing "no write tool" is
-  // the false accusation the ledger exists to prevent; the event carries no
-  // agent id, so a hit is silence, not a deliverable. Only a row this agent
-  // could have caused counts: its session, after its transcript began, inside
-  // the project, not a deletion — and only when the agent ran a tool that can
-  // write without leaving a write block.
-  {
-    name: "a FileChanged ledger hit abstains from the no-write warning",
-    run: () =>
-      runHook((root) => {
-        writeLedger(root, [inSessionRow(root)]);
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, Date.now() - 60_000), root);
-      }),
-    check: expectSilence,
-  },
-  {
-    name: "an MCP tool call is a write the transcript cannot show, so the ledger is consulted",
-    run: () =>
-      runHook((root) => {
-        const started = Date.now() - 60_000;
-        writeLedger(root, [inSessionRow(root)]);
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          stamped(assistantMcp("m1"), started),
-          stamped(toolResultOk("m1"), started + 1),
-          stamped(assistantText("written through the filesystem server."), started + 2),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectSilence,
-  },
-  {
-    // Every write block went to /tmp, and FileChanged recorded an in-project
-    // write in this session after the agent started. "Nothing in the project
-    // changed" is then a claim the ledger contradicts, and it must not be made.
-    name: "a FileChanged ledger hit abstains from the outside-write warning too",
-    run: () =>
-      runHook((root) => {
-        writeLedger(root, [inSessionRow(root)]);
-        return payload("omc-slim:fixer", scratchAndShellTranscript(root, Date.now() - 60_000), root);
-      }),
-    check: expectSilence,
-  },
-  {
-    name: "the same scratch-only transcript with no ledger row is an outside write",
-    run: () =>
-      runHook((root) =>
-        payload("omc-slim:fixer", scratchAndShellTranscript(root, Date.now() - 60_000), root),
-      ),
-    check: expectOutsideWarningNaming("fixer"),
-  },
-  {
-    // Another fixer in the same session made that write. An agent that ran no
-    // shell and no MCP tool cannot have, and the ledger cannot vouch for it.
-    name: "a ledger hit does not cover an agent that ran no shell or MCP tool",
-    run: () =>
-      runHook((root) => {
-        writeLedger(root, [inSessionRow(root)]);
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          stamped(assistantText("I reviewed it and changed nothing."), Date.now() - 60_000),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectWarning,
-  },
-  {
-    name: "a ledger row from another session does not silence the no-write warning",
-    run: () =>
-      runHook((root) => {
-        writeLedger(root, [inSessionRow(root, { session_id: "sess-other" })]);
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, Date.now() - 60_000), root);
-      }),
-    check: expectWarning,
-  },
-  {
-    // The writer never omits the session id; a row without one is not its row.
-    name: "a ledger row with no session_id does not silence the no-write warning",
-    run: () =>
-      runHook((root) => {
-        writeLedger(root, [unscopedRow(root)]);
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, Date.now() - 60_000), root);
-      }),
-    check: expectWarning,
-  },
-  {
-    // No session id in the payload means no row can be matched to this agent.
-    // The row here carries none either: a reader that compares undefined to
-    // undefined would count it.
-    name: "a payload with no session_id does not consult the ledger",
-    run: () =>
-      runHook((root) => {
-        writeLedger(root, [unscopedRow(root)]);
-        const data = JSON.parse(
-          payload("omc-slim:fixer", shellOnlyTranscript(root, Date.now() - 60_000), root),
-        );
-        delete data.session_id;
-        return JSON.stringify(data);
-      }),
-    check: expectWarning,
-  },
-  {
-    name: "a ledger row from before the transcript began does not silence it",
-    run: () =>
-      runHook((root) => {
-        const started = Date.now();
-        writeLedger(root, [inSessionRow(root, { t: started - 60_000 })]);
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, started), root);
-      }),
-    check: expectWarning,
-  },
-  {
-    // `t` is an mtime, and some filesystems keep mtime to the second or two. A
-    // write in the same second as the transcript's first line is not from
-    // before it.
-    name: "a ledger row 1.5 s before the transcript began still counts",
-    run: () =>
-      runHook((root) => {
-        const started = Date.now();
-        writeLedger(root, [inSessionRow(root, { t: started - 1_500 })]);
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, started), root);
-      }),
-    check: expectSilence,
-  },
-  {
-    name: "a ledger row 3 s before the transcript began does not count",
-    run: () =>
-      runHook((root) => {
-        const started = Date.now();
-        writeLedger(root, [inSessionRow(root, { t: started - 3_000 })]);
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, started), root);
-      }),
-    check: expectWarning,
-  },
-  {
-    // The transcript's start is its EARLIEST timestamp. A later line stamped
-    // after the row would, taken as the start, push the row before it.
-    name: "a ledger row after the transcript's first line counts, whatever a later line says",
-    run: () =>
-      runHook((root) => {
-        const started = Date.now() - 60_000;
-        writeLedger(root, [inSessionRow(root, { t: started + 30_000 })]);
-        const transcript = writeTranscript(root, "agent.jsonl", [
-          stamped(assistantBash("b1", "sed -i 's/a/b/' src/x.ts"), started),
-          stamped(toolResultOk("b1"), started + 1),
-          stamped(assistantText("I rewrote it with sed."), Date.now()),
-        ]);
-        return payload("omc-slim:fixer", transcript, root);
-      }),
-    check: expectSilence,
-  },
-  {
-    name: "a ledger unlink is not a write",
-    run: () =>
-      runHook((root) => {
-        writeLedger(root, [inSessionRow(root, { event: "unlink" })]);
-        return payload(
-          "omc-slim:fixer",
-          shellOnlyTranscript(root, Date.now() - 60_000, "I removed the stale file."),
-          root,
-        );
-      }),
-    check: expectWarning,
-  },
-  {
-    name: "a ledger row for a path outside the project does not silence it",
-    run: () =>
-      runHook((root) => {
-        writeLedger(root, [inSessionRow(root, { path: "/tmp/x" })]);
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, Date.now() - 60_000), root);
-      }),
-    check: expectWarning,
-  },
-  {
-    // A symlink at the ledger path is not a ledger the writer produced, whatever
-    // it points at. The target here is a valid ledger, so following the link
-    // is what would silence the warning.
-    name: "a ledger that is a symlink is not read",
-    run: () =>
-      runHook((root) => {
-        const real = join(root, "elsewhere.jsonl");
-        writeFileSync(real, JSON.stringify(inSessionRow(root)) + "\n");
-        const path = ledgerPathFor(root);
-        mkdirSync(dirname(path), { recursive: true });
-        symlinkSync(real, path);
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, Date.now() - 60_000), root);
-      }),
-    check: expectWarning,
-  },
-  {
-    // The writer keeps its ledger far under a mebibyte. A valid row sits at the
-    // end of this one, past a line of filler, so a reader without the cap finds
-    // it and falls silent.
-    name: "a ledger over 1 MiB is not read",
-    run: () =>
-      runHook((root) => {
-        writeLedgerText(
-          root,
-          "x".repeat(LEDGER_CAP_BYTES + 16) + "\n" + JSON.stringify(inSessionRow(root)) + "\n",
-        );
-        return payload("omc-slim:fixer", shellOnlyTranscript(root, Date.now() - 60_000), root);
-      }),
-    check: expectWarning,
-  },
 
   // --- Stop: the main thread's own claims, bounded to the current turn -------
   {
@@ -1855,7 +1183,7 @@ const cases = [
     check: expectSilence,
   },
   {
-    // The same abstention as on SubagentStop: no field, no claim to test.
+    // No field, no claim to test: abstain.
     name: "Stop abstains when last_assistant_message is absent",
     run: () =>
       runHook((root) =>
@@ -1867,8 +1195,7 @@ const cases = [
   },
   {
     // A check that ran in a child must not silence the parent. Stop reads
-    // transcript_path. Reading agent_transcript_path is the SubagentStop bug
-    // inverted.
+    // transcript_path, never a subagent's own.
     name: "Stop does not credit a check that ran only in a subagent transcript",
     run: () =>
       runHook((root) =>

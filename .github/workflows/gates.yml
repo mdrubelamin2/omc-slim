@@ -74,7 +74,7 @@ jobs:
           failed=0
           for runtime in node bun; do
             pids=()
-            for suite in verify-deliverables check-output-style seed-watch-paths file-ledger; do
+            for suite in verify-deliverables; do
               $runtime "hooks/$suite.test.mjs" & pids+=($!)
               $runtime "hooks/$suite.mutate.mjs" & pids+=($!)
             done
@@ -87,7 +87,6 @@ jobs:
           pids=()
           node skills/codemap/scripts/codemap.test.mjs & pids+=($!)
           bash skills/review/scripts/base.test.sh & pids+=($!)
-          ./scripts/check-adversarial.sh & pids+=($!)
           bash scripts/optional/statusline.test.sh & pids+=($!)
           failed=0
           for pid in "${pids[@]}"; do wait "$pid" || failed=1; done

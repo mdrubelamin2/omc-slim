@@ -3,6 +3,61 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.12.0
+
+Four of the five hook registrations are gone, and one of them was dead.
+
+`verify-deliverables` gated its SubagentStop half on
+`WRITE_AGENTS = {"fixer", "designer"}`. Neither agent has shipped since the
+roster became four read-only specialists, so the branch could not execute for
+any agent this plugin dispatches — including the `general-purpose` writer the
+output style tells the model to send for mechanical edits, whose `agent_type`
+carries no `omc-slim:` namespace and is skipped before the gate is reached.
+The README had been claiming the check ran "on the main thread and on writer
+subagents" for the whole time the second clause was false.
+
+`seed-watch-paths` and `file-ledger` existed only to feed one line of that dead
+branch. They bought a single distinction, a subagent that wrote through
+Auto-mode Bash or an MCP server versus one that wrote nothing, and charged a
+recursive `watchPaths` walk at session start, with no ignore list and no depth
+limit, plus one node process per delivered file event. On this maintainer's
+machine they had written 1,453 rows across four projects and not one had ever
+been read. A user reporting a session that would not start had the symptom
+disappear on disabling the plugin; that mechanism is the plausible cause and it
+no longer exists.
+
+`check-output-style` went too, by request, and this is the release's real cost.
+It was the only thing that reported a stolen output-style slot, which is the one
+failure omc-slim cannot self-report: Claude Code resolves a forced style with
+`filter(forceForPlugin)[0]`, first match by load order, logs the loss at WARN,
+and tells nobody. The plugin then installs inert: agents load, nothing routes.
+The README now states the condition and gives the manual probe, and
+`scripts/optional/statusline.sh` still prints the badge. Exit criterion 3 moved
+from half-met to NOT MET rather than being quietly descoped: a criterion whose
+evidence was deleted did not pass. `scripts/check-adversarial.sh`, which existed
+solely to test that hook against a real rival plugin, went with it.
+
+**omc-slim now registers one hook, on `Stop` alone. Nothing of this plugin runs
+when a session starts.**
+
+The hook itself lost 408 lines: the write verdict, the ledger reader, path
+containment, the agent-namespace resolver, and the whole-file read path that only
+SubagentStop used. Two more things went because the mutation runner proved they
+could not fire. `earliestTimestampMs` was written on every line and read only by
+the ledger. The turn reset inside the scan was redundant once `readLastTurn` was
+the single caller: it and the backward scan call the same predicate, so `raw`
+starts at the last human line and can hold no earlier turn.
+
+The suites shrank with the code, and the mutation runner caught two ways that
+could have gone wrong. A scan-budget case had used the no-write accusation to
+tell abstain from accuse; with the write path gone both outcomes were silence and
+the case proved nothing — its own comment warned about exactly that trap, and it
+now discriminates on the claim path. The over-cap fixture holds no newline, so it
+trips the long-line bail before the byte cap is ever consulted; a second fixture
+was added that reaches the cap. 163 cases, 80 mutants, 80 killed.
+
+The always-on surface is unchanged at 2,467 tokens. Hooks were never in it.
+
 ## v0.11.1
 
 The Build layer gained a craft floor, in seven sentences. The style already

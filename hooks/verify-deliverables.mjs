@@ -1,25 +1,15 @@
 #!/usr/bin/env node
 /**
- * omc-slim — Stop / SubagentStop deliverable check.
+ * omc-slim — Stop verification-claim check.
  *
- * A subagent can report success having written nothing. This checks that a
- * write-capable specialist actually touched a file IN THE PROJECT, and tells the
- * *user* when it did not.
- *
- * "In the project" is the second half, and it is why the check is not a boolean:
- * a successful Write to /tmp/notes.md and work done through sanctioned shell
- * edits are two different states, and they get two different messages. Neither
- * one accuses.
- *
- * A third state is not about writing at all: the agent asserted a verification
- * result, and nothing in its transcript ran a check. Measured rather than
- * theorised — a benchmark of 45 Python bug-fix tasks had the agent report 45/45
- * complete; against held-out tests 26 passed, 19 false positives, and the same
- * 19 failed identically on two different vendors' models, so it is the agent
- * loop's shape rather than a model defect. The transcript reads "[Round 3] 5/5
- * tests pass. Build successful! All verified." against a suite of eight. A
- * prompt rule cannot tell whether a check ran at all; this can, because it
- * holds the transcript.
+ * The turn asserted a verification result, and nothing in its transcript ran a
+ * check. Measured rather than theorised — a benchmark of 45 Python bug-fix
+ * tasks had the agent report 45/45 complete; against held-out tests 26 passed,
+ * 19 false positives, and the same 19 failed identically on two different
+ * vendors' models, so it is the agent loop's shape rather than a model defect.
+ * The transcript reads "[Round 3] 5/5 tests pass. Build successful! All
+ * verified." against a suite of eight. A prompt rule cannot tell whether a
+ * check ran at all; this can, because it holds the transcript.
  *
  * Every Bash command in the turn gets one of three verdicts. "check": argv0
  * names a test, build, lint or typecheck runner, or a script whose name says it
@@ -35,27 +25,19 @@
  * that command ran, and silence is the only reading of "cannot tell" that does
  * not accuse.
  *
- * Deliberately advisory: it never blocks the subagent from stopping, and on
- * Stop it never returns `decision: "block"` (oh-my-claudecode #959 / #2542).
- *
- * On SubagentStop it emits `systemMessage` (surfaced to the user) and never
- * `hookSpecificOutput.additionalContext`. additionalContext is injected back
- * into the subagent that is already finishing — the regression oh-my-claudecode
- * hit in its #3209 / #3233.
- *
- * On Stop it emits `systemMessage` only, and never
+ * Deliberately advisory: it never returns `decision: "block"`
+ * (oh-my-claudecode #959 / #2542). It emits `systemMessage` only, and never
  * `hookSpecificOutput.additionalContext`: on Stop that field continues the turn
  * under the same loop protections as `decision: "block"` (verified 2.1.251;
- * hooks docs "Stop decision control"), and a continue is refused. Only the
- * claim state is in scope there, because write advisories would fire on every
- * chatty turn, and `stop_hook_active` stays silent so nothing stacks on a
- * continue some other hook caused.
+ * hooks docs "Stop decision control"), and a continue is refused.
+ * `stop_hook_active` stays silent so nothing stacks on a continue some other
+ * hook caused.
  *
- * On Stop the transcript is the whole session and only its last turn is
- * evidence, so only the tail is read: backwards in 1 MiB chunks to the last
- * human user line, then forward from there. Measured on a 42 MB, 18,500-line
- * session, five runs each: the whole-file read took 0.29-0.35 s of wall and
- * 263 MB of peak RSS; the tail read takes 0.04 s and 59 MB.
+ * The transcript is the whole session and only its last turn is evidence, so
+ * only the tail is read: backwards in 1 MiB chunks to the last human user line,
+ * then forward from there. Measured on a 42 MB, 18,500-line session, five runs
+ * each: the whole-file read took 0.29-0.35 s of wall and 263 MB of peak RSS;
+ * the tail read takes 0.04 s and 59 MB.
  *
  * Fails open in every error path: a broken guard must never break a session.
  *
@@ -76,24 +58,9 @@ import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
 
-/** Specialists expected to produce file changes. Read-only agents are exempt. */
-const WRITE_AGENTS = new Set(["fixer", "designer"]);
-
 /**
- * The namespace this plugin's agents carry.
- *
- * `agent_type` for a plugin agent is `<plugin name>:<agent>` — `omc-slim:fixer`
- * — in a marketplace install and in a `--plugin-dir` session alike. The matcher
- * in hooks.json pins the same namespace, and the two have to stay in step:
- * hooks.json decides what runs, ownAgentName decides what warns. A bare name or
- * a foreign namespace is another plugin's agent, or nobody's, and is not ours
- * to police.
- */
-const SELF_NAMESPACE = "omc-slim:";
-
-/**
- * Cap on the bytes read from a transcript: the whole file on SubagentStop, the
- * tail behind the last human user line on Stop. It bounds the string
+ * Cap on the bytes read from a transcript: the tail behind the last human user
+ * line. It bounds the string
  * allocation, not scan time, which has its own budget below; the agents doing
  * the most work write the largest transcripts, so a low cap skips the check
  * where it matters.
@@ -142,9 +109,6 @@ const SCAN_BUDGET_MS = (() => {
   return Number.isFinite(n) && n >= 0 ? n : 2000;
 })();
 
-/** Tools whose successful use counts as having produced a deliverable. */
-const WRITE_TOOLS = new Set(["Edit", "Write", "NotebookEdit", "MultiEdit"]);
-
 /**
  * Tools that hand work to another agent. A successful dispatch means a check may
  * have run in a transcript this one cannot see, so the claim state abstains.
@@ -152,27 +116,10 @@ const WRITE_TOOLS = new Set(["Edit", "Write", "NotebookEdit", "MultiEdit"]);
 const DISPATCH_TOOLS = new Set(["Task", "Agent"]);
 
 /**
- * An MCP tool, like Bash, can write a file without leaving a write-tool block.
- * Only an agent that used one of the two can have made a write the FileChanged
- * ledger shows and the transcript does not.
- */
-const OPAQUE_TOOL_PREFIX = "mcp__";
-
-/**
  * A segment with more tokens than this is not parsed. No runner takes that
  * many, and a generated command line is not evidence the parse can weigh.
  */
 const MAX_SEGMENT_TOKENS = 64;
-
-/** The FileChanged ledger's writer never produces a file this large. */
-const MAX_LEDGER_BYTES = 1024 * 1024;
-
-/**
- * A ledger row's `t` is the changed file's mtime, and some filesystems keep
- * mtime to the second (HFS+, ext3) or to two (FAT). A row that close before the
- * transcript's first line is not from before the agent existed.
- */
-const MTIME_TOLERANCE_MS = 2000;
 
 /**
  * Binaries that ARE a check runner when they are argv0, by bare basename: a
@@ -475,97 +422,6 @@ function debug(...args) {
   if (process.env.OMC_SLIM_DEBUG === "1") console.error("[omc-slim]", ...args);
 }
 
-/**
- * The written path out of a write tool's `input`, or null if it carries none.
- *
- * Edit, Write and MultiEdit all use `file_path`; NotebookEdit uses
- * `notebook_path`. A block with neither is not a path we can place, and null
- * propagates as "cannot tell" — never as "outside".
- */
-function writtenPath(input) {
-  if (input === null || typeof input !== "object") return null;
-  for (const key of ["file_path", "notebook_path"]) {
-    const value = input[key];
-    if (typeof value === "string" && value.trim() !== "") return value;
-  }
-  return null;
-}
-
-/**
- * Absolute, symlink-resolved path, for a file that may no longer exist.
- *
- * Both sides of the containment test have to be resolved the same way or the
- * comparison is a coin flip: on macOS `/tmp` is a symlink to `/private/tmp`, and
- * the OS temp dir sits under `/var` -> `/private/var`, so a raw string compare
- * calls a real in-project write an outside one. `realpathSync` cannot answer for
- * a path that was written and then deleted, so resolve the nearest ancestor that
- * does exist and re-attach the rest.
- */
-function realish(path, base) {
-  let head = resolve(base, path);
-  const tail = [];
-  for (;;) {
-    try {
-      return join(realpathSync(head), ...tail);
-    } catch {
-      const parent = dirname(head);
-      // At the filesystem root there is nothing left to resolve against.
-      if (parent === head) return resolve(base, path);
-      tail.unshift(basename(head));
-      head = parent;
-    }
-  }
-}
-
-/** Is `path` the project root or inside it? Both must already be resolved. */
-function withinRoot(path, root) {
-  const prefix = root.endsWith(sep) ? root : root + sep;
-  return path === root || path.startsWith(prefix);
-}
-
-/**
- * Is this write inside the project — lexically, or after resolving symlinks?
- *
- * Either answer being yes is enough, and that asymmetry is the point. Resolving
- * the written path is what handles macOS `/tmp` -> `/private/tmp`, so it has to
- * happen. But it also relocates a path that is genuinely inside the project
- * through a symlinked directory — a pnpm or yarn workspace link, a nix or Bazel
- * symlink farm, a linked package directory — and the resolved form then lands
- * outside a root that never moved. A hook whose whole charter is never to
- * accuse must take the reading in which no accusation is warranted.
- */
-function writeIsInProject(rawPath, root) {
-  // Lexical first, against the UNRESOLVED cwd. Comparing a lexical path against
-  // the resolved root is a category error and gets macOS wrong on its own,
-  // because the root moves to /private/tmp and the path does not.
-  if (root.raw !== null && withinRoot(resolve(root.raw, rawPath), root.raw)) {
-    return true;
-  }
-  return withinRoot(realish(rawPath, root.real), root.real);
-}
-
-/**
- * The project root the payload's `cwd` names, symlink-resolved, or null.
- *
- * Null means the containment test cannot be run at all. The caller then falls
- * back to the pre-path behaviour — any successful write counts — because a hook
- * that cannot place a file must not claim it landed in the wrong place.
- */
-function projectRoot(cwd) {
-  if (typeof cwd !== "string" || cwd.trim() === "") {
-    debug("no cwd in payload; not testing where writes landed");
-    return null;
-  }
-  try {
-    // Both forms are kept. `real` is what a resolved write path is compared
-    // against; `raw` is what a lexical one is.
-    return { real: realpathSync(cwd), raw: resolve(cwd) };
-  } catch (err) {
-    debug("cannot resolve project root", cwd, err && err.message);
-    return null;
-  }
-}
-
 function readStdin() {
   try {
     return readFileSync(0, "utf8");
@@ -590,7 +446,7 @@ function readStdin() {
  *                 checkRuns: Set, sawUnknownCommand: boolean,
  *                 sawOpaqueTool: boolean, earliestTimestampMs: number|null}}
  */
-function scanTranscript(transcriptPath, opts = {}) {
+function scanTranscript(transcriptPath) {
   if (!transcriptPath) {
     debug("cannot tell: no agent transcript path in payload");
     return null;
@@ -614,26 +470,9 @@ function scanTranscript(transcriptPath, opts = {}) {
     return null;
   }
 
-  const raw =
-    opts.lastTurnOnly === true
-      ? readLastTurn(transcriptPath)
-      : readWhole(transcriptPath, st.size);
+  const raw = readLastTurn(transcriptPath);
   if (raw === null) return null;
-  return scanLines(raw, opts);
-}
-
-/** The whole file, for a subagent transcript: every write block and the first timestamp matter. */
-function readWhole(transcriptPath, size) {
-  if (size > MAX_TRANSCRIPT_BYTES) {
-    debug("cannot tell: over cap", size, transcriptPath);
-    return null;
-  }
-  try {
-    return readFileSync(transcriptPath, "utf8");
-  } catch (err) {
-    debug("cannot tell: read failed", transcriptPath, err && err.message);
-    return null;
-  }
+  return scanLines(raw);
 }
 
 /**
@@ -733,8 +572,8 @@ function isHumanUserLine(line) {
  * on a timer, so a turn with no assistant entry has not been written yet, and
  * nothing can be said about it.
  */
-function scanLines(raw, opts) {
-  const scan = { ...turnEvidence(), earliestTimestampMs: null };
+function scanLines(raw) {
+  const scan = turnEvidence();
 
   const deadline = Date.now() + SCAN_BUDGET_MS;
   let scanned = 0;
@@ -754,10 +593,6 @@ function scanLines(raw, opts) {
     } catch {
       continue;
     }
-    noteTimestamp(obj, scan);
-    if (opts.lastTurnOnly === true && isHumanUserEntry(obj)) {
-      Object.assign(scan, turnEvidence());
-    }
     if (obj.type === "assistant") scan.sawAssistantEntry = true;
     collectBlocks(obj, scan);
   }
@@ -775,8 +610,6 @@ function scanLines(raw, opts) {
  */
 function turnEvidence() {
   return {
-    /** id of every write-tool tool_use block -> the path it wrote, or null */
-    pendingWrites: new Map(),
     /** ids whose tool_result came back clean */
     succeeded: new Set(),
     /** ids whose tool_result came back `is_error` */
@@ -789,67 +622,9 @@ function turnEvidence() {
     multiSegmentCheckRuns: new Set(),
     /** did any Bash command read as "unknown"? Then nothing can say no check ran. */
     sawUnknownCommand: false,
-    /** did the agent use Bash or an MCP tool, either of which can write without a write block? */
-    sawOpaqueTool: false,
     /** did the turn record an assistant entry at all? */
     sawAssistantEntry: false,
   };
-}
-
-/**
- * Message lines carry an ISO 8601 `timestamp`; bookkeeping lines do not. The
- * earliest one dates the transcript, so a ledger write from before the agent
- * existed can be told apart from one it could have made.
- */
-function noteTimestamp(entry, scan) {
-  if (entry === null || typeof entry !== "object") return;
-  if (typeof entry.timestamp !== "string") return;
-  const ms = Date.parse(entry.timestamp);
-  if (!Number.isFinite(ms)) return;
-  if (scan.earliestTimestampMs === null || ms < scan.earliestTimestampMs) {
-    scan.earliestTimestampMs = ms;
-  }
-}
-
-/**
- * Did this agent SUCCESSFULLY write a file INSIDE the project?
- *
- * Four answers, because a boolean cannot separate them:
- *
- *   null       cannot tell. The caller stays silent.
- *   true       at least one successful write landed in the project root.
- *   "outside"  successful writes, every one of them outside the root.
- *   "none"     no successful write at all.
- *
- * An attempted write is not a deliverable. A permission-denied Edit still
- * appears as a `tool_use` block, so matching on tool_use alone reports success
- * for an agent that was blocked and produced nothing — the exact situation most
- * worth flagging.
- *
- * So: the scan collected write-tool `tool_use` ids with the path each one wrote;
- * this requires a matching `tool_result` that is not `is_error`. A tool_use with
- * no result at all (agent died mid-call) also counts as no write.
- *
- * A successful write whose path cannot be placed — no path in the input, or a
- * null `root` — counts as `true`. Silence is the only safe reading of a write
- * this cannot locate.
- *
- * @param {object|null} scan  scanTranscript's result, or null for "cannot tell"
- * @param {object|null} root  resolved project root, or null to skip the test
- * @returns {null|true|"outside"|"none"}
- */
-function writeVerdict(scan, root) {
-  if (scan === null) return null;
-  const { pendingWrites, succeeded } = scan;
-
-  let sawSuccess = false;
-  for (const [id, path] of pendingWrites) {
-    if (!succeeded.has(id)) continue;
-    sawSuccess = true;
-    if (root === null || path === null) return true;
-    if (writeIsInProject(path, root)) return true;
-  }
-  return sawSuccess ? "outside" : "none";
 }
 
 /** Depth-bounded walk collecting the tool blocks every state is built from. */
@@ -863,11 +638,7 @@ function collectBlocks(node, scan, depth = 0) {
   }
 
   if (node.type === "tool_use" && node.id) {
-    if (WRITE_TOOLS.has(node.name)) {
-      scan.pendingWrites.set(node.id, writtenPath(node.input));
-    }
     if (DISPATCH_TOOLS.has(node.name)) scan.dispatches.add(node.id);
-    if (node.name === "Bash" || isMcpTool(node.name)) scan.sawOpaqueTool = true;
     if (node.name === "Bash") noteCommand(node, scan);
   }
   // `is_error` is absent on success and true on failure.
@@ -881,10 +652,6 @@ function collectBlocks(node, scan, depth = 0) {
       collectBlocks(value, scan, depth + 1);
     }
   }
-}
-
-function isMcpTool(name) {
-  return typeof name === "string" && name.startsWith(OPAQUE_TOOL_PREFIX);
 }
 
 /** Judge one Bash block's command and record what it contributes to the turn. */
@@ -1478,85 +1245,6 @@ function claimedUnrunCheck(scan, message) {
   return !sawUnattributableFailure(scan);
 }
 
-/**
- * This plugin's own agent, by bare name — or null when the agent is another
- * plugin's or carries no namespace. Kept in step with the matcher in hooks.json;
- * see SELF_NAMESPACE.
- */
-function ownAgentName(agent) {
-  if (!agent.startsWith(SELF_NAMESPACE)) return null;
-  return agent.slice(SELF_NAMESPACE.length);
-}
-
-/**
- * Where hooks/file-ledger.mjs keeps this project's FileChanged ledger: one file
- * per project under the Claude config dir, keyed by the resolved cwd. Duplicated
- * there on purpose — the mutation runner copies one hook file into a temp dir,
- * where a shared module would not resolve.
- */
-function ledgerPathFor(cwd) {
-  let real;
-  try {
-    real = realpathSync(cwd);
-  } catch {
-    real = resolve(cwd);
-  }
-  const key = createHash("sha256").update(real).digest("hex").slice(0, 16);
-  const claudeHome = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
-  return join(claudeHome, "omc-slim", "ledgers", `${key}.jsonl`);
-}
-
-/**
- * Has FileChanged recorded an in-project write this subagent could have made?
- *
- * Used only to abstain from the no-write advisory: Auto-mode Bash and an MCP
- * server leave no Edit/Write block. FileChanged carries a session_id and never
- * an agent id, so a hit means "cannot tell who wrote", which is silence — never
- * a deliverable. A row counts only from this session, only from after the
- * transcript's first timestamp, only for a path inside the project, and never
- * for a deletion. A payload with no session_id can match no row, so the ledger
- * is not consulted at all.
- */
-function ledgerShowsInProjectWrite(cwd, root, sessionId, sinceMs) {
-  if (root === null || typeof sessionId !== "string" || sessionId === "") return false;
-  const path = ledgerPathFor(cwd);
-  let raw;
-  try {
-    // lstat: a symlink at the ledger path is not a ledger this plugin wrote.
-    const st = lstatSync(path);
-    if (!st.isFile() || st.size > MAX_LEDGER_BYTES) return false;
-    raw = readFileSync(path, "utf8");
-  } catch {
-    return false;
-  }
-  for (const line of raw.split("\n")) {
-    if (line.trim() === "") continue;
-    let row;
-    try {
-      row = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    if (ledgerRowCounts(row, sessionId, sinceMs) && writeIsInProject(row.path, root)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * One ledger row is `{t, session_id, path, event}`, `t` in ms since the epoch
- * and an mtime, so it may be coarser than `sinceMs`; see MTIME_TOLERANCE_MS.
- */
-function ledgerRowCounts(row, sessionId, sinceMs) {
-  if (row === null || typeof row !== "object") return false;
-  if (typeof row.path !== "string" || row.path.trim() === "") return false;
-  if (row.event === "unlink") return false;
-  if (row.session_id !== sessionId) return false;
-  if (!Number.isFinite(sinceMs)) return true;
-  return typeof row.t === "number" && row.t >= sinceMs - MTIME_TOLERANCE_MS;
-}
-
 function main() {
   const input = readStdin();
   if (!input.trim()) return emit(null);
@@ -1568,10 +1256,7 @@ function main() {
     return emit(null);
   }
 
-  const event = String(data.hook_event_name ?? "SubagentStop");
-  const lastMessage = data.last_assistant_message;
-  if (event === "Stop") return mainStop(data, lastMessage);
-  return mainSubagentStop(data, lastMessage);
+  return mainStop(data, data.last_assistant_message);
 }
 
 /**
@@ -1584,7 +1269,7 @@ function mainStop(data, lastMessage) {
     return emit(null);
   }
   const transcript = data.transcript_path ?? null;
-  const scan = scanTranscript(transcript, { lastTurnOnly: true });
+  const scan = scanTranscript(transcript);
   const claimed = claimedUnrunCheck(scan, lastMessage);
   debug("Stop", "unrun claim:", claimed);
   if (!claimed) return emit(null);
@@ -1594,99 +1279,6 @@ function mainStop(data, lastMessage) {
     "— an MCP server, a tool that is not Bash — ignore this. Otherwise the " +
     "result is a claim, not an observation.";
   return emit(message);
-}
-
-function mainSubagentStop(data, lastMessage) {
-  const agent = String(data.agent_type ?? "").toLowerCase();
-
-  const bare = ownAgentName(agent);
-  if (bare === null || !WRITE_AGENTS.has(bare)) return emit(null);
-
-  // MUST be the subagent's own transcript, not `transcript_path` — that one is
-  // the parent session. Scanning the parent would find any edit the main thread
-  // ever made and wrongly conclude this subagent wrote something; a
-  // `?? data.transcript_path` fallback here turns silence into that accusation.
-  const agentTranscript = data.agent_transcript_path ?? null;
-
-  const root = projectRoot(data.cwd);
-  const scan = scanTranscript(agentTranscript);
-  let wrote = writeVerdict(scan, root);
-  // FileChanged recorded an in-project write, in this session and after this
-  // transcript began, and the agent ran a tool that can write without leaving a
-  // write block. Cannot tell who wrote (the event has no agent id), so do not
-  // accuse: neither "wrote nothing" nor "nothing in the project changed", which
-  // the ledger contradicts just the same when every write block went to /tmp.
-  // An agent that ran no such tool cannot have made that write.
-  if (
-    (wrote === "none" || wrote === "outside") &&
-    scan.sawOpaqueTool &&
-    ledgerShowsInProjectWrite(data.cwd, root, data.session_id, scan.earliestTimestampMs)
-  ) {
-    wrote = null;
-  }
-  const claimed = claimedUnrunCheck(scan, lastMessage);
-  debug("agent", bare, "root", root, "wrote:", wrote, "unrun claim:", claimed);
-
-  // Three states, three messages, because one message would be a lie in two of
-  // them. `null` for the write verdict means "could not determine" and says
-  // nothing rather than crying wolf.
-  //
-  // None of them accuses. The fixer's own brief sanctions `sed`, `git mv` and
-  // bulk shell edits, and prefers an MCP code-generation server to hand-written
-  // boilerplate — none of which leaves a write-tool block in the transcript, so
-  // each message offers that reading first.
-  //
-  // The write states and the claim state are independent: an agent can write
-  // nothing AND report a check it never ran, and both are worth saying. The user
-  // gets one message, not two.
-  const advisories = [];
-  if (wrote === "outside") {
-    advisories.push(outsideWriteAdvisory(bare));
-  } else if (wrote === "none") {
-    advisories.push(noWriteAdvisory(bare));
-  }
-  if (claimed) advisories.push(unrunCheckAdvisory(bare));
-
-  return emit(advisories.length ? `omc-slim: ${advisories.join("\n")}` : null);
-}
-
-/** Successful writes, every one of them outside the project root. */
-function outsideWriteAdvisory(agentName) {
-  return (
-    `the ${agentName} agent's only successful writes landed outside the ` +
-    `project directory (a scratch path such as /tmp). Nothing in the project ` +
-    `changed. If that was the intent, ignore this; if it was not, check the ` +
-    `work before trusting the report.`
-  );
-}
-
-/**
- * No successful write at all. "successful" carries weight: this state also
- * covers the agent whose every write was denied, and "no tool use was seen"
- * would be false of that one.
- */
-function noWriteAdvisory(agentName) {
-  return (
-    `no successful Edit/Write-family tool use was seen from the ` +
-    `${agentName} agent. If the work landed through the shell (sed, git mv, a bulk ` +
-    `rewrite) or an MCP server, ignore this. Otherwise, check the work before ` +
-    `trusting the report.`
-  );
-}
-
-/**
- * A verification result asserted with nothing in the transcript that ran one.
- *
- * It names the state, not the person, and it offers the innocent reading first —
- * an MCP server or a tool that is not Bash is a check this hook cannot see.
- */
-function unrunCheckAdvisory(agentName) {
-  return (
-    `the ${agentName} agent reported a verification result, and no test, build ` +
-    `or typecheck command came back clean in its transcript. If it verified another way ` +
-    `— an MCP server, a tool that is not Bash — ignore this. Otherwise the ` +
-    `result is a claim, not an observation.`
-  );
 }
 
 /** Always exit 0. Advisory hooks must not fail a session. */

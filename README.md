@@ -13,7 +13,7 @@ It is honest about what it cannot do, on this page, further down. Read that part
 /plugin install omc-slim@omc-slim
 ```
 
-That is the whole setup. Four agents, six skills, five hooks, four commands and one output style turn on together.
+That is the whole setup. Four agents, six skills, one hook, four commands and one output style turn on together.
 
 Try it first without installing:
 
@@ -26,7 +26,7 @@ claude --plugin-dir ./omc-slim
 
 ## What changes on day one
 
-**A test it never ran cannot pass quietly.** A hook reads the last message and the transcript, on the main thread and on writer subagents. If the model reported a passing suite and no test runner appears in the transcript, you are told. The hook tells *you*, not the model. Commands are matched on argv0, so `git log --oneline latest` no longer counts as a test run. The worst case is measured: one benchmark had an agent report every task complete while 19 of 45 held-out tests failed, on a transcript reading `5/5 tests pass` about a suite of eight.
+**A test it never ran cannot pass quietly.** One hook reads the turn's last message and its transcript. If the model reported a passing suite and no test runner appears in the transcript, you are told. The hook tells *you*, not the model. Commands are matched on argv0, so `git log --oneline latest` no longer counts as a test run. The worst case is measured: one benchmark had an agent report every task complete while 19 of 45 held-out tests failed, on a transcript reading `5/5 tests pass` about a suite of eight.
 
 **It plans before it edits.** Ask for something across four files and you get a numbered stage map with a check per stage, before any work starts. Not fourteen edits and a summary that says it went well.
 
@@ -34,7 +34,7 @@ claude --plugin-dir ./omc-slim
 
 **It says what it could not check.** A review finding must quote the line that proves it. A finding with no evidence is dropped, not reported. What could not be verified is written down instead of smoothed over.
 
-**It stays out of your way.** ~2,467 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It writes no file into your project unless you run one of the three that do.
+**It stays out of your way.** ~2,467 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
 
 ---
 
@@ -44,43 +44,43 @@ You should not have to remember any names. Ask in plain language and routing usu
 
 ### "I have never seen this repository before"
 
-Ask a question about it first: *"where does the retry logic live?"* That is `omc-slim:explorer`. It returns a `file:line` map, not prose, and it refuses to fix anything it finds.
+Ask a question about it first: *"where does the retry logic live?"* That is the `omc-slim:explorer` agent. It returns a `file:line` map, not prose, and it refuses to fix anything it finds.
 
-Only reach for `omc-slim:codemap` when nobody on the team has read the repo and several people need to. It writes a `codemap.md` into every directory plus a root atlas. It is expensive — one 362-file repo cost $6.09 — so it states the cost and waits for your yes.
+Only reach for the `omc-slim:codemap` skill when nobody on the team has read the repo and several people need to. It writes a `codemap.md` into every directory plus a root atlas. It is expensive — one 362-file repo cost $6.09 — so it states the cost and waits for your yes.
 
-> Rule of thumb: one question, one place → `omc-slim:explorer`. A whole repo, for many people, kept on disk → `omc-slim:codemap`. If you could just read the repo, read it.
+> Rule of thumb: the `omc-slim:explorer` agent answers one question about one place. The `omc-slim:codemap` skill maps a whole repo for many people and leaves it on disk. If you could just read the repo, read it.
 
 ### "This bug keeps coming back"
 
-You fixed it. It returned. Nobody can name the cause. That is `omc-slim:tracer`. It builds three competing hypotheses and ranks them by the evidence for and against each one. It will not guess at a symptom nobody has reproduced; it tells you what reproducing it would take.
+You fixed it. It returned. Nobody can name the cause. That is the `omc-slim:tracer` agent. It builds three competing hypotheses and ranks them by the evidence for and against each one. It will not guess at a symptom nobody has reproduced; it tells you what reproducing it would take.
 
-If you already know the cause and have a diff, you do not want tracer. You want `omc-slim:review`.
+If you already know the cause and have a diff, you do not want tracer. You want the `omc-slim:review` skill.
 
 ### "Is my recalled API knowledge still true?"
 
-The library moved. Your model's memory did not. `omc-slim:librarian` reads the installed source on disk first, then the web, and sources every claim. Use it when an external fact is load-bearing, or when prior art beats inventing: named algorithms, RFCs, real usage on GitHub.
+The library moved. Your model's memory did not. The `omc-slim:librarian` agent reads the installed source on disk first, then the web, and sources every claim. Use it when an external fact is load-bearing, or when prior art beats inventing: named algorithms, RFCs, real usage on GitHub.
 
 ### "I am about to merge this"
 
-`omc-slim:review` reads the diff across correctness, simplicity, security, tests, schema, API contract and performance at once. Every finding quotes `file:line` with a severity and a confidence. It then fixes what is mechanical.
+The `omc-slim:review` skill reads the diff across correctness, simplicity, security, tests, schema, API contract and performance at once. Every finding quotes `file:line` with a severity and a confidence. It then fixes what is mechanical.
 
 The change has to exist first. Review judges; it does not design.
 
 ### "This design worries me"
 
-Not a diff. A decision — an architecture, a security boundary, a data-integrity call. `omc-slim:oracle` argues the opposing side on purpose. Ask it *"am I over-engineering this?"* and expect it to say yes when you are.
+Not a diff. A decision — an architecture, a security boundary, a data-integrity call. The `omc-slim:oracle` agent argues the opposing side on purpose. Ask it *"am I over-engineering this?"* and expect it to say yes when you are.
 
 Use it for a decision that is hard to undo. It is an escalation, not a step in every task.
 
 ### "I want to build something, I am not sure what"
 
-`omc-slim:deep-interview` asks you two to four questions per round until the shape is clear. Then it writes a spec — goal, out of scope, acceptance criteria, verification plan — and **stops** for your approval before any code.
+The `omc-slim:deep-interview` skill asks you two to four questions per round until the shape is clear. Then it writes a spec — goal, out of scope, acceptance criteria, verification plan — and **stops** for your approval before any code.
 
 It runs before a plan exists. A question gets an answer, never an interview.
 
 ### "This change touches everything"
 
-A migration. A rewrite. Work that is only correct once every layer lands together. That is `omc-slim:deepwork`: a written stage map, parallel lanes, one check per stage that can fail, and a gate between stages.
+A migration. A rewrite. Work that is only correct once every layer lands together. That is the `omc-slim:deepwork` skill: a written stage map, parallel lanes, one check per stage that can fail, and a gate between stages.
 
 Invoke it by name — it does not start on its own. See *What we measured* below.
 
@@ -92,13 +92,13 @@ Routine multi-file edits are not deepwork. Two files and a rename stay on the ma
 
 ### "Why is this code so complicated?"
 
-`omc-slim:simplify` deletes code that should never have been written: speculative abstraction, config nobody sets, a hand-rolled standard library. Nothing comes out until it knows why it went in, and behaviour is preserved exactly.
+The `omc-slim:simplify` skill deletes code that should never have been written: speculative abstraction, config nobody sets, a hand-rolled standard library. Nothing comes out until it knows why it went in, and behaviour is preserved exactly.
 
 Invoke it by name: `/omc-slim:simplify src/pricing.js`. It is not for renames or formatting, which change no structure.
 
 ### "How do I prove this did not break anything?"
 
-`omc-slim:verification-planning` frames the claim, designs an evidence path from the system itself, and requires every check to be able to fail. It decides what would prove the change. It does not write the tests.
+The `omc-slim:verification-planning` skill frames the claim, designs an evidence path from the system itself, and requires every check to be able to fail. It decides what would prove the change. It does not write the tests.
 
 ---
 
@@ -176,7 +176,11 @@ How the numbers were taken, and the four measurement bugs found before publishin
 
 ## Is it on?
 
-The first reply that plans or delegates names the style. Its **absence** is the signal. Another enabled plugin can take the output-style slot, and Claude Code picks the winner by load order without telling you.
+The first reply that plans or delegates names the style. Its **absence** is the signal. Another enabled plugin can take the output-style slot, and Claude Code picks the winner by load order without telling you. **Nothing reports that for you**, so check it yourself when specialists stop receiving work:
+
+```
+claude -p "One line: which output style is active?"
+```
 
 For a permanent badge, add the status line. It costs no model tokens. It prints `omc-slim ●` when the style is in force, and `omc-slim ✗ (Concise won)` when it is not:
 
@@ -184,7 +188,7 @@ For a permanent badge, add the status line. It costs no model tokens. It prints 
 { "statusLine": { "type": "command", "command": "/path/to/omc-slim/scripts/optional/statusline.sh" } }
 ```
 
-To turn it off: `/plugin disable omc-slim`. Output style is part of the system prompt, so the change lands after `/clear` or in a new session. The ledger files under `~/.claude/omc-slim/ledgers/` are yours to delete.
+To turn it off: `/plugin disable omc-slim`. Output style is part of the system prompt, so the change lands after `/clear` or in a new session.
 
 ---
 
@@ -202,11 +206,11 @@ Tell them first. It changes how every teammate's session reads. Anyone who disab
 
 ## How it works
 
-Five hook registrations across four scripts, all fail-open. None can block a turn.
+One hook, on `Stop` alone. It cannot run at session start, it watches no files, and it spawns no process per edit.
 
-Two scripts speak. One reports a style collision at session start. The other reports a verification claim with no runner, on the main thread and on writer subagents, and a write that never reached the project. The other two stay silent: one seeds filesystem watches inside a project, one keeps the ledger.
+It reads the turn's transcript and reports a verification claim that no command supports. A claim is judged only against commands the hook can classify: argv0 names a runner, or a binary that cannot be one, or nothing the tables know. A runner it does not know **abstains rather than accuses**, and one unknown command in the turn mutes the advisory entirely.
 
-A claim is judged only against commands the hook can classify. A runner it does not know abstains rather than accuses. The ledger is scoped to the session and to the time the subagent ran, and it is read only when that subagent used a shell or an MCP tool. It lives under `~/.claude/omc-slim/` (or `$CLAUDE_CONFIG_DIR`), never inside your project. Nothing here injects text into the model.
+It fails open on every path. Eleven hostile payloads — no stdin, bad JSON, a missing file, a directory, a FIFO, `/dev/zero`, wrong types — all exit 0 and stay silent. A 61 MB transcript takes 0.35 s against its 5 s timeout, because only the tail behind the last human turn is read. It never returns `decision: "block"`, and never `additionalContext`, which on Stop would continue the turn. Nothing here injects text into the model.
 
 Agents are scoped by what they must **not** do, never by a fixed tool list. So each one picks up whatever your project already provides:
 
@@ -221,9 +225,9 @@ Agents are scoped by what they must **not** do, never by a fixed tool list. So e
 
 ## How it is checked
 
-CI runs all seven `check-*.sh` scripts on every push, along with all four hook suites and all four mutation runners.
+CI runs all six `check-*.sh` scripts on every push, along with the hook suite and its mutation runner.
 
-The hook suites run 198, 24, 26 and 24 cases. The mutation runners then break those hooks 120, 25, 27 and 23 ways, to prove the suites would notice. `COVERAGE.tsv` pins every rule to the file that must carry it. `REINFORCEMENT.tsv` pins the *reasoning* too, because one compression pass kept every pinned phrase and broke the behaviour anyway.
+The hook suite runs 163 cases. The mutation runner then breaks the hook 80 ways, and the suite catches every one, to prove those cases would notice a regression. `COVERAGE.tsv` pins every rule to the file that must carry it. `REINFORCEMENT.tsv` pins the *reasoning* too, because one compression pass kept every pinned phrase and broke the behaviour anyway.
 
 ```
 ./scripts/check-coverage.sh && ./scripts/check-reinforcement.sh

@@ -290,64 +290,38 @@ telling it *you are running low on room* is anxiety and does not. Over-correctin
 past that line broke `observer` routing once: its reason to exist disappeared
 along with the framing.
 
-### All five hooks are advisory and fail open
+### The one hook is advisory and fails open
 
-`check-output-style` and `seed-watch-paths` (SessionStart), `file-ledger`
-(FileChanged), and `verify-deliverables` (SubagentStop on `fixer`/`designer`,
-and Stop on the main thread). None returns a `permissionDecision`, so none can
-block. Stop never returns `decision: "block"`. Every error path exits 0 emitting
-nothing. A broken guard must never break a session.
+`verify-deliverables`, on `Stop` alone. It returns no `permissionDecision`, so it
+cannot block, and it never returns `decision: "block"`. Every error path exits 0
+emitting nothing. A broken guard must never break a session.
 
-FileChanged and `seed-watch-paths` emit no model-visible text. Neither
-`verify-deliverables` event emits `additionalContext`. On SubagentStop it
-re-enters the finishing child (oh-my-claudecode #3209 / #3233). On Stop it
+v0.12.0 removed the other four registrations. `check-output-style` and
+`seed-watch-paths` (SessionStart), `file-ledger` (FileChanged), and
+`verify-deliverables` on SubagentStop all went, along with the ledger reader and
+the write verdict inside the hook. The SubagentStop half was already dead: it
+gated on `WRITE_AGENTS = {"fixer", "designer"}`, and neither agent had shipped
+since the roster collapsed to four read-only specialists. `seed-watch-paths` and
+`file-ledger` existed only to feed one line of that dead branch, at the price of
+a recursive `watchPaths` walk at session start and one process per file event.
+Nothing of this plugin now runs when a session starts.
+
+`verify-deliverables` does not emit `additionalContext`. On Stop that field
 continues the turn under the same loop protections as `decision: "block"`
 (2.1.251 binary; hooks docs, Stop decision control).
 
-The ledger lives outside the project, at
-`<CLAUDE_CONFIG_DIR or ~/.claude>/omc-slim/ledgers/<sha256 of the resolved project path, 16 hex chars>.jsonl`.
-A row is `{t, session_id, path, event}` with `t` the written file's mtime, and
-no row is written without a `session_id`. The reader's `ledgerPathFor` mirrors
-the writer's instead of importing it. The mutation runner copies one hook file
-into a temp directory, where a shared module would not resolve.
-
-`systemMessage` goes to the **user**, not the model, so you cannot verify a hook
-fired by asking the model whether it saw a warning. Run it with `OMC_SLIM_DEBUG=1`
-and read stderr, which names which "cannot tell" path it took.
-
-All four hook suites and their mutation runners run in CI via
-`.github/workflows/gates.yml`. `check-coverage.sh` re-runs them to pin the counts
-in the README. Run the matching suite after any edit to a hook.
-
-The `*.mutate.mjs` runners check those suites the only way that means
-anything: they break each hook on purpose and require the harness to catch every
-mutant. Run one after adding or weakening a case. A suite that still passes when
-the hook is broken is worse than none, because it looks like evidence. Add a
-mutant whenever you add a branch to a hook. They share `hooks/mutate-runner.mjs`,
-which writes each mutant to its own temp copy and asserts by sha256 that the
-tracked hook was never touched.
-
-Mutants run in parallel, one lane per core minus one, and `check-coverage.sh`
-runs the eight hook suites concurrently under `bun` when it is on PATH and
-`node` otherwise. Whichever runtime starts a suite is the one the hook runs
-under, because the harness spawns it with `process.execPath`. That is why CI
-runs every suite under both: `hooks.json` ships `node`, so the node pass is the
-authoritative one, and bun is the fast local loop. Keep it that way unless
-`hooks.json` changes.
-
-Do not paste the mutant count into prose here. This section said "fifteen
-ways" through eight releases that took it to twenty-three, because nothing checks
-a number written in words in a maintainer document. `check-coverage.sh` derives
-both totals and asserts the README carries them; the README is the place to quote
-them.
-
-On Stop the hook reads the transcript tail backwards from the last human turn,
-and the whole file only when there is none. Measured on a 42 MB session: 0.04 s and 59 MB per Stop,
+It reads the tail behind the last human user line, and the whole file only when there is none. Measured on a 42 MB session: 0.04 s and 59 MB per Stop,
 against 0.29 to 0.35 s and 263 MB for a whole-file read.
 
 ### A silent third-party collision is the one failure the plugin cannot self-report
 
-`check-output-style` exists because omc-slim *is* its output style. Claude Code
+**v0.12.0 removed the hook that reported this, and nothing replaced it.** The
+condition below is unchanged and still real; only the detector is gone. The
+README now states it and gives the manual probe, and
+`scripts/optional/statusline.sh` still prints the badge for anyone who wires it
+up. This section is kept because the failure is kept.
+
+`check-output-style` existed because omc-slim *is* its output style. Claude Code
 resolves the active style with `Object.values(...).filter(forceForPlugin)[0]`:
 first match wins, ordered by plugin load. A second plugin that forces a style can
 take the slot, and the loss is logged at WARN, which no user reads. Everything
@@ -393,8 +367,8 @@ resolver never reads the user's setting while any plugin forces a style: the
 `outputStyle` branch is only reached when the forced-style filter comes back
 empty. So a user changing their output style cannot disable this plugin, whatever
 it looks like. A user installing a second style-forcing plugin can, silently, and
-`check-output-style` is the answer to that. Expect this to be the most common "is it
-even working?" report; the README answers it with a one-line check.
+since v0.12.0 nothing tells them. Expect this to be the most common "is it even
+working?" report; the README answers it with a one-line check the user runs.
 
 ---
 
@@ -2124,7 +2098,7 @@ session start and extend them as it goes.
 The refusal's own trigger — *"reopens only if the platform ships the missing
 capability"* — fired. v0.9.9 adopted it as a 0-token ledger, not as a
 per-write injection. FileChanged has no `additionalContext` and no decision
-control. SessionStart seeds `watchPaths` for source directories inside a project, with a workspace descent; `hooks/seed-watch-paths.mjs` states the gate.
+control. omc-slim seeds no `watchPaths`: v0.12.0 removed that hook, because the recursive walk it asked for ran at session start and each delivered event then cost one process.
 Watching cwd itself was refused: it would include `node_modules` and `.git`.
 The spend argument that kept this an open question does not apply to a hook that
 injects nothing.

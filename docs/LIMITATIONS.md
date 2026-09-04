@@ -391,25 +391,13 @@ common one. A warning that is correct to ignore on most dispatches is a warning
 nobody reads, and a check that degrades to "cannot tell" by default is not a
 check. The fixer's name-the-mechanism rule used to carry the whole weight.
 
-v0.9.9 closed the common path, not by parsing Bash, but by watching the disk.
-A `FileChanged` ledger records in-project writes from Edit, Auto-mode Bash, and
-an editor outside Claude. It lives outside the project, under
-`~/.claude/omc-slim/ledgers/` (or `$CLAUDE_CONFIG_DIR`), one file per project
-named by a hash of the project path. The first draft kept it in the project,
-which leaked absolute paths and session ids into any `git add -A`. A repository
-could also commit a symlink at that path. Nothing is written inside the project
-now. Each row is `{t, session_id, path, event}`. `t` is the written
-file's mtime rather than delivery time, because chokidar delivers an event 0.5
-to 0.7 s late. No row is written without a `session_id`.
-
-The reader consults the ledger only when the subagent's own transcript shows a
-`Bash` or `mcp__*` tool use. An agent that never ran a shell cannot have made a
-write the transcript does not show. It requires the row's `session_id` to equal
-the payload's, `t` after the subagent's first transcript timestamp, and a path
-inside the project. It skips `unlink`. On a hit the hook abstains rather than
-accuses, whether the transcript showed no write or only writes outside the
-project. A write from another session, or from before the work began, cannot
-vouch for it.
+v0.9.9 tried to close the common path, not by parsing Bash, but by watching the
+disk: a `FileChanged` ledger of in-project writes, kept outside the project under
+`~/.claude/omc-slim/ledgers/`, one file per project named by a hash of the
+project path, each row `{t, session_id, path, event}`. The reader consulted it
+only when a subagent's own transcript showed a `Bash` or `mcp__*` tool use, and
+on a hit it abstained rather than accused. **v0.12.0 removed all of it**, for the
+reasons below.
 
 The claim scan also runs on `Stop` for the main thread. A miss reaches you as a
 `systemMessage` and never reaches the model. On Stop, `additionalContext`
@@ -435,34 +423,23 @@ the advisory names that case and tells you to ignore it. A runner the tables do
 not know reads as unknown and mutes the advisory, which is abstention rather
 than accusation.
 
-Watching is seeded at SessionStart, and only inside a project. `seed-watch-paths`
-names no roots for `$HOME`, for a filesystem root, or for a directory without a
-marker (`.git`, `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`,
-`Makefile` and sixteen more). It descends workspace directories (`packages/`,
-`apps/`, `libs/`, `services/`, `crates/`, `modules/`, `examples/`) to each
-child's subdirectories, so `packages/foo/src` is watched and
-`packages/foo/node_modules` is not. It names root-level source files too, and
-caps the list at 48 entries. A workspace child's own root-level files are not
-watched. Two skip sets exist on purpose. The ledger ignores 13 never-source
-names at any depth: `node_modules .git __pycache__ .venv venv .tox Pods
-DerivedData coverage .next dist target vendor`, and any path with a `.claude`
-component. The seed hook skips those plus
-`build out obj tmp logs env`, at the first level only, because `src/build/` can
-be source. Every delivered FileChanged event costs one node process, about 43
-ms on one machine over five runs; re-derive it with `/usr/bin/time -l node
-hooks/file-ledger.mjs < payload.json`. A nested `node_modules` under a watched
-directory still fires
-events, which the ledger drops after the spawn.
+v0.12.0 removed every part of this that watched files. `seed-watch-paths`
+(SessionStart), `file-ledger` (FileChanged) and the `verify-deliverables`
+SubagentStop registration are gone, together with the ledger reader and the
+write verdict inside the hook. What they bought was one distinction — a
+subagent that wrote through Auto-mode Bash or an MCP server versus one that
+wrote nothing — reached through a branch gated on `WRITE_AGENTS = {"fixer",
+"designer"}`. Neither agent had shipped since the roster became four read-only
+specialists, so the branch could not execute, and the two silent hooks fed it
+anyway at the price of a recursive `watchPaths` walk at session start and one
+node process per delivered file event (about 43 ms each).
 
-FileChanged does not fire in a remote-workspace session, so the ledger is empty
-there and the claim scan runs without it. A plugin enabled mid-session has no
-watcher until restart. Two ordering residuals remain. A subagent whose last act
-is a shell write can return before its row lands, so the no-write advisory can
-still fire on that write. A main-thread edit within two seconds before
-dispatch can still be credited to the subagent; that is the tolerance for
-filesystems with coarse mtimes. And the older hole stands: a user save during a
-subagent run, inside the time window, still silences the no-write advisory when
-that subagent also used a shell or MCP tool. FileChanged has no `agent_id`, so
-the ledger cannot tell a
-subagent's write from yours. That is fail-open, and it is the charter. Paid
+Two limitations went with them and are worth naming as removed rather than
+solved. There is no longer any check that a writer subagent produced a file:
+a `general-purpose` writer that reports success having written nothing is not
+detected, and never was, because its `agent_type` carries no `omc-slim:`
+namespace. And FileChanged had no `agent_id`, so the ledger could never tell a
+subagent's write from the user's own — a fail-open hole that is now moot.
+
+The claim scan is unaffected. It reads the transcript and nothing else. Paid
 eval B1 (main-thread false pass, n=3) has not run.
