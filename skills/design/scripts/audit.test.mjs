@@ -150,9 +150,12 @@ test('browser discovery falls back to PATH, not only to fixed locations', () => 
 
 test('with no browser it fails closed and claims nothing', async () => {
   const saved = process.env.CHROME_PATH;
+  const savedPath = process.env.PATH;
   const savedPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
   process.env.CHROME_PATH = '/nonexistent/browser';
+  process.env.PATH = '';
   Object.defineProperty(process, 'platform', { value: 'nonesuch', configurable: true });
+  assert.equal(findBrowser(), null, 'the no-browser case is not being simulated');
   try {
     const result = await audit(BROKEN);
     assert.equal(result.verified, false);
@@ -163,6 +166,7 @@ test('with no browser it fails closed and claims nothing', async () => {
     assert.match(result.message, /CHROME_PATH/, 'the failure must say how to fix it');
   } finally {
     Object.defineProperty(process, 'platform', savedPlatform);
+    process.env.PATH = savedPath;
     if (saved === undefined) delete process.env.CHROME_PATH;
     else process.env.CHROME_PATH = saved;
   }
