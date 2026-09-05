@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { audit, summarise, findBrowser, probeSource, probeFunctionSource } from './audit.mjs';
+import { audit, summarise, findBrowser, probeSource, probeFunctionSource, nodeTooOld } from './audit.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PROBE = resolve(HERE, 'probe.js');
@@ -116,6 +116,38 @@ test('an error gates every later check', () => {
   assert.deepEqual(s.skipped, ['all-checks-after-error']);
 });
 
+test('the script has no third-party dependency', () => {
+  const runtime = [probeSource(), readFileSync(resolve(HERE, 'audit.mjs'), 'utf8')];
+  const all = [...runtime, readFileSync(resolve(HERE, 'audit.test.mjs'), 'utf8')];
+  for (const source of all) {
+    for (const match of source.matchAll(/^import .*? from '([^']+)'/gm)) {
+      const spec = match[1];
+      assert.ok(
+        spec.startsWith('node:') || spec.startsWith('./') || spec.startsWith('../'),
+        `${spec} is neither a node builtin nor a relative path`
+      );
+    }
+  }
+  const commonjs = new RegExp('\\b' + 'require' + '\\(');
+  for (const source of runtime) {
+    assert.equal(commonjs.test(source), false, 'no CommonJS resolution in the shipped runtime');
+  }
+});
+
+test('this Node is new enough to drive the browser', () => {
+  assert.equal(nodeTooOld(), false, `Node ${process.versions.node} is below the documented floor`);
+});
+
+test('browser discovery falls back to PATH, not only to fixed locations', () => {
+  const source = readFileSync(resolve(HERE, 'audit.mjs'), 'utf8');
+  assert.match(source, /CHROME_ON_PATH/, 'a machine with Chrome outside the shipped paths must still be found');
+  for (const platformKey of ['darwin', 'linux', 'win32']) {
+    assert.match(source, new RegExp(platformKey + ':'), `${platformKey} has no candidate list`);
+  }
+  assert.match(source, /Program Files \(x86\)/, 'the 32-bit Windows install location is the common one');
+  assert.match(source, /google-chrome-stable/, 'the Debian package name is the common Linux binary');
+});
+
 test('with no browser it fails closed and claims nothing', async () => {
   const saved = process.env.CHROME_PATH;
   const savedPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
@@ -128,6 +160,7 @@ test('with no browser it fails closed and claims nothing', async () => {
     assert.deepEqual(result.ran, []);
     assert.match(result.message, /NOT VISUALLY VERIFIED/);
     assert.match(result.message, /0 assertions ran/);
+    assert.match(result.message, /CHROME_PATH/, 'the failure must say how to fix it');
   } finally {
     Object.defineProperty(process, 'platform', savedPlatform);
     if (saved === undefined) delete process.env.CHROME_PATH;

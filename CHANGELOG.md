@@ -78,10 +78,22 @@ requires a function declaration. The two calling conventions are real and a
 source written for one is rejected by the other, which is the kind of seam that
 only shows up when someone asks whether the thing actually connects.
 
+The scripts carry no third-party dependency: every import is a `node:` builtin,
+there is no `package.json` and nothing to install. What they do depend on is the
+machine, and three of those dependencies would have broken on a real one.
+Browser discovery shipped a single Windows path and missed both
+`Program Files (x86)` and `google-chrome-stable`, which is the Debian package
+name; it now carries nine Linux candidates, five Windows, five macOS, and a
+`PATH` sweep behind all of them. The Node floor is 22, for the built-in
+WebSocket the DevTools connection uses, and that is now checked before a browser
+is launched rather than surfacing as a connection failure afterwards. Both
+failures name `CHROME_PATH` and the `--probe` route out. Three tests pin all of
+it, including one that fails if an import ever resolves outside `node:`.
+
 `audit.mjs` runs 31 checks in three tiers. Two errors gate everything, because an
 audit on a page whose script threw is measuring nothing. Failures are the floor.
 Advisories never affect an exit code. With no browser it reports NOT VISUALLY
-VERIFIED, names the assertions that did not run, and asks. The suite is ten tests
+VERIFIED, names the assertions that did not run, and asks. The suite is thirteen tests
 including a mutation: gutting the `tinyText` assertion is caught, and
 restoring it makes the check fire again. 14 of 31 checks pass on the seeded
 fixture, 31 of 31 on the clean one.

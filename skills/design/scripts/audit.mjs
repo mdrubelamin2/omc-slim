@@ -11,15 +11,42 @@ const SETTLE_MS = 600;
 const LAUNCH_TIMEOUT_MS = 15000;
 const EVAL_TIMEOUT_MS = 20000;
 
+const MIN_NODE_MAJOR = 22;
+
 const CHROME_CANDIDATES = {
   darwin: [
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
     '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
     '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
   ],
-  linux: ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/microsoft-edge'],
-  win32: ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe']
+  linux: [
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/opt/google/chrome/chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/snap/bin/chromium',
+    '/usr/bin/brave-browser',
+    '/usr/bin/microsoft-edge-stable',
+    '/usr/bin/microsoft-edge'
+  ],
+  win32: [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Chromium\\Application\\chrome.exe'
+  ]
 };
+
+const CHROME_ON_PATH = [
+  'google-chrome-stable', 'google-chrome', 'chromium-browser', 'chromium',
+  'brave-browser', 'microsoft-edge-stable', 'microsoft-edge', 'chrome'
+];
+
+const HEADLESS_FLAG = '--headless=new';
 
 const ERROR_TRAP = `
 window.__designAuditErrors = window.__designAuditErrors || [];
@@ -39,12 +66,33 @@ export function errorTrapSource() {
   return ERROR_TRAP;
 }
 
+function onPath(name) {
+  const dirs = (process.env.PATH || '').split(platform() === 'win32' ? ';' : ':');
+  const suffixes = platform() === 'win32' ? ['.exe', ''] : [''];
+  for (const dir of dirs) {
+    if (!dir) continue;
+    for (const suffix of suffixes) {
+      const full = resolve(dir, name + suffix);
+      if (existsSync(full)) return full;
+    }
+  }
+  return null;
+}
+
 export function findBrowser() {
   if (process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH)) return process.env.CHROME_PATH;
   for (const candidate of CHROME_CANDIDATES[platform()] || []) {
     if (existsSync(candidate)) return candidate;
   }
+  for (const name of CHROME_ON_PATH) {
+    const found = onPath(name);
+    if (found) return found;
+  }
   return null;
+}
+
+export function nodeTooOld() {
+  return Number(process.versions.node.split('.')[0]) < MIN_NODE_MAJOR;
 }
 
 export function summarise(result) {
@@ -106,7 +154,7 @@ async function connect(wsUrl) {
 
 async function launch(browser, width, height) {
   const child = spawn(browser, [
-    '--headless=new',
+    HEADLESS_FLAG,
     '--remote-debugging-port=0',
     '--no-first-run',
     '--no-default-browser-check',
@@ -142,9 +190,18 @@ async function launch(browser, width, height) {
 }
 
 export async function audit(target, { width = 1280, height = 800 } = {}) {
+  if (nodeTooOld()) {
+    return unavailable(
+      `this Node is ${process.versions.node} and the audit needs ${MIN_NODE_MAJOR} or newer for its built-in WebSocket. ` +
+      'Run the checks through a connected browser tool with --probe instead'
+    );
+  }
   const browser = findBrowser();
   if (!browser) {
-    return unavailable('no browser tool is connected and no Chrome binary was found');
+    return unavailable(
+      'no browser tool is connected and no Chrome-family binary was found. ' +
+      'Set CHROME_PATH, or run the checks through a connected browser tool with --probe'
+    );
   }
 
   let child, session;
