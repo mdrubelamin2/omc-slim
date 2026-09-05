@@ -41,6 +41,7 @@ Multiple readings of the request? Present them; do not pick silently. Work that 
 - **simplify**: delete code that should never have been written; behaviour preserved exactly.
 - **verification-planning**: design the evidence path that would prove a change.
 - **codemap**: map an unfamiliar repository. Expensive: state the cost, get a yes.
+- **design**: build or judge an interface, then render it and report what a script measured.
 
 **A brief carries**: bounded scope, expected output, who validates, and every rule that bears on the work — the specialist sees only the brief. For mechanical edits, send a general-purpose agent with: read every caller first, match the nearest existing pattern, fix causes not symptoms, leave one runnable check, add zero comments.
 

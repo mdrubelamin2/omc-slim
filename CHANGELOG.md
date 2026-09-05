@@ -3,6 +3,127 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.13.0
+
+The design owner is back, and this time it can look at what it built.
+
+`designer` was deleted in v0.10.0 on a cost argument: its slot "belongs to the
+official frontend-design skill at 83 tokens". That argument was wrong about the
+cost. `measure-context.sh` counts the output style body plus each description,
+and component bodies are free until something invokes them, so the 115-line
+agent was never in anybody's context. The deletion also left a hole this
+repository had already found once and fixed once. `CHANGELOG.md:932` records it
+as the worst of eleven contradictions a release gate ever caught: a
+critique-only visual audit with no owner anywhere in the plugin, because
+`review`'s Interface lane routed judgement calls to a designer that no longer
+existed. That loop has been open ever since. It closes here.
+
+**The residual is not taste, it is that the model never looks.** Three research
+lanes and two adversarial gates went into establishing that. A CVPR 2026 study
+across 4,759 expert-annotated pages reports task-average F1 near 20% on text
+overflow and near chance on element boundaries, so a component that renders a
+screenshot and judges it is a check that cannot fail honestly. The same
+literature says a known-good reference plus a fixed human-written taxonomy moves
+per-application accuracy from 39% to near 100%, and that domain-authored rubrics
+beat model-authored ones at kappa 0.60 against 0.46. So every number in this
+skill comes from `scripts/audit.mjs`, which drives a headless browser over the
+DevTools protocol with no dependencies, and the reading of the render is
+confined to what no script can reach.
+
+Both adversarial gates killed the second component. The proposal was a skill
+plus a read-only critic agent, justified by the style's own rule that author and
+verdict stay separate. `skills/review/checklists.md:199` already faces that
+problem on a higher-stakes surface and answers it with a briefed
+general-purpose dispatch rather than a roster entry, and citing the rule while
+ignoring the only worked example of applying it is not an argument. One skill
+ships. `critic.md` is the brief.
+
+The floor and the calibration are separate files because they have different
+readers and because a fixed value set is its own failure. Ten installs sharing
+one measure, one scale, one radius and one curve is a fingerprint, which is the
+thing `defaults.md` exists to catch. `floor.md` is correctness and does not
+move. `calibration.md` opens on the instruction that arriving at all of its
+values unchanged is the tell. A critique run reads 1,750 words, a replication
+1,360, an origination 2,928; a review run reads 6,198.
+
+Nothing here is allowed to become authority. `floor.md` carries precedence rank
+0, above its own accessibility floor: what you can verify right now beats every
+file in the skill, a written design system in the repository outranks the skill
+entirely, and a rule you can show to be stale is one you override and name. Every
+file states a calibration date and instructs that its specifics decay into
+claims to re-verify. One rule has no override, and it is the evidence rule.
+
+The community corpus decided the shape of `defaults.md`. Across 3,033 on-topic
+comments the loud tells are the ones people name first and the ones cheapest to
+fake: the violet gradient, the default kit, the radius. The tells that
+practitioners cite when they want to be right rank nowhere: no real images,
+no coherence across sections, hover states that were never written, colour that
+means the wrong thing. So the file gates on the durable half and only advises on
+the dated half, which carries a measured 5 to 10 percent false-positive rate and
+has convicted award-winning human work. The skill reports what would be called
+out. It never accuses.
+
+Verification adopts the session rather than assuming it. The skill takes the
+strongest instrument available and works down: a browser tool already connected
+to a real page, a driver the project installs, then the bundled script. It reads
+what each offers instead of assuming a shape, uses that tool's own audits where
+they beat the probe, and names in the report any check it made beyond the
+bundled set. The render is captured at every swept viewport, in dark mode where
+the project has one, and in the states a static capture misses.
+
+The probe emits in two shapes so a browser tool that is already connected can
+run it instead of launching another one. `--probe` gives a bare expression for a
+tool that evaluates one; `--probe-fn` wraps it as a function for a tool that
+requires a function declaration. The two calling conventions are real and a
+source written for one is rejected by the other, which is the kind of seam that
+only shows up when someone asks whether the thing actually connects.
+
+`audit.mjs` runs 31 checks in three tiers. Two errors gate everything, because an
+audit on a page whose script threw is measuring nothing. Failures are the floor.
+Advisories never affect an exit code. With no browser it reports NOT VISUALLY
+VERIFIED, names the assertions that did not run, and asks. The suite is ten tests
+including a mutation: gutting the `tinyText` assertion is caught, and
+restoring it makes the check fire again. 14 of 31 checks pass on the seeded
+fixture, 31 of 31 on the clean one.
+
+Two gate holes were found by using them. `check-coverage.sh` reported
+"3/3 plugin-internal paths resolve" while `floor.md` linked to a script that did
+not exist yet, so relative links inside companion files were never checked.
+`check-prose.sh` derived a scope that excluded every companion file, so
+`checklists.md`, `principles.md` and `procedure.md` had been ungated since they
+shipped. The prose gate now reads `skills/*/*.md` and covers 45 documents
+instead of 32.
+
+A compression pass took the eight files from 6,100 words to 5,424 with every
+rule and every pinned phrase intact. `SKILL.md` lost a fifth of its length,
+mostly to a verify section that had grown ten bolded paragraphs where six say
+the same thing, and to a browser-discovery instruction that appeared twice.
+`floor.md` gained six section headings and lost the sentences that explained
+its rules rather than stating them. Five rules were duplicated across files and
+now live in one place each: the response budget, `tabular-nums` and URL state
+had been restated in `domains.md`, which opens by saying generic craft is not
+repeated, and pointer-down response and the presentation-value rule had been
+restated in `gesture.md`. Read paths: 1,817 words for a one-line change, 2,287
+to replicate, 3,449 to originate, 4,433 in the worst case. A review run reads
+6,198 every time it fires.
+
+Correctness that does not vary moved out of `calibration.md` and into
+`floor.md`: the form rules, the response budget, URL state, the untouched
+browser surfaces and the working-memory cap. A replication run reads the floor
+and never the calibration, so those rules were unreachable on the one mode most
+likely to need them. Read paths after the move: 1,947 words for a one-line
+change, 2,488 to replicate, 3,675 to originate, 4,745 in the worst case of a
+gesture-driven greenfield surface with a dispatched verdict.
+
+Registries: 32 COVERAGE rows and 6 REINFORCEMENT rows, a new `design` origin
+classified as internal for the same reason `research` is. Two of those pins
+tripped during the final prose pass, which is the mechanism working: the rules
+survived, the wording moved, and the gate named both. Gates at release:
+coverage 315/315 with 24/24 prompt files naming no third-party component,
+reinforcement 103/103, prose 45/45, evals 7/7, shell 19/19, and five component
+suites green. Always-on moved from 2,467 to 2,590 real tokens, which is the
+whole price of the seventh skill.
+
 ## v0.12.0
 
 Four of the five hook registrations are gone, and one of them was dead.

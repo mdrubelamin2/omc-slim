@@ -145,7 +145,7 @@ Machine-written code has its own set. Memoising everything "just in case": **ove
 
 ## Interface
 
-Judgement calls need a designer or the user; these are the mechanical ones.
+Judgement calls go to the `omc-slim:design` skill, which owns the visual audit and can render the result; these are the mechanical ones.
 
 - Focus removed (`outline: none`) with no replacement
 - Touch target under 24×24 CSS px: the WCAG 2.2 AA floor (2.5.8). 44×44 is the AAA enhanced target (2.5.5) and the Apple convention, not the AA floor
@@ -157,7 +157,7 @@ Judgement calls need a designer or the user; these are the mechanical ones.
 - Text with no measure limit
 - More than three font families
 
-The tells of generated UI: everything centred, one large radius on every surface, icons in coloured circles as decoration. Also the symmetrical three-card grid, violet-to-indigo gradients, copy that opens "Unlock the power of".
+The tells of generated UI are dated, so they live in one place with a calibration date on them: the `omc-slim:design` skill carries the list, split into what gates and what only advises.
 
 **Calibrate against the project's own design system if it has one.** A pattern the project blessed is not a finding.
 

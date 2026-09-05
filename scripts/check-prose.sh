@@ -81,7 +81,12 @@ else
     done
     FILES+=("$f")
   done
-  FILES+=("$ROOT/output-styles/omc-slim.md" "$ROOT"/agents/*.md "$ROOT"/skills/*/SKILL.md)
+  # Companion reference files were outside this gate until v0.13.0, which is a
+  # hole rather than a decision: checklists.md and craft-floor-style references
+  # are read by the model exactly like a SKILL.md is, and nothing stopped prose
+  # drift in them. The design skill ships five of them, so the gap became worth
+  # closing rather than recording.
+  FILES+=("$ROOT/output-styles/omc-slim.md" "$ROOT"/agents/*.md "$ROOT"/skills/*/*.md)
 fi
 
 # The newest CHANGELOG entry, extracted to a temp file so the gate reads what is

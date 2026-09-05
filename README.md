@@ -13,7 +13,7 @@ It is honest about what it cannot do, on this page, further down. Read that part
 /plugin install omc-slim@omc-slim
 ```
 
-That is the whole setup. Four agents, six skills, one hook, four commands and one output style turn on together.
+That is the whole setup. Four agents, seven skills, one hook, four commands and one output style turn on together.
 
 Try it first without installing:
 
@@ -34,7 +34,7 @@ claude --plugin-dir ./omc-slim
 
 **It says what it could not check.** A review finding must quote the line that proves it. A finding with no evidence is dropped, not reported. What could not be verified is written down instead of smoothed over.
 
-**It stays out of your way.** ~2,467 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
+**It stays out of your way.** ~2,590 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
 
 ---
 
@@ -65,6 +65,16 @@ The library moved. Your model's memory did not. The `omc-slim:librarian` agent r
 The `omc-slim:review` skill reads the diff across correctness, simplicity, security, tests, schema, API contract and performance at once. Every finding quotes `file:line` with a severity and a confidence. It then fixes what is mechanical.
 
 The change has to exist first. Review judges; it does not design.
+
+### "This looks like every other AI landing page"
+
+The `omc-slim:design` skill builds and judges interfaces in two modes. **Replicate** matches a source at fidelity: a design file, a screenshot, a wireframe. **Originate** builds from a brief, asks for real references before it writes markup, and diffs its own plan against the median it would have produced for any similar brief.
+
+Then it renders the result and runs the audit: 31 checks in three tiers. It prefers whatever browser tool you already have connected and hands it the same probe, so nothing extra launches and you see what it sees. With no browser connected, `audit.mjs` drives a headless one itself, with no dependencies. Two errors gate everything, because an audit on a page whose script threw is measuring nothing. Failures are the floor: contrast, target size, clipped text, overflow, missing states, heading order, the four motion failures. Advisories never fail a build, because the dated tell list carries a real false-positive rate and has convicted award-winning human work.
+
+With no browser connected and no Chrome on the machine it reports **NOT VISUALLY VERIFIED**, names every assertion that did not run, and asks. It does not guess and it does not quietly pass.
+
+The rules are dated evidence, not authority. A written design system in your repository outranks the whole skill, and precedence rank 0 is whatever you can verify right now.
 
 ### "This design worries me"
 
@@ -148,7 +158,7 @@ Every one also has an explicit form, and the agents work with the output style o
 
 ## What it costs
 
-**~2,467 tokens** of always-on context, and nothing injected per tool call. Treat it as a floor. The harness adds framing that no text measurement sees, so the real figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)). `./scripts/measure-context.sh` re-derives it, and also prints **2,791 on a chars/4 basis**, the estimate this project's version series is tracked on.
+**~2,590 tokens** of always-on context, and nothing injected per tool call. Treat it as a floor. The harness adds framing that no text measurement sees, so the real figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)). `./scripts/measure-context.sh` re-derives it, and also prints **2,931 on a chars/4 basis**, the estimate this project's version series is tracked on.
 
 Two settings of yours will save more than this plugin costs. Neither is a plugin change:
 
@@ -225,7 +235,7 @@ Agents are scoped by what they must **not** do, never by a fixed tool list. So e
 
 ## How it is checked
 
-CI runs all six `check-*.sh` scripts on every push, along with the hook suite and its mutation runner.
+CI runs all seven `check-*.sh` scripts on every push, along with the hook suite and its mutation runner.
 
 The hook suite runs 163 cases. The mutation runner then breaks the hook 80 ways, and the suite catches every one, to prove those cases would notice a regression. `COVERAGE.tsv` pins every rule to the file that must carry it. `REINFORCEMENT.tsv` pins the *reasoning* too, because one compression pass kept every pinned phrase and broke the behaviour anyway.
 

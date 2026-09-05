@@ -25,6 +25,12 @@
 # Whitespace is normalised first, so line-wrapped prose still matches.
 #
 # origin	rule	where	pattern
+# RETIRED v0.13.0 — design-name-nothing pinned an authoring rule, not a runtime
+# one: the reader of SKILL.md is building a design, not writing SKILL.md. The
+# rule itself is unchanged and mechanically enforced at check-coverage.sh:792,
+# which fails the build on any third-party name in a shipped prompt. Rule 0b is
+# satisfied by the gate outliving the prose.
+# design	design-name-nothing	design	is a dead pointer on a machine without it
 CLAUDE.md	ownership-no-exits	output-styles	with evidence, is a result
 CLAUDE.md	no-permission-to-continue	output-styles	permission to continue
 CLAUDE.md	looks-right-is-not-a-check	output-styles	a check that cannot fail is not evidence
@@ -328,3 +334,36 @@ audit	no-magic-literals	output-styles	is a named constant
 audit	established-solution-first	output-styles	Take the established solution first
 audit	chestertons-fence	output-styles	until you know why it went in
 audit	speed-needs-a-number	output-styles	owes no benchmark
+design	design-two-modes	design	Two modes
+design	design-survey-project-first	design	A value the project set is the answer
+design	design-references-before-brief	design	Ask for references before you ask for anything else
+design	design-self-diff-against-median	design	diff the plan against your own median
+design	design-bounded-passes	design	at most one confirming round
+design	design-audit-at-checkpoint	design	at a checkpoint rather than per edit
+design	design-errors-gate	design	means every later number is meaningless
+design	design-advisory-never-fails	design	Advisories never fail anything
+design	design-fail-closed	design	No browser, no claim
+design	design-render-is-not-a-measurement	design	Every number comes from a measurement. A reading is not one.
+design	design-verdict-is-dispatched	design	dispatch a **general-purpose agent**
+design	design-verify-now-outranks-file	design/floor.md	What you can verify right now
+design	design-project-outranks-skill	design/floor.md	outranks this skill entirely
+design	design-licence-to-disagree	design/floor.md	Following a rule you know to be wrong
+design	design-evidence-rule-not-arguable	design/floor.md	a check you did not run is not a result
+design	design-contrast-gate	design/floor.md	Contrast gates on WCAG 2
+design	design-target-floor-and-touch	design/floor.md	24 is the legal minimum
+design	design-states-shipped-whole	design/floor.md	Cutting one is a defect, not a scope decision
+design	design-reduced-motion-substitutes	design/floor.md	substitutes, it does not delete
+design	design-concentric-radii	design/floor.md	Choose the outer value; derive the inner
+design	design-calibration-is-not-a-target	design/calibration.md	Arriving at all of them unchanged is the tell
+design	design-durable-half-gates	design/defaults.md	The first list does not decay and it gates
+design	design-prescribed-look-is-a-fingerprint	design/defaults.md	A prescribed look becomes the next default
+design	design-never-the-verdict	design/defaults.md	Report the pattern, name the count, never the verdict
+design	design-domains-are-open	design/domains.md	Five worked examples, not a closed list
+design	design-alignment-first	design/replicate.md	Alignment, then colour
+design	design-diff-is-not-acceptance	design/replicate.md	A change detector, not an acceptance test
+design	design-clone-cannot-inherit-states	design/replicate.md	A static source has no hover
+design	design-withhold-the-tell-list	design/critic.md	Withhold the calibration and the dated defaults list
+design	design-critic-cannot-point-is-not-a-finding	design/critic.md	A finding you cannot point at is not a finding
+design	design-critic-is-not-a-gate	design/critic.md	The audit gates. This pass reports.
+design	design-adopt-session-tools	design	strongest instrument available
+design	design-extend-beyond-the-probe	design	beyond the bundled set

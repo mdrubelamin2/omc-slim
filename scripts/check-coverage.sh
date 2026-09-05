@@ -881,12 +881,17 @@ NSPY
 # over a broken codemap. The hook suites above are enrolled with README counts
 # because those counts are published; these two are enrolled for the exit code.
 JS_RUNTIME=$(command -v bun || command -v node)
+# The design audit drives a headless browser over the DevTools protocol and needs
+# the global WebSocket that Node 22 carries, so it is pinned to node rather than
+# taking whichever runtime is first on PATH.
+NODE_RUNTIME=$(command -v node)
 COMPONENT_OUT=$(mktemp -d)
 trap 'rm -rf "$COMPONENT_OUT"' EXIT
 COMPONENT_SUITES=(
   "bash $ROOT/skills/review/scripts/base.test.sh"
   "$JS_RUNTIME $ROOT/skills/codemap/scripts/codemap.test.mjs"
   "bash $ROOT/scripts/optional/statusline.test.sh"
+  "${NODE_RUNTIME:-node} $ROOT/skills/design/scripts/audit.test.mjs"
 )
 for index in "${!COMPONENT_SUITES[@]}"; do
   (
@@ -1300,6 +1305,12 @@ ORIGINS = {
     # vendor documentation and measured results, and the trail from each rule
     # back to its evidence lives in docs/RESEARCH-2026-08-26.md.
     'research':             ('internal',   None,                  None),
+    # Rules the design skill rests on. `internal` for the same reason as
+    # `research`: the sources are published studies, vendor documentation and a
+    # community corpus, none of which is a repository this project can pin. The
+    # trail lives in docs/deepwork/design-skill.md, and every design file states
+    # its own calibration date because those sources decay.
+    'design':               ('internal',   None,                  None),
     'CLAUDE.md':            ('tracked',    'CLAUDE.md',           '~/.claude/CLAUDE.md'),
     'fable-mode':           ('tracked',    'fable-mode.SKILL.md', 'fable-mode'),
     'addy':                 ('tracked',    'agent-skills',        'addyosmani/agent-skills'),

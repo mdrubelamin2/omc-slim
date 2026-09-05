@@ -135,3 +135,10 @@ linear-modular-small	output-styles	one unit does one thing	one fact has one owne
 established-solution-first	output-styles	Take the established solution first	the standard library before a dependency|costs more than it saves
 chestertons-fence	output-styles	until you know why it went in	whose test had to be edited changed behaviour|revert it
 speed-needs-a-number	output-styles	Buy speed with a measurement	owes no benchmark
+design-fail-closed	design	No browser, no claim	NOT VISUALLY VERIFIED|name the assertions that did not run|ask before building a check
+design-bounded-passes	design	Build fully first	at most one confirming round|a re-opened hunt of your own|only while something critical is open
+design-self-diff-against-median	design	diff the plan against your own median	revise, and say what changed and why|the default wearing a plan's clothes
+design-verify-now-outranks-file	design/floor.md	What you can verify right now	dated evidence, not authority|what you can check wins
+design-durable-half-gates	design/defaults.md	does not decay and it gates	carries a real false-positive rate|only ever advises
+design-alignment-first	design/replicate.md	Alignment, then colour	two-pixel drift on an edge reads before
+design-adopt-session-tools	design	strongest instrument available	instead of assuming its shape|use its own audits where they beat the probe

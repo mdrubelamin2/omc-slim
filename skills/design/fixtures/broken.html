@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Seeded defects</title>
+<style>
+  body { font-family: sans-serif; margin: 0; background: #ffffff; color: #111111; }
+  .wide { width: 2400px; height: 40px; background: #eeeeee; }
+  .faint { color: #a6a6a6; font-size: 16px; }
+  .tiny { font-size: 9px; }
+  .clamped { height: 18px; overflow: hidden; width: 300px; }
+  .smallhit { width: 18px; height: 18px; padding: 0; border: 0; }
+  .allprops { transition: all 200ms ease-out; }
+  .widthmorph { transition: width 300ms ease-out; }
+  .easein { transition: opacity 200ms ease-in; }
+  .card {
+    border: 1px solid rgba(0, 0, 0, 0.6);
+    box-shadow: 0px 4px 24px rgba(0, 0, 0, 0.2);
+    border-radius: 14px;
+    background: #fafafa;
+    padding: 12px;
+    margin: 8px;
+  }
+  .gradient-text {
+    background-image: linear-gradient(90deg, #7c3aed, #4f46e5);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-size: 40px;
+  }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .pops { animation: pop 300ms ease-out; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none; transition: none; } }
+</style>
+</head>
+<body>
+  <div class="wide"></div>
+
+  <h1>Seeded defects</h1>
+  <h3>A skipped heading level</h3>
+
+  <p class="faint">Low contrast body text that does not reach four and a half to one.</p>
+  <p class="tiny">Text below the twelve pixel body floor, long enough to be counted as real content.</p>
+  <p class="clamped">Clamped copy that is taller than its box and therefore cut off partway through the sentence without any indication.</p>
+
+  <button class="smallhit">x</button>
+  <button class="allprops">Transitions everything</button>
+  <button class="widthmorph">Transitions width</button>
+  <button class="easein">Eases in on my own click</button>
+
+  <div onclick="void 0">A div pretending to be a button</div>
+
+  <input type="text" placeholder="Email address" style="font-size: 13px">
+
+  <img alt="missing">
+
+  <p class="gradient-text">Transform your business</p>
+
+  <p>Copy that leans on the dash — again and again — past any rate a person sustains — and keeps going — well beyond eight — with more still — and another — and one final one — to clear the density gate comfortably.</p>
+
+  <div class="card">one</div>
+  <div class="card">two</div>
+  <div class="card">three</div>
+  <div class="card">four</div>
+  <div class="card">five</div>
+  <div class="card">six</div>
+
+  <div class="pops">Enters from nothing</div>
+</body>
+</html>

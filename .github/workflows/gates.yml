@@ -88,6 +88,7 @@ jobs:
           node skills/codemap/scripts/codemap.test.mjs & pids+=($!)
           bash skills/review/scripts/base.test.sh & pids+=($!)
           bash scripts/optional/statusline.test.sh & pids+=($!)
+          node skills/design/scripts/audit.test.mjs & pids+=($!)
           failed=0
           for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
           exit $failed
@@ -99,6 +100,7 @@ jobs:
           ./scripts/check-shell.sh
           ./scripts/check-evals.sh
           ./scripts/check-prose.sh
+          ./scripts/check-dated.sh
 
       - name: Upstream pin drift
         # Reports, never fails: a moved upstream is a decision to make, not a
