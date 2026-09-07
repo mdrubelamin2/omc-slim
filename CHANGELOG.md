@@ -27,6 +27,15 @@ past tense, as the record of an argument that turned out to point the same way.
 
 Six skills now, not seven. Static surface 2,703 real tokens.
 
+And a ceiling on that surface: **3,000 real tokens, enforced.** The old ratchet
+measured against 4,197, the lowest figure any release had reached, and at 2,703
+the plugin sat 1,494 under it — a floor you are nowhere near is not a budget.
+`check-coverage.sh` now fails the build when the always-on surface passes 3,000,
+which leaves 297 for everything future. Proved it can fail before trusting it:
+padding the output style to 3,704 tokens is rejected by name and by number.
+Criterion 6 in RELEASE-READINESS.md is rewritten around it and moves to MET,
+because there is now something to meet.
+
 No version bump: v0.13.0 was never tagged or published, so the removal folds
 into the entry below rather than opening a version nobody could have installed.
 

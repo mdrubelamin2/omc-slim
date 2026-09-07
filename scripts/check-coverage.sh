@@ -228,6 +228,16 @@ if real.returncode != 0 or not real_measured.isdigit():
     print('                  constant, which is exactly how the last one went wrong')
     raise SystemExit(1)
 corrected = f'{int(real_measured):,}'
+
+# The always-on ceiling. Paid on every request of every session, so it is the one
+# number that must not drift upward without a decision. It fails the build rather
+# than reporting, because a ceiling nobody enforces is a preference.
+STATIC_CEILING = 3000
+if int(real_measured) > STATIC_CEILING:
+    print(f'  OVER CEILING  the always-on surface is {corrected} real tokens, '
+          f'past the {STATIC_CEILING:,} ceiling by {int(real_measured) - STATIC_CEILING:,}')
+    print('                  cut something, or raise the ceiling deliberately and say why')
+    raise SystemExit(1)
 # Carried to the GitHub-description block below, which used to re-run
 # measure-context.sh --terse-real for the identical number: a second tokeniser
 # load and a second pass over the whole estate, for a figure already in hand.
@@ -412,10 +422,10 @@ sites = [
     ('docs/ASSESSMENT-2026-08-29.md', f'on-invoke bodies up to {ceiling_corr}'),
     ('docs/NATIVE.md', f'ships ~{corrected} always-on tokens'),
     # QUALITY-BAR states the basis a checkpoint was met on; RELEASE-READINESS
-    # measures the ratchet against its 4,197 floor. Both are present tense.
+    # measures the surface against the declared ceiling. Both are present tense.
     ('docs/QUALITY-BAR.md', f'({corrected} real / {total} chars/4)'),
     ('docs/RELEASE-READINESS.md',
-     f'is {corrected}, {int(real_measured) - 4197:,} above that floor'),
+     f'is {corrected}, {STATIC_CEILING - int(real_measured):,} under the {STATIC_CEILING:,} ceiling'),
 ]
 
 bad = 0
