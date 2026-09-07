@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -10,6 +13,9 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const PROBE = resolve(HERE, 'probe.js');
 const BROKEN = pathToFileURL(resolve(HERE, '../fixtures/broken.html')).href;
 const CLEAN = pathToFileURL(resolve(HERE, '../fixtures/clean.html')).href;
+const DEFERRED = pathToFileURL(resolve(HERE, '../fixtures/deferred.html')).href;
+const NO_IMAGERY = pathToFileURL(resolve(HERE, '../fixtures/no-imagery.html')).href;
+const AUDIT_CLI = resolve(HERE, 'audit.mjs');
 
 const MUST_TRIP = [
   'documentOverflowX',
@@ -54,7 +60,7 @@ test('the probe also emits in function form, for an evaluate tool that requires 
 test('every check the probe can report is named in MUST_TRIP or MUST_ADVISE or is a gate', () => {
   const source = probeSource();
   const declared = [...source.matchAll(/ran\.push\('([a-zA-Z]+)'\)/g)].map((m) => m[1]);
-  const gates = ['scriptError', 'contentHiddenAtRest'];
+  const gates = ['scriptError', 'contentHiddenAtRest', 'documentNotRendered'];
   const unclaimed = declared.filter(
     (c) => !MUST_TRIP.includes(c) && !MUST_ADVISE.includes(c) && !gates.includes(c)
   );
@@ -63,6 +69,56 @@ test('every check the probe can report is named in MUST_TRIP or MUST_ADVISE or i
     ['elementOverflowX', 'elementOverlap', 'fixedWidthTextContainer', 'fontNotLoaded', 'hoverNotGated', 'noRealImages'],
     'a new check must be added to the fixtures or listed here as deliberately unfixtured'
   );
+});
+
+test('no check is registered twice, because ran.length is the published denominator', () => {
+  const declared = [...probeSource().matchAll(/ran\.push\('([a-zA-Z]+)'\)/g)].map((m) => m[1]);
+  const seen = new Set();
+  const twice = declared.filter((c) => (seen.has(c) ? true : (seen.add(c), false)));
+  assert.deepEqual(twice, [], 'a duplicate inflates "N of M" in every report');
+});
+
+test('a page that renders after its load event is an error, not a clean pass', needsBrowser, async () => {
+  const result = await audit(DEFERRED);
+  assert.equal(result.verified, true, result.message);
+  const s = summarise(result);
+  assert.equal(s.gated, true, 'an unrendered document must gate every later check');
+  assert.ok(
+    s.errors.some((f) => f.check === 'documentNotRendered'),
+    'a scripted document with no text was measured as if it were a page'
+  );
+});
+
+test('sections with no imagery fail, because defaults.md gates that half', needsBrowser, async () => {
+  const result = await audit(NO_IMAGERY);
+  assert.equal(result.verified, true, result.message);
+  const s = summarise(result);
+  assert.ok(s.failures.some((f) => f.check === 'noRealImages'), 'noRealImages did not fail');
+  assert.equal(s.ok, false);
+});
+
+test('an svg counts as imagery, so the clean fixture does not trip the image gate', needsBrowser, async () => {
+  const s = summarise(await audit(CLEAN));
+  assert.ok(!s.failures.some((f) => f.check === 'noRealImages'));
+});
+
+test('a viewport argument that does not parse stops the run instead of measuring the default', () => {
+  assert.throws(
+    () => execFileSync(process.execPath, [AUDIT_CLI, CLEAN, '--width', 'abc'], { stdio: 'pipe' }),
+    (error) => error.status === 2,
+    'a bad --width used to reach Chrome as NaN and silently measure 1280'
+  );
+});
+
+test('the report names the viewport it measured', needsBrowser, () => {
+  const out = execFileSync(process.execPath, [AUDIT_CLI, CLEAN, '--width', '900'], { encoding: 'utf8' });
+  assert.match(out, /checks passed on .* at 900x\d+/);
+});
+
+test('a file:// URL is audited as itself, not re-resolved as a relative path', needsBrowser, () => {
+  const out = execFileSync(process.execPath, [AUDIT_CLI, CLEAN], { encoding: 'utf8' });
+  assert.ok(out.includes('fixtures/clean.html'), out);
+  assert.ok(!out.includes('NOT VISUALLY VERIFIED'), out);
 });
 
 test('the broken fixture trips every seeded defect', needsBrowser, async () => {
@@ -173,21 +229,46 @@ test('with no browser it fails closed and claims nothing', async () => {
 });
 
 test('deleting an assertion is caught: the suite can fail', needsBrowser, async () => {
+  // The mutant goes to a temp copy and the tracked probe is only ever read.
+  // Mutating it in place left it gutted in the working tree on any abort
+  // between the write and the restore, and two concurrent runs restored each
+  // other's mutants — the class hooks/mutate-runner.mjs removed for the hooks.
   const original = readFileSync(PROBE, 'utf8');
   const gutted = original.replace(
     "        if (fs < min && text.length > (isUi ? 1 : 20)) {\n          fail('tinyText', el, fs + 'px below ' + min + 'px floor');\n        }",
     '        void min;'
   );
   assert.notEqual(gutted, original, 'the mutation target moved; update this test');
-  writeFileSync(PROBE, gutted);
+
+  const sandbox = mkdtempSync(join(tmpdir(), 'omc-slim-probe-'));
+  const variant = join(sandbox, 'probe.js');
+  writeFileSync(variant, gutted);
   try {
-    const result = await audit(BROKEN);
-    const tripped = new Set(summarise(result).failures.map((f) => f.check));
-    assert.equal(tripped.has('tinyText'), false, 'the gutted probe still reported tinyText');
+    // The broken fixture fails by design, so a non-zero exit is the expected
+    // outcome and its stdout is the result.
+    let out;
+    try {
+      out = execFileSync(process.execPath, [AUDIT_CLI, BROKEN, '--json'], {
+        encoding: 'utf8',
+        env: { ...process.env, OMC_SLIM_PROBE_PATH: variant },
+      });
+    } catch (failure) {
+      out = failure.stdout;
+    }
+    // --json prints the payload and then the human report, which carries no
+    // braces, so the last one closes the JSON.
+    const findings = JSON.parse(out.slice(out.indexOf('{'), out.lastIndexOf('}') + 1)).findings || [];
+    assert.equal(
+      findings.some((f) => f.check === 'tinyText'),
+      false,
+      'the gutted probe still reported tinyText'
+    );
   } finally {
-    writeFileSync(PROBE, original);
+    rmSync(sandbox, { recursive: true, force: true });
   }
+
+  assert.equal(readFileSync(PROBE, 'utf8'), original, 'the tracked probe was modified');
   const restored = await audit(BROKEN);
   const trippedAgain = new Set(summarise(restored).failures.map((f) => f.check));
-  assert.ok(trippedAgain.has('tinyText'), 'the probe was not restored');
+  assert.ok(trippedAgain.has('tinyText'), 'the probe still reports tinyText');
 });

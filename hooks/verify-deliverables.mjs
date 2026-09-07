@@ -96,13 +96,14 @@ const NEWLINE = 0x0a;
  */
 const SCAN_BUDGET_MS = (() => {
   const raw = process.env.OMC_SLIM_SCAN_BUDGET_MS;
-  // Blank counts as unset, and that is the whole reason this is not a one-liner:
-  // `Number("")` is 0, not NaN, so an exported-but-empty variable would set the
-  // budget to zero, expire the deadline on line one of every transcript and mute
-  // the hook permanently — a guard that stops guarding without saying so.
-  if (raw === undefined || raw.trim() === "") return 2000;
+  // One guard: strictly positive, or the default. Zero is not a budget, it is a
+  // mute — it expires the deadline on line one of every transcript and the hook
+  // stops guarding for good, which is the state the mutation suite kills as a
+  // regression. Every route to zero is closed by the same test: an
+  // exported-but-empty variable (`Number("")` is 0, not NaN), a typo'd value,
+  // and a literal 0.
   const n = Number(raw);
-  return Number.isFinite(n) && n >= 0 ? n : 2000;
+  return Number.isFinite(n) && n > 0 ? n : 2000;
 })();
 
 /**
@@ -347,15 +348,22 @@ const CHECK_SCRIPT_NAME = /(^|[._-])(test|tests|spec|check|lint|verify)([._-]|$)
  * and matching them would flag an agent for describing its own work. Each entry
  * is tested against one sentence at a time; see assertsVerification.
  */
+const CHECK_SUBJECT = String.raw`tests?|suites?|specs?|checks?|gates?|assertions?|cases?`;
+
 const VERIFICATION_CLAIMS = [
-  // "tests pass", "all tests passing", "the suite passes"
-  /\b(tests?|suites?|specs?)\s+(all\s+)?(pass|passes|passed|passing)\b/,
+  // "tests pass", "all checks passing", "the suite is green", "gates green"
+  new RegExp(
+    String.raw`\b(${CHECK_SUBJECT})\s+(all\s+|is\s+|are\s+|were\s+|came\s+back\s+)?` +
+      String.raw`(pass|passes|passed|passing|green|clean)\b`,
+  ),
   // "5/5 tests pass", "45/45 passed"
   /\b\d+\s*\/\s*\d+\s+(tests?\s+)?(pass|passes|passed|passing|green)\b/,
-  // "45 of 45 passed"
-  /\b\d+\s+of\s+\d+\s+(tests?\s+)?(pass|passes|passed|passing)\b/,
-  // "12 passed", the runner's own summary line quoted back
-  /\b\d+\s+passed\b/,
+  // "45 of 45 passed", "19 of 19 checks pass"
+  new RegExp(
+    String.raw`\b\d+\s+of\s+\d+\s+((${CHECK_SUBJECT})\s+)?(pass|passes|passed|passing|green)\b`,
+  ),
+  // "12 passed", "13 pass" — the runner's own summary line quoted back
+  /\b\d+\s+(pass|passes|passed|passing)\b/,
   // "passed in 3s"
   /\bpassed\s+in\s+[\d.]+\s*s\b/,
   // "build succeeded", "build successful"
@@ -390,7 +398,7 @@ const NOT_AN_ASSERTION =
  * assertion they belong to is judged alone.
  */
 const HEDGE_WORD_IDIOMS = [
-  /\b(no|0|zero|without)\s+(fail\w*|error\w*|regression\w*|warning\w*|issue\w*)\b/g,
+  /\b(no|0|zero|without)\s+(fail\w*|error\w*|regression\w*|warning\w*|issue\w*|change\w*|diff\w*)\b/g,
   /\bnothing\s+(is\s+)?broken\b/g,
   /\berror-free\b/g,
   /\bas\s+expected\b/g,
@@ -414,6 +422,15 @@ const HARNESS_TEXT_PREFIXES = [
   "[Request interrupted",
 ];
 
+/**
+ * The one budget test, shared by both scan phases so neither can mask the
+ * other's failure: with two independent checks, deleting either left the hook
+ * abstaining anyway and the mutant that deleted it survived.
+ */
+function pastDeadline(deadline) {
+  return Date.now() >= deadline;
+}
+
 function debug(...args) {
   if (process.env.OMC_SLIM_DEBUG === "1") console.error("[omc-slim]", ...args);
 }
@@ -433,14 +450,14 @@ function readStdin() {
  * null is "cannot tell", and every state built on it must then stay silent: all
  * of them are accusations if they fire against a transcript nobody read.
  *
+ * Only the current turn counts: a check at turn 2 must not silence a "tests
+ * pass" at turn 40, so the read starts at the last human user line. A
+ * transcript with no such line is one turn.
+ *
  * @param {string|null} transcriptPath
- * @param {{lastTurnOnly?: boolean}} [opts]  Stop: only the current turn. A
- *   check from turn 2 must not silence a "tests pass" at turn 40, so the read
- *   starts at the last human user line and the evidence is discarded again at
- *   any later one. A transcript with no such line is one turn.
- * @returns {null|{pendingWrites: Map, succeeded: Set, dispatches: Set,
- *                 checkRuns: Set, sawUnknownCommand: boolean,
- *                 sawOpaqueTool: boolean, earliestTimestampMs: number|null}}
+ * @returns {null|{succeeded: Set, errored: Set, dispatches: Set, checkRuns: Set,
+ *                 multiSegmentCheckRuns: Set, sawUnknownCommand: boolean,
+ *                 sawAssistantEntry: boolean}}
  */
 function scanTranscript(transcriptPath) {
   if (!transcriptPath) {
@@ -466,9 +483,13 @@ function scanTranscript(transcriptPath) {
     return null;
   }
 
-  const raw = readLastTurn(transcriptPath);
+  // One deadline over BOTH phases. It used to start inside scanLines, which
+  // left the backward search — a JSON.parse of every line across up to the byte
+  // cap — outside the bound the header advertises.
+  const deadline = Date.now() + SCAN_BUDGET_MS;
+  const raw = readLastTurn(transcriptPath, deadline);
   if (raw === null) return null;
-  return scanLines(raw);
+  return scanLines(raw, deadline);
 }
 
 /**
@@ -476,7 +497,7 @@ function scanTranscript(transcriptPath) {
  * when it has none. Null when the file cannot be read, or when the cap's worth
  * of tail holds no human line.
  */
-function readLastTurn(transcriptPath) {
+function readLastTurn(transcriptPath, deadline) {
   let fd;
   try {
     fd = openSync(transcriptPath, "r");
@@ -486,7 +507,7 @@ function readLastTurn(transcriptPath) {
   }
   try {
     const size = fstatSync(fd).size;
-    const from = lastHumanLineOffset(fd, size);
+    const from = lastHumanLineOffset(fd, size, deadline);
     if (from === null) return null;
     return readBytes(fd, from, size).toString("utf8");
   } catch (err) {
@@ -505,13 +526,17 @@ function readLastTurn(transcriptPath) {
  * read; the line whose start lies in a chunk not yet read waits in `pending`
  * and is completed by the next chunk.
  */
-function lastHumanLineOffset(fd, size) {
+function lastHumanLineOffset(fd, size, deadline) {
   // The tail of a line whose start lies in a chunk not yet read, oldest chunk
   // first, joined once when the start is found. Joining per chunk is quadratic
   // in the line's length, and a transcript's longest line runs to megabytes.
   let pending = [];
   let end = size;
   while (end > 0) {
+    if (pastDeadline(deadline)) {
+      debug("cannot tell: scan budget exhausted looking for the turn start");
+      return null;
+    }
     if (size - end >= MAX_TRANSCRIPT_BYTES) {
       debug("cannot tell: no human user line within the cap");
       return null;
@@ -568,17 +593,16 @@ function isHumanUserLine(line) {
  * on a timer, so a turn with no assistant entry has not been written yet, and
  * nothing can be said about it.
  */
-function scanLines(raw) {
+function scanLines(raw, deadline) {
   const scan = turnEvidence();
 
-  const deadline = Date.now() + SCAN_BUDGET_MS;
   let scanned = 0;
 
   for (const line of raw.split("\n")) {
     // Checked every 256 lines rather than every line: Date.now() per line on a
     // 50 MB transcript is itself measurable, and 256 lines of parse plus the
     // block walk below cannot overrun a 2 s budget by anything that matters.
-    if ((scanned++ & 0xff) === 0 && Date.now() >= deadline) {
+    if ((scanned++ & 0xff) === 0 && pastDeadline(deadline)) {
       debug("cannot tell: scan budget exhausted", scanned);
       return null;
     }
@@ -1227,9 +1251,9 @@ function sawUnattributableFailure(scan) {
  * no line of several commands with a check among them may have errored, since
  * which of them failed cannot be told.
  *
- * `message` is the payload's `last_assistant_message`. Absent means abstain, on
- * both events: the field is missing when the final assistant message carries no
- * text block, and the transcript is no substitute — it is flushed on a timer and
+ * `message` is the payload's `last_assistant_message`. Absent means abstain:
+ * the field is missing when the final assistant message carries no text block,
+ * and the transcript is no substitute — it is flushed on a timer and
  * may not yet hold that message when the hook runs, so its "last assistant text"
  * can be an earlier one.
  */
@@ -1256,9 +1280,8 @@ function main() {
 }
 
 /**
- * Main thread. Write advisories would fire on every chatty turn; only the
- * claim state is in scope. The transcript is the parent session's, read from
- * its last human turn.
+ * The one state in scope on Stop: a verification result asserted with nothing in
+ * the transcript that ran one. The transcript is read from the last human turn.
  */
 function mainStop(data, lastMessage) {
   if (data.stop_hook_active === true) {

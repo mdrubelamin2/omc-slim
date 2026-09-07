@@ -6,6 +6,8 @@ Two lists and a method. The first list does not decay and it gates. The second i
 
 Do not prescribe a replacement look. A prescribed look becomes the next default.
 
+**And read the dated list at report time, not before you build.** Banning a tell moves the probability to the next one: measured, models told to avoid the purple gradient cascade to emerald, cream and italic serifs, which is how this list grew. The pre-build instruction is the positive one at the end of this file — name what you are ruling out, and put a real number, a real moment or a real outcome where the template wants a slogan. The list below scores what you built.
+
 # What does not decay
 
 Craft. These fail a build, and they are what people cite when they want to be right rather than fast.

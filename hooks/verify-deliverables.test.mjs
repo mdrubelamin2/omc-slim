@@ -855,7 +855,11 @@ const cases = [
     // that and the mutation run caught it. With no write, the two outcomes
     // diverge: the deadline abstains, its absence accuses. Budget 0 fires the
     // check on the first line, so this is deterministic, not timing-dependent.
-    name: "scan over its budget abstains rather than accusing",
+    // Zero is not a budget, it is a mute: it expires the deadline on line one of
+    // every transcript and the hook stops guarding for good, which is the same
+    // state the mutation suite kills as a regression. It falls back to the
+    // default like any other unusable value.
+    name: "a zero scan budget falls back to the default instead of muting the hook",
     run: () =>
       runHookWithNoScanBudget((root) => {
         const transcript = writeTranscript(root, "agent.jsonl", [
@@ -865,6 +869,29 @@ const cases = [
         ]);
         return payload(transcript, root, root, "All tests pass.");
       }),
+    check: expectStopClaim,
+  },
+  {
+    // The behaviour the zero case used to stand in for, exercised honestly: a
+    // budget that cannot cover the transcript abstains rather than answering
+    // from a scan that stopped early.
+    name: "scan over its budget abstains rather than accusing",
+    run: () =>
+      spawnHook(
+        (root) => {
+          const filler = Array.from({ length: 4000 }, (_, i) => [
+            assistantBash(`fill${i}`, "git status"),
+            toolResultOk(`fill${i}`),
+          ]).flat();
+          const transcript = writeTranscript(root, "agent.jsonl", [
+            ...filler,
+            assistantText("All tests pass."),
+          ]);
+          return payload(transcript, root, root, "All tests pass.");
+        },
+        "",
+        { OMC_SLIM_SCAN_BUDGET_MS: "1" },
+      ),
     check: expectSilence,
   },
   {
@@ -950,6 +977,51 @@ const cases = [
     // pass with the whole filter deleted.
     name: "a reported failure is not a claim",
     run: () => runHook(claimOnly("3 of 5 tests passed and 2 failed, so I stopped.")),
+    check: expectSilence,
+  },
+  {
+    // The subject vocabulary was tests|suites|specs, so every phrasing this
+    // repository actually uses in a closing report went unseen: "all checks
+    // pass", "gates green", "the suite is green". The detector was written
+    // against its own regexes rather than against the output style's contract.
+    name: "a claim about checks rather than tests is still a claim",
+    run: () => runHook(claimOnly("All checks pass.")),
+    check: expectStopClaim,
+  },
+  {
+    name: "a claim about gates is still a claim",
+    run: () => runHook(claimOnly("Gates green.")),
+    check: expectStopClaim,
+  },
+  {
+    name: "a suite reported green is still a claim",
+    run: () => runHook(claimOnly("The suite is green.")),
+    check: expectStopClaim,
+  },
+  {
+    // "0 fail" is the runner's own summary, not a hedge. The idiom list strips
+    // it so the assertion beside it is judged alone.
+    name: "a count with a zero-failure tally is still a claim",
+    run: () => runHook(claimOnly("13 pass, 0 fail.")),
+    check: expectStopClaim,
+  },
+  {
+    name: "a build reported clean is still a claim",
+    run: () => runHook(claimOnly("The build is clean.")),
+    check: expectStopClaim,
+  },
+  {
+    // The style's own closing example. It used to be bare "19 of 19", which
+    // names no subject and could be any count; the style now carries the
+    // subject and the detector reads it.
+    name: "the output style's own closing phrasing is a claim",
+    run: () => runHook(claimOnly("19 of 19 tests pass.")),
+    check: expectStopClaim,
+  },
+  {
+    // The widening must not reach a sentence that reports a failure.
+    name: "a failing check count is not a claim",
+    run: () => runHook(claimOnly("11 of 14 checks pass and 3 fail.")),
     check: expectSilence,
   },
   {

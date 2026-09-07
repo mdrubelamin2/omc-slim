@@ -12,7 +12,7 @@
  * Not a test file. `runMutants` is called by *.mutate.mjs, never run directly.
  */
 
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import {
   readFileSync,
   writeFileSync,
@@ -30,9 +30,9 @@ const sha = (text) => createHash("sha256").update(text).digest("hex");
 /**
  * What one harness run means.
  *
- * A run that never finished is not a result. `spawnSync` reports a timeout as
- * `error.code === "ETIMEDOUT"` with `status === null`, which a bare
- * `status === 0` test would score as a kill.
+ * A run that never finished is not a result. runHarness synthesises the shape a
+ * timeout takes — `error.code === "ETIMEDOUT"` with `status === null` — which a
+ * bare `status === 0` test would score as a kill.
  *
  * Signals and spawn failures are unusable for the same reason: nothing was
  * measured. Neither a kill nor a survival, and the run fails on one, because a
@@ -182,9 +182,22 @@ export async function runMutants({ hook, test, mutants }) {
   const outcomes = await inLanes(mutants, LANES, async (mutant, index) => {
     const [label, find, replace, consequence] = mutant;
     if (!pristine.includes(find)) {
+      // Unusable, not survived: nothing was measured. Scoring it as a survivor
+      // reported a hole in the tests where the truth is a harness that cannot
+      // answer, and exited 1 where the file's own doctrine says 3.
       return {
-        line: `  ANCHOR-MISS  ${label}`,
-        survivor: [label, consequence, "anchor no longer matches the hook"],
+        line: `  ANCHOR-MISS ${label.padEnd(46)} anchor no longer matches the hook`,
+        unusable: [label, consequence, "anchor no longer matches the hook"],
+      };
+    }
+    // `replace` with a string patches the FIRST occurrence only. An anchor that
+    // matches twice therefore mutates one site and leaves the other doing the
+    // work, so the mutant is weaker than its label claims and may be killed or
+    // survive for the wrong reason.
+    if (pristine.split(find).length > 2) {
+      return {
+        line: `  AMBIGUOUS ${label.padEnd(46)} anchor matches ${pristine.split(find).length - 1} sites`,
+        unusable: [label, consequence, "anchor is not unique, so only the first site was mutated"],
       };
     }
 

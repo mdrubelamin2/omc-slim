@@ -6,12 +6,11 @@ Opened from [`SKILL.md`](./SKILL.md), not read by default. Reach for it when you
 
 **Cite the principle by name** when a review finding rests on one. A named principle is arguable; "this is over-engineered" is not.
 
-- **KISS**: the simplest thing that fully solves the real problem, not the smallest thing that appears to.
-- **YAGNI**: build for today. Speculative flexibility is complexity with no payer: read, tested and maintained forever for a case that never arrived.
-- **DRY: of knowledge, not of characters.** Code that must change together for the same reason is duplicated knowledge; unify it. Code that merely looks alike is coincidence; leave it. **Where DRY and YAGNI appear to collide, the tiebreaker is the rule of three.** A wrong abstraction costs more than the duplication it replaced, because every later case bends to fit.
-- **Single responsibility**: one reason to change. Can you name what it does without "and"?
-- **Linear flow**: code should read top to bottom. Guard clauses over nesting, a straight sequence over callback pyramids and flag-driven branching. Every indent level is a branch the reader must hold.
-- **Modularity**: narrow interfaces, dependencies pointing one way, a module you can understand without opening its neighbours. Watch for import cycles and the `utils` junk drawer.
+KISS, YAGNI and single responsibility are the floor and need no restating here. Three carry a decision their names do not:
+
+- **DRY is of knowledge, not of characters.** Code that must change together for the same reason is duplicated; code that merely looks alike is coincidence. **Where DRY and YAGNI collide, the tiebreaker is the rule of three** — a wrong abstraction costs more than the duplication it replaced, because every later case bends to fit.
+- **Linear flow**: code should read top to bottom. Guard clauses over nesting; every indent level is a branch the reader must hold.
+- **Modularity**: narrow interfaces, dependencies pointing one way, a module you can understand without opening its neighbours.
 
 ## Red flags
 

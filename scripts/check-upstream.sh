@@ -23,6 +23,32 @@ trap 'rm -rf "$TMP"' EXIT
 moved=0
 broken=0
 
+# Every probe below reaches the network. `timeout(1)` is GNU coreutils and macOS
+# does not ship it, so the bound is a background call plus a polling wait — the
+# same mechanism skills/review/scripts/base.sh uses on its fetch, and for the
+# same reason: one unreachable host must not hold a gate open.
+NET_TIMEOUT_SECONDS="${UPSTREAM_TIMEOUT_SECONDS:-15}"
+case "$NET_TIMEOUT_SECONDS" in
+  '' | *[!0-9]*) NET_TIMEOUT_SECONDS=15 ;;
+esac
+
+bounded() {
+  local out; out="$(mktemp)"
+  ( "$@" >"$out" 2>/dev/null ) &
+  local pid=$! waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$NET_TIMEOUT_SECONDS" ]; then
+      kill -TERM "$pid" 2>/dev/null; sleep 1; kill -KILL "$pid" 2>/dev/null
+      wait "$pid" 2>/dev/null || :
+      rm -f "$out"; return 124
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$pid" 2>/dev/null || :
+  cat "$out"; rm -f "$out"
+}
+
 while IFS=$'\t' read -r kind name pin source; do
   case "$kind" in ''|'#'*) continue ;; esac
   [ -n "$FILTER" ] && [[ "$name" != *"$FILTER"* ]] && continue
@@ -30,7 +56,7 @@ while IFS=$'\t' read -r kind name pin source; do
   case "$kind" in
     git)
       # Ask the remote for its default-branch head without cloning.
-      head="$(git ls-remote "$source" HEAD 2>/dev/null | awk '{print $1}')"
+      head="$(bounded git ls-remote "$source" HEAD | awk '{print $1}')"
       if [ -z "$head" ]; then
         printf '  %-22s UNREACHABLE  %s\n' "$name" "$source"
       elif [ "$head" = "$pin" ]; then

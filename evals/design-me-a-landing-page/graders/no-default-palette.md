@@ -1,6 +1,6 @@
 ---
 type: regex
-target: last_message
+focus: last_message
 pattern: "(from-purple|to-indigo|#7c3aed|#8b5cf6|#a855f7|#6366f1|#667eea|bg-gradient-to-r from-\\w+-500 to-\\w+-600)"
 match: not_contains
 flags: "i"

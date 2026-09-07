@@ -12,6 +12,8 @@ Cut complexity, preserve behaviour exactly. The goal is not fewer lines. It is c
 
 **Skip it when** you do not yet understand the code, or the module is about to be rewritten. Skip it too when the code is performance-critical and the simpler form is measurably slower. **"Already clean" is not on that list unless you can show it.** It holds only when nothing in the tables below fires. A nested ternary or a three-deep nest refutes it, so it never outranks *Be brave about size*. Skip any block with an explicit do-not-touch marker (`simplify-ignore`, `@preserve`, a comment naming a reason). Honour it and say you skipped it.
 
+**Scale to the work.** One obvious deletion gets the edit, the pin-down check if the code was untested, and the project's cheapest existing check. A module gets the ladder in §2 and the archaeology in §1. A subsystem gets both plus the blast-radius statement. The Chesterton archaeology is per fence, not per line: an import this change orphaned needs no `git log -S`, and a helper nobody can explain does.
+
 ## The Five Principles
 
 **1. Preserve behavior exactly.** Inputs, outputs, side effects, error behaviour, ordering and edge cases stay identical. Unsure? Do not make the change.
@@ -32,13 +34,12 @@ The default failure is timidity: renaming a variable, straightening one conditio
 
 - **Restructure, do not only rearrange.** Wrong seams, a god object, inheritance expressing one behaviour, state threaded through five layers: replace it. Careful patches over a wrong design is the expensive outcome, not the safe one.
 - **Finish the deletion.** A wrapper that only forwards moved complexity rather than removing it. Internal: migrate callers and delete. Exported: **deleting it is an API change**, so collapse to a one-line alias, or migrate callers if this is not a public boundary. Either is fine. Say which and why.
-- **An argument that defends a rule moves; it does not vanish.** In text that shapes behaviour, the passage answering "why bother" reads as padding and often is not. Cut it and the rule stops firing under pressure, while the file still reads correctly, so nothing catches it. Relocate each rebuttal to where the excuse gets made: a rationalization row, or the step it guards.
 
 Never at the cost of the always-on floor the main thread already holds: see *Never simplified away* in the output style. Never at the cost of this skill's own two: the pin-down check on untested code, and a test weakened to go green. And never at the cost of silence: a large restructure is named and its **blast radius stated** before it starts. Spending it is the caller's decision.
 
 ## Reach and handoff
 
-Before deciding code is dead, use the strongest search this machine has. A structural or AST-aware server answers "every caller" exactly where a regex approximates it. And a linter or type checker for this stack may already name the hand-rolled helper. These come from the project's `.claude/` and the user's `~/.claude/`, their names say nothing useful, and `ToolSearch` reaches them where tools are deferred. Where nothing is installed, the project's own tools are the answer, and you say which you used.
+Before deciding code is dead, use the strongest search this machine has. A structural or AST-aware server answers "every caller" exactly where a regex approximates it, and a linter or type checker for this stack may already name the hand-rolled helper. Survey for them the way the output style says. Where nothing is installed, the project's own tools are the answer, and you say which you used.
 
 Two components carry work this skill should not do itself. Deciding what would pin untested code, where that is not obvious, is the `omc-slim:verification-planning` skill (writing the check is yours, principle 1). And enumerating every consumer of a symbol is the `omc-slim:explorer` agent, which returns locations and proposes nothing.
 
@@ -128,7 +129,7 @@ Tag each finding. `delete:` dead code or speculative feature, replacement nothin
 **Batch size is a ladder; take the lowest rung that fits the work.** One change at a time is the default: make the change, then check preservation with evidence proportionate to the risk. That is the pinned check for logic you touched, plus whatever the repository's release instructions require. Keep the change only while that evidence holds. Batch beyond one only what you can attribute: **if verification fails after several simplifications, bisect them rather than guessing.** Above roughly 500 lines, **stop hand-editing**: use a codemod or AST transform, verified on a sample before you trust the whole run. That top rung replaces the two below it, because a mechanical rewrite is attributed by its rule rather than by its edits.
 
 - Keep refactoring commits **separate from feature and bug-fix commits**. Mixed history is harder to review and revert.
-- **Mark any ceiling you deliberately leave**: a global lock, an O(n²) scan over a list you know stays small, a naive heuristic. Name the limit and the upgrade path in a comment. Unmarked ceilings get rediscovered the hard way.
+- **Mark any ceiling you deliberately leave**: a global lock, an O(n²) scan over a list you know stays small, a naive heuristic. Name the limit and the upgrade path in a comment — one of the two exceptions the output style's comment ban carves out, and the only one you invoke on your own.
 
 ### 4. Verify
 
@@ -142,6 +143,8 @@ Tag each finding. `delete:` dead code or speculative feature, replacement nothin
 - [ ] The result is genuinely easier to understand
 
 Harder to follow or harder to review? Revert. Not every attempt succeeds, and saying so is a result.
+
+**Done is the checklist above, not the absence of anything left to simplify.** There is always something left to simplify. One pass over the scope you named, its evidence, and a report: what came out, what you left and why, and what a second pass would take. A pass that starts because the last one finished is the failure mode principle 5 exists to prevent, arriving from the inside.
 
 **That first checkbox is necessary and it is not sufficient.** Measured: **19–35% of LLM-generated refactorings are functionally non-equivalent, and roughly 21% of those are not caught by the existing test suite.** A green run means the change survived the paths that have tests, which is a smaller claim than the checkbox looks like. And for anything you deleted, the tests that would have caught you are the ones nobody wrote.
 

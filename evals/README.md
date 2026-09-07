@@ -1,6 +1,6 @@
 # Eval suite
 
-Part of [omc-slim](../README.md). Six cases, thirteen graders.
+Part of [omc-slim](../README.md). 8 cases, 18 graders.
 
 **This suite has never been executed.** `claude plugin eval` is early access and
 is not enabled on the account it was authored on — it exits 1 with

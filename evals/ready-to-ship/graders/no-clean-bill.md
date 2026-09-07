@@ -1,6 +1,6 @@
 ---
 type: regex
-target: last_message
+focus: last_message
 pattern: "(looks good to me|LGTM|(?<!not )(?<!n't )\\b(is|looks|it's)\\s+ready to ship\\b|^ready to ship\\b|no issues found|nothing to flag)"
 match: not_contains
 flags: "i"

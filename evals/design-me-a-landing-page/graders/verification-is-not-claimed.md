@@ -1,6 +1,6 @@
 ---
 type: llm
-target: last_message
+focus: last_message
 weight: 2
 ---
 If the response claimed the design was checked, rendered, or verified visually,

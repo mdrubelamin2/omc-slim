@@ -1,7 +1,14 @@
-# Review lanes
+# Review lanes: always on
 
-What each lane looks for. Read only the lanes in scope. Every item is a
-*candidate*: nothing is reportable until it clears the gates in `SKILL.md`.
+What the four always-on lanes look for, plus the briefs and the report-time
+suppression list. Every item is a *candidate*: nothing is reportable until it
+clears the gates in `SKILL.md`.
+
+**The six conditional lanes are one file each in [`lanes/`](./lanes/)** —
+`security.md`, `data-and-schema.md`, `api-contract.md`, `interface.md`,
+`operations.md`, `performance.md`. Open the ones the lane table in `SKILL.md`
+triggers and leave the rest shut: one file per trigger, so a diff that fires one
+lane pays for one lane.
 
 ---
 
@@ -65,22 +72,6 @@ The `omc-slim:simplify` skill's scope, applied as review: detect here, hand the 
 
 **Does the refactor reduce complexity or relocate it?** Count the concepts a reader must hold. If the cleaner version leaves that count unchanged, it is not cleaner. Prefer the restructuring that makes whole branches, modes or layers disappear over one that re-centralises the same logic. Prefer deleting an abstraction to polishing it. **Do not normalise drift**: "the file already does this" is how a bad pattern becomes the convention.
 
-## Security
-
-Past the obvious (validate input, parameterise queries, do not log secrets):
-
-- **Trust boundaries, listed:** requests, uploads, webhooks, third-party APIs, and **model output**. Anything a model produced is untrusted input. Never into `eval`, SQL, a shell, `innerHTML` or a file path, and never persisted without a shape and format check.
-- **Prompt injection is assumed; permissions are enforced in code, not in the prompt.** Bound token, rate and recursion limits; keep secrets, cross-tenant data and system prompts out of the context window.
-- **Authorisation defaults to deny.** The endpoint with no auth middleware, or the role a user can escalate into. The object reference that works by changing an id to someone else's.
-- **Injection past SQL**: shell interpolation, template injection, path traversal, header injection. SSRF via a user- or model-supplied URL: allowlist the host, block private and reserved ranges.
-- **Validation is an allowlist, not a denylist.**
-- **Crypto misuse**: MD5 or SHA1 where security depends on it, or `Math.random` for a token. `==` on a secret or digest, a hardcoded key, an unsalted hash.
-- **Escape hatches**: `dangerouslySetInnerHTML`, `v-html`, `html_safe`/`raw`, `mark_safe`, bare `innerHTML` on anything user- or model-controlled.
-- **Deserialising untrusted data**: pickle, Marshal, unsafe YAML loads.
-- **Leakage**: a secret in source or a log, or a credential in a URL. A stack trace or SQL string in an error response, a sensitive field the serialiser forgot.
-
-Dependencies: **one dependency change at a time**, because a bulk bump that breaks the build loses which package did it. Read the changelog, not the version number: **semver is a promise the maintainer may not have kept.** Review the lockfile diff, commit it, never hand-edit it. Triage advisories by *reachability*; an advisory audit does not catch a newly malicious package. Every dependency is a liability: bytes, maintenance, and whether the existing stack already does it.
-
 ## Tests
 
 - **Negative paths**: a guard clause, an error branch, a permission check asserted in code and never tested for the denied case
@@ -89,87 +80,6 @@ Dependencies: **one dependency change at a time**, because a bulk bump that brea
 - **Flake sources**: sleeps and tight timeouts, assertions on the order of unordered results, unseeded random data
 
 **Coverage of *this* change.** A changed method whose tests only cover the old behaviour is untested, whatever the coverage number says. A test edited to make the change pass is a behaviour change, and has to be named as one.
-
-## Performance
-
-**Never state a number you did not observe.** A finding from reading code is *potential* impact; label a measured one `measured`, and what you could not measure `not measured`. Field and lab data are different numbers, and presenting one as the other is fabrication: no scorecard beats an invented one.
-
-| Symptom | Look at |
-|---|---|
-| Slow first load | Bundle size; TTFB split into DNS / TCP-TLS / server wait; render-blocking resources |
-| Interaction sluggish | Long tasks > 50ms; re-renders; controlled-input overhead |
-| Animation jank | Layout thrashing, forced reflow (read-then-write in a loop) |
-| Slow after navigation | Fetch waterfalls; N+1 fetches on the client |
-| One endpoint slow | That endpoint's queries and indexes |
-| *Every* endpoint slow | Connection pool, memory, CPU — not the query |
-| Intermittently slow | Lock contention, GC pauses, an external dependency |
-| Memory grows | Leaked listeners and refs, unbounded caches — take a heap snapshot |
-
-| Anti-pattern | Fix |
-|---|---|
-| N+1 queries | Join, eager-load, or batch |
-| Unbounded query or fetch | Paginate; `LIMIT` with a deterministic `ORDER BY` |
-| Missing index | Index filtered and sorted columns, and new foreign keys |
-| Sequential `await`s on independent calls | `Promise.all` |
-| Layout thrashing | Batch all DOM reads, then all writes |
-| Blocking the main thread | Chunk long tasks, yield to the scheduler, offload to a worker |
-| Unoptimised images | Modern format, responsive sizes, lazy-load below the fold |
-| Large bundle | Split by route, lazy-load, audit dependencies |
-| Missing caching | Explicit TTL; hash content for immutable assets |
-| Leaked listeners, intervals, refs | Clean up on teardown |
-
-Machine-written code has its own set. Memoising everything "just in case": **over-memoisation costs more than it saves** and is itself a defect. State duplicated instead of lifted. `useEffect` dependencies broad enough to loop. Scroll and resize listeners with no `passive` or debounce. DOM writes inside a loop, over-fetching "in case", parallel requests with no deduplication. Report these under the area they belong to; there is no "AI" category.
-
-**Fit the advice to the actual stack.** Identify the framework and rendering model before applying any framework-specific rule. Recommending `next/image` to a Vue app, or `React.memo` to a Svelte app, makes a whole review untrustworthy.
-
-## Data and schema
-
-- Reversible, with a down that actually undoes it
-- No drop of a column still holding data, no type change that truncates
-- `NOT NULL` only after a backfill
-- Backfill batched, not one statement over the table
-- Index creation concurrent on a large table
-- **Ordering against the deploy**: does the old code survive the new schema during a rolling deploy, and the new code survive the old schema?
-
-## API contract
-
-- Removed or retyped response fields
-- A new required parameter on an existing endpoint
-- Changed status codes or methods, or a renamed path with no alias
-- A changed auth requirement
-- A breaking change with no version bump
-- An error shape inconsistent with the rest of the API
-- Missing pagination or rate limiting where siblings have it
-- Docs, spec and examples still describing the old behaviour
-- **Clients that cannot force-update**: will they still work?
-
-## Interface
-
-Judgement calls go to the `omc-slim:design` skill, which owns the visual audit and can render the result; these are the mechanical ones.
-
-- Focus removed (`outline: none`) with no replacement
-- Touch target under 24×24 CSS px: the WCAG 2.2 AA floor (2.5.8). 44×44 is the AAA enhanced target (2.5.5) and the Apple convention, not the AA floor
-- Body text under 16px
-- Heading levels skipped
-- `!important` added
-- An interactive element with no hover or focus state
-- A fixed pixel width with no `max-width` or breakpoint
-- Text with no measure limit
-- More than three font families
-
-The tells of generated UI are dated, so they live in one place with a calibration date on them: the `omc-slim:design` skill carries the list, split into what gates and what only advises.
-
-**Calibrate against the project's own design system if it has one.** A pattern the project blessed is not a finding.
-
-## Operations
-
-- Version tag format consistent across the manifest, the tag and the publish step
-- Publish idempotent on re-run
-- Secrets referenced, not inlined
-- A build matrix covering the platforms actually shipped
-- A new artefact type with no release path
-
-Test-only CI changes and services with an existing auto-deploy usually clear this lane in a line. Clear it and say so: the lane table triggers it, and a triggered lane is run and reported rather than skipped.
 
 ## Decorrelating lanes by evidence source
 

@@ -56,8 +56,8 @@ introspection-is-not-a-check	deepwork	is not a check	will also pass its own intr
 introspection-is-not-a-check	verification-planning	is not a check	A check must be able to fail|will also pass its own introspection
 register-simple-english	output-styles	Simplified Technical English (ASD-STE100)	not baby talk and not|fragments
 lead-with-answer	output-styles	Lead with the answer	No preamble, no summary of what the reader just watched
-explorer-output-cap	explorer	Cap: 150 lines	on a survey|the most relevant 150
-explorer-cap-yields-to-completeness	explorer	The cap does not apply to an enumeration	A truncated set is worse than no set|Asked for all of something, return all of it
+explorer-output-cap	explorer	Cap a survey at 150 lines	the most relevant 150|(N more matches)
+explorer-cap-yields-to-completeness	explorer	is returned complete	A truncated set is worse than no set|The cap is against prose, never against completeness
 explorer-proposes-nothing	explorer	Never suggest a fix	a refactor, or a next step|That is the caller's job
 explorer-shell-is-read-only	explorer	Bash is for non-mutating diagnostics only	Never `git checkout`, `stash` or `reset`|discard uncommitted work that is not yours
 explorer-negative-result	explorer	If you found nothing	say so in one line|name where you looked
@@ -83,7 +83,7 @@ librarian-say-you-dont-know	librarian	If the docs do not cover it, say so and re
 librarian-sources-travel	librarian	Every load-bearing claim gets a source	No source, no claim
 codemap-cost-is-real	codemap	This skill is expensive	it reads the whole tree and spawns one writer agent per directory|writes files into the user's repository|a `codemap.md` in every mapped directory|`.slim/codemap.json`, and a section in root `AGENTS.md`
 codemap-announce-gate	codemap	say what it will cost and what it will write, and get a yes first	Reaching for it unprompted is correct; doing so silently is not
-codemap-exclusions-mandatory	codemap	Exclude (MANDATORY)	Do NOT include tests, documentation, or translations|Respect `.gitignore` automatically
+codemap-exclusions-mandatory	codemap	Select the core code and config, and nothing else	Exclude tests|`.gitignore` is applied for you|A map of the tests describes the tests, not the system
 codemap-agents-md-idempotent	codemap	skip this step	already contains a `## Repository Map` section|the reference is already set up
 codemap-registration-reason	codemap	auto-loads `AGENTS.md` into agent context on every session	To ensure agents automatically discover and use the codemap|update (or create) `AGENTS.md` at the repo root
 deep-interview-wrong-tool	deep-interview	Stop and say so if the request is already specific	Interviewing someone who has already told you exactly what they want is not diligence, it is friction|A one-line bug fix does not need a spec
@@ -92,7 +92,7 @@ deep-interview-score-is-not-the-gate	deep-interview	It does not decide whether t
 deep-interview-round-cap	deep-interview	Loop at most	four rounds|If the total is still above 4 after four rounds|say plainly which dimensions remain unresolved and what the risk of proceeding is|An unresolvable ambiguity is a finding, not a failure
 deep-interview-approval-gate	deep-interview	Do not start implementing	Present the spec path and a three-line summary|wait for explicit approval
 deep-interview-gate-is-the-value	deep-interview	This gate is the entire value of the skill	A spec written and then immediately acted on without confirmation is just a slower way to build the wrong thing
-deep-interview-gate-is-measured	deep-interview	That is now measured	+14.50 points|control-armed|did not beat that pack
+deep-interview-gate-is-measured	deep-interview	That is measured, and the measurement is small	83.17 to **97.67**|n=3 on one frozen task|a one-task design cannot carry a 14.5pp claim|Keep the gate for the mechanism, not for the number
 deep-interview-gate-beats-prior-approval	deep-interview	The gate survives the argument that the user already approved	They approved *the interview*|never the stop|this one wins
 review-quote-gate	review	Quote the code, or you do not have a finding	quote the construct that *creates* the symbol|the bar is "I read the source that defines this", not "I grepped and missed it"|Cannot quote it, it is speculation|do not invent a higher confidence
 review-cite-gate	review	Cite the source, or you do not have a claim	checked against a current source, **never recalled**|the most expensive false positive there is|carry the source into the finding|an unsourced external claim is indistinguishable from a recalled one
@@ -126,7 +126,7 @@ oracle-advises-never-implements	oracle	You advise; a briefed writer implements	N
 oracle-root-causes	oracle	Find root causes, not symptoms	Grep every caller before blaming one
 oracle-claims-carry-locations	oracle	A claim about code without a location is a guess	Cite `file.ts:line`
 oracle-verdict-first	oracle	Rank findings by severity	Lead with the verdict|do not pad with minor style notes when the question was architectural
-comments-are-last-resort	output-styles	You write zero comments	No exception earns one|Never narrate, never address the reader|git owns history
+comments-are-last-resort	output-styles	You write zero comments	Two things put one in, and nothing else|Never narrate, never address the reader|git owns history
 rigor-never-scales-down	output-styles	Rigor never scales down	a small task is a small amount of that, never a softer version of it|Demand sizes the spend, never the standard
 blunt-no-flattery	output-styles	Be blunt with the person and brutal with the work	No flattery, no praise for the request, no agreement you do not hold|once, then build what they reaffirm
 deepwork-lane-brief-zero-comments	deepwork	Every writer lane's brief says: add zero comments	Subagents do not inherit the output style|the brief carries it
@@ -136,9 +136,18 @@ established-solution-first	output-styles	Take the established solution first	the
 chestertons-fence	output-styles	until you know why it went in	whose test had to be edited changed behaviour|revert it
 speed-needs-a-number	output-styles	Buy speed with a measurement	owes no benchmark
 design-fail-closed	design	No browser, no claim	NOT VISUALLY VERIFIED|name the assertions that did not run|ask before building a check
-design-bounded-passes	design	Build fully first	at most one confirming round|a re-opened hunt of your own|only while something critical is open
-design-self-diff-against-median	design	diff the plan against your own median	revise, and say what changed and why|the default wearing a plan's clothes
+design-bounded-passes	design	Build fully first	at most one confirming round|a re-opened hunt of your own|third round needs an open failure
+design-self-diff-against-median	design	diff the plan against the dated list	a comparison against a written corpus and it is checkable|the default wearing a plan's clothes
 design-verify-now-outranks-file	design/floor.md	What you can verify right now	dated evidence, not authority|what you can check wins
 design-durable-half-gates	design/defaults.md	does not decay and it gates	carries a real false-positive rate|only ever advises
 design-alignment-first	design/replicate.md	Alignment, then colour	two-pixel drift on an edge reads before
 design-adopt-session-tools	design	strongest instrument available	instead of assuming its shape|use its own audits where they beat the probe
+run-ends-with-a-report	output-styles	Every run ends, and you say what ended it	Work you noticed on the way is named, never absorbed|A pass that starts because the last one finished
+deepwork-done-condition	deepwork	every stage on the approved map carries its check or its waiver	Not when nothing is left to improve|a run that waits for that state never ends
+deepwork-cascade-one-level	deepwork	That backward step goes one level	means the plan is wrong, not the tree|name the cascade, and re-map with the user
+deepwork-map-ceiling	deepwork	The map the user saw is the run	capped at half the count in the map they **first** approved|show the new map beside the original
+deepwork-lane-carries-a-bound	deepwork	Every lane brief carries its own bound	A lane inherits none of this skill's budgets|no ceiling
+simplify-done-is-the-checklist	simplify	not the absence of anything left to simplify	There is always something left to simplify|what a second pass would take
+design-self-diff-once	design	One revision, then build	The second self-diff re-runs the first|will always find something|neither is worth another hour
+design-build-closes-on-the-plan	design	Build closes on the plan, not on taste	Polish you think of while building is a finding for the report
+design-then-stop	design	A surface is never finished	the plan is built and the budget is spent

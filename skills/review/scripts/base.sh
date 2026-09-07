@@ -103,9 +103,31 @@ fi
 # First ref that resolves wins. The order is the review's own precedence:
 # the branch's PR target, the repository default, then the conventional names
 # with the remote prefix, then without it for a repository that has no remote.
+# `gh` reaches the network, and the fetch above is bounded for exactly that
+# reason. Same bound, same mechanism: a background call plus a polling wait,
+# because `timeout(1)` is GNU coreutils and macOS does not ship it.
+bounded_gh_base() {
+  local out; out="$(mktemp)"
+  ( gh pr view --json baseRefName -q .baseRefName >"$out" 2>/dev/null ) &
+  local pid=$! waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$FETCH_TIMEOUT_SECONDS" ]; then
+      kill -TERM "$pid" 2>/dev/null; sleep 1; kill -KILL "$pid" 2>/dev/null
+      wait "$pid" 2>/dev/null || :
+      echo "review-base: gh pr view timed out after ${FETCH_TIMEOUT_SECONDS}s — falling back to the repository default" >&2
+      rm -f "$out"; return 0
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$pid" 2>/dev/null || :
+  cat "$out"
+  rm -f "$out"
+}
+
 BASE=""
 for ref in \
-  "$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || true)" \
+  "$(command -v gh >/dev/null 2>&1 && bounded_gh_base || true)" \
   "$(git symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)" \
   origin/main origin/master main master
 do
@@ -139,14 +161,32 @@ echo "base: $BASE ($(git rev-parse --short "$MERGE_BASE"))"
 # quotePath off everywhere a path is printed: a C-quoted name (non-ASCII, a
 # quote, a tab) is not a path a lane can open, in a header or in a list.
 git() { command git -c core.quotePath=false "$@"; }
-UNTRACKED=$(git ls-files --others --exclude-standard)
+# NUL-delimited: a newline in a filename split one path into two that do not
+# exist, `git diff --no-index` failed on both, `|| :` swallowed it, and the file
+# was announced as included in FILE while being absent from it.
+UNTRACKED_FILES=()
+while IFS= read -r -d '' f; do
+  UNTRACKED_FILES+=("$f")
+done < <(git ls-files --others --exclude-standard -z)
+UNTRACKED=""
+[ ${#UNTRACKED_FILES[@]} -gt 0 ] && UNTRACKED=$(printf '%s\n' "${UNTRACKED_FILES[@]}")
 
 if [ -z "$(git diff --name-only "$MERGE_BASE")" ] && [ -z "$UNTRACKED" ]; then
   echo "changed lines: 0 — nothing to review against $BASE"
   exit 0
 fi
 
-git diff --numstat "$MERGE_BASE" | awk '{n+=$1+$2} END{print "changed lines:", n+0}'
+# A binary file reports `-\t-` rather than counts, so summing $1+$2 charged it
+# zero lines. The count decides whether the review dispatches lanes or runs them
+# itself, and the undercount pushed a change towards the cheaper path.
+git diff --numstat "$MERGE_BASE" | awk '
+  $1 == "-" { binary++; next }
+  { n += $1 + $2 }
+  END {
+    printf "changed lines: %d", n + 0
+    if (binary) printf " (plus %d binary file(s), which report no line count)", binary
+    print ""
+  }'
 git diff --name-only "$MERGE_BASE"
 
 if [ -n "$UNTRACKED" ]; then
@@ -177,10 +217,10 @@ write_change_set() {
   local rc=$?
   # `--no-index` exits 1 whenever the two sides differ, which against /dev/null
   # is always. Left as the function's status it would read as a failed write.
-  while IFS= read -r f; do
+  for f in "${UNTRACKED_FILES[@]}"; do
     [ -n "$f" ] || continue
     git diff --no-index -U10 -- /dev/null "$f" || :
-  done <<< "$UNTRACKED"
+  done
   # The tracked diff's status is the function's status, not the loop's.
   return "$rc"
 }

@@ -1,5 +1,13 @@
 # What invokes automatically
 
+> **Measured against the v0.9.x roster, which is not the roster that ships.**
+> `designer` and `fixer` appear below and were deleted in v0.10.0; the `design`
+> skill added in v0.13.0 has never been probed. Every row naming either agent
+> describes a component you cannot invoke, and the absence of a `design` row is
+> an untested component, not a quiet one. Re-run the probe before trusting any
+> row here to predict what starts on its own.
+
+
 Part of [omc-slim](../README.md).
 
 This page lists which omc-slim components fire on their own and which need an

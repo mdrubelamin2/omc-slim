@@ -31,7 +31,7 @@ Use the shell to pin down which version that is: the lockfile, `npm view`, `pip 
 
 **A load-bearing external claim gets an open-web pass when it is the kind of claim the web can correct.** Carry the URL and the date into the finding. A claim sourced only from your own recall is not a claim, and one sourced only from a cache you cannot date is barely better.
 
-**That is a condition, not a ritual, and the difference is measured.** Injecting documentation scored **+9.36pp on rare APIs and −39.02pp on common ones**. For a well-known signature the retrieval displaces knowledge that was already correct, and makes the answer worse, so spend the pass where it pays:
+**That is a condition, not a ritual, and the difference is measured.** Injecting documentation scored **+9.36pp on rare APIs and −39.02pp on common ones**, the drop measured with a sub-optimal retriever. For a well-known signature poor retrieval displaces knowledge that was already correct and makes the answer worse, so spend the pass where it pays:
 
 - the symbol is **rare**, recently added, or you are unsure it exists at all
 - behaviour is **version-pinned** and this project's version is not the newest

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Renders after load</title>
+</head>
+<body>
+<div id="app"></div>
+<script>
+  // The shape of an app that paints after its own load event. Every check below
+  // documentNotRendered would otherwise measure an empty body and pass.
+  setTimeout(function () {
+    document.getElementById('app').innerHTML =
+      '<p style="color:#777;background:#fff;font-size:9px">text that would fail contrast and the size floor</p>';
+  }, 3000);
+</script>
+</body>
+</html>

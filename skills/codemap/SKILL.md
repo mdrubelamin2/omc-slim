@@ -6,42 +6,33 @@ when_to_use: '"map this codebase", "document this repo". Proposes itself on an u
 
 # Codemap Skill
 
-You help users understand and map repositories by creating hierarchical codemaps.
+Hierarchical `codemap.md` files across a repository nobody has read yet, plus a root atlas and a pointer in `AGENTS.md`.
 
 ## Announce before you start
 
 This skill is expensive: it reads the whole tree and spawns one writer agent per directory. On a few-hundred-file repository that is real money and several minutes. It also **writes files into the user's repository**: a `codemap.md` in every mapped directory, `.slim/codemap.json`, and a section in root `AGENTS.md`.
 
-So: say what it will cost and what it will write, and get a yes first. Reaching for it unprompted is correct; doing so silently is not. Proposing and running are different acts, and only the first is yours.
+Say what it will cost and what it will write, and get a yes first. Reaching for it unprompted is correct; doing so silently is not.
+
+**Get the number before you ask, from `plan`.** It writes nothing and prints the files, the directories and the writer dispatches the run will spend. An adjective is not a cost the user can consent to.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" plan \
+  --root ./ --include "src/**/*.ts" --exclude "**/*.test.ts"
+```
+
+Pass `init` the same `--include` and `--exclude`, or the plan priced a different run.
 
 If the repository is small enough to simply read, read it instead.
 
-## When to Use
-
-- User asks to understand/map a repository
-- User wants codebase documentation
-- Starting substantial work on an unfamiliar codebase
-
 ## Workflow
 
-### Step 1: Check for Existing State
+### Step 1: Initialize
 
-**First, check if `.slim/codemap.json` exists in the repo root.**
-
-If `.slim/codemap.json` exists: Skip to Step 3 (Detect Changes) - no need to re-initialize.
-
-If it does not exist: Continue to Step 2 (Initialize).
-
-### Step 2: Initialize (Only if no state exists)
+`init` exits 1 with `already exists` when state is present, so run it and let the exit code route you: clean means continue here, `already exists` means go to Step 2.
 
 1. **Analyze the repository structure** - List files, understand directories
-2. **Infer patterns** for **core code/config files ONLY** to include:
-   - **Include**: `src/**/*.ts`, `package.json`, etc.
-   - **Exclude (MANDATORY)**: Do NOT include tests, documentation, or translations.
-     - Tests: `**/*.test.ts`, `**/*.spec.ts`, `tests/**`, `__tests__/**`
-     - Docs: `docs/**`, `*.md` (except root `README.md` if needed), `LICENSE`
-     - Build/Deps: `node_modules/**`, `dist/**`, `build/**`, `*.min.js`
-   - Respect `.gitignore` automatically
+2. **Select the core code and config, and nothing else.** Include what runs: `src/**/*.ts`, the manifest. Exclude tests (`**/*.test.ts`, `**/*.spec.ts`, `tests/**`, `__tests__/**`), documentation (`docs/**`, `*.md`, `LICENSE`) and build output (`node_modules/**`, `dist/**`, `build/**`, `*.min.js`). `.gitignore` is applied for you. A map of the tests describes the tests, not the system.
 3. **Run codemap.mjs init**:
 
 ```bash
@@ -51,15 +42,13 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" init \
   --exclude "**/*.test.ts" --exclude "dist/**" --exclude "node_modules/**"
 ```
 
-`init` exits 1 with `already exists` when state is present, after migrating a legacy `.slim/cartography.json`; go to Step 3.
-
 This creates:
 - `.slim/codemap.json` - File and folder hashes for change detection
 - Empty `codemap.md` files in all relevant subdirectories, each opening with a provenance header naming the commit, date and file count it was written against
 
 4. **Delegate codemap writing** - Dispatch one general-purpose writer per folder, using the brief in "Dispatching a codemap writer" below.
 
-### Step 3: Detect Changes (If state already exists)
+### Step 2: Detect changes
 
 1. **Run codemap.mjs changes** to see what changed:
 
@@ -86,15 +75,15 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" stale --root ./
 
 Each row is `FRESH`, or a status and the reason it cannot be trusted: files changed, no header, never written, header skewed, map missing. A commit distance it cannot know (no repository, shallow clone) is named, never guessed.
 
-### Step 4: Finalize Repository Atlas (Root Codemap)
+### Step 3: The root atlas
 
-Once all specific directories are mapped, the Orchestrator must create or update the root `codemap.md`. This file serves as the **Master Entry Point** for any agent or human entering the repository.
+Once the directories are mapped, write the root `codemap.md`. It is the entry point for anyone arriving at the repository.
 
 1.  **Map Root Assets**: Document the root-level files (e.g., `package.json`, `index.ts`, `plugin.json`) and the project's overall purpose.
 2.  **Aggregate Sub-Maps**: Create a "Directory Map" section. For every folder that has a `codemap.md`, extract its **Responsibility** summary and include it in a table or list in the root map.
 3.  **Cross-Reference**: Ensure that the root map contains the absolute or relative paths to the sub-maps so agents can jump directly to the relevant details.
 
-### Step 5: Register Codemap in AGENTS.md
+### Step 4: Register it in AGENTS.md
 
 **Claude Code auto-loads `AGENTS.md` into agent context on every session.** To ensure agents automatically discover and use the codemap, update (or create) `AGENTS.md` at the repo root:
 
@@ -109,17 +98,20 @@ Once all specific directories are mapped, the Orchestrator must create or update
 repo's architecture, responsibilities and data flow. **They are generated, and
 they go stale.** Each states the commit it was written against in its header.
 
-Check before you rely on one:
+Check one before you rely on it, not at session start: a tree under active
+development will always have stale maps, and a check that fails by default is a
+check nobody reads.
 
-Ask the omc-slim codemap skill to run its `stale` check (`/omc-slim:codemap stale`).
+Ask the omc-slim codemap skill to run its `stale` check (`/omc-slim:codemap stale`)
+when a specific map is about to be trusted.
 
 For any directory it lists: ignore that map and read the code, or regenerate it
 with the codemap skill. A map is a shortcut to the code, never a substitute.
 ```
 
-This is idempotent - repeated codemap runs will detect the existing section and skip. No duplication.
+Idempotent: a later run finds the existing section and leaves it alone.
 
-### Step 6: Run `update`
+### Step 5: Run `update`
 
 Run `update` on both paths, after the writers return **and** after Step 4 writes the root map. It saves the new hashes *and* re-stamps every `codemap.md` provenance header, which is the run's statement that the maps are current. Run it before the writers and it certifies maps nobody touched. Run it before Step 4 and it certifies the root map. The root folder always carries a header for it, and Step 4 has not written it yet.
 
@@ -127,6 +119,12 @@ Run `update` on both paths, after the writers return **and** after Step 4 writes
 node "${CLAUDE_PLUGIN_ROOT}/skills/codemap/scripts/codemap.mjs" update \
   --root ./
 ```
+
+## Done
+
+**Every mapped directory has a written map, the root atlas exists, `AGENTS.md` carries its section, and `update` has re-stamped the headers.** `stale --root ./` returning zero is the check. Not when every map reads well — a map is a shortcut to the code and it will always be improvable.
+
+Then stop. Report the directory count, the writer count, what `update` stamped, and any directory whose map was refused or left alone.
 
 ## Dispatching a codemap writer
 

@@ -96,8 +96,18 @@ trap 'rm -rf "$(dirname "$NEWEST")"' EXIT
 awk '/^## /{n++} n==1' "$ROOT/CHANGELOG.md" > "$NEWEST"
 if [ -s "$NEWEST" ] && [ "$#" -eq 0 ]; then FILES+=("$NEWEST"); fi
 
-python3 - "${FILES[@]}" <<'PY'
-import collections, re, sys, statistics
+OMC_SLIM_ROOT="$ROOT" python3 - "${FILES[@]}" <<'PY'
+import collections, os, re, sys, statistics
+
+# Repo-relative, because PROMPT_DIRS is matched against it. Testing the absolute
+# path meant a checkout under any directory named skills/, agents/ or
+# output-styles/ turned the bold-lead-in gate off for every document in the
+# repository, silently.
+ROOT = os.environ.get('OMC_SLIM_ROOT', '')
+
+
+def relative(path):
+    return path[len(ROOT) + 1:] if ROOT and path.startswith(ROOT + os.sep) else path
 
 # Sourced thresholds
 # 10.0 rests on the HUMAN corpus, and the provenance of each half differs enough
@@ -156,11 +166,16 @@ def strip(t):
 
 bad = 0
 rows = []
+too_short = []
 for path in sys.argv[1:]:
     raw = open(path, encoding='utf-8').read()
     t = strip(raw)
     words = len(re.findall(r"[A-Za-z][A-Za-z'-]*", t))
     if words < 200:
+        # Named rather than dropped: "45/45 inside the thresholds" read as the
+        # whole population, and a file that fell out of the count for being
+        # short was indistinguishable from one that passed.
+        too_short.append((path.rsplit('/', 1)[-1], words))
         continue
     paras = [p.strip() for p in t.split('\n\n') if p.strip() and not p.lstrip().startswith('#')]
     sections = max(1, len(re.findall(r'^## ', t, flags=re.M)))
@@ -206,12 +221,15 @@ for path in sys.argv[1:]:
     burst = (statistics.pstdev(lens) / statistics.mean(lens)) if len(lens) > 3 else 1.0
     trans = sum(1 for p in paras if re.match(TRANSITION, p)) / max(len(paras), 1)
 
-    name = path.rsplit('/', 1)[-1]
+    # The last two components, so seven files do not all report as "SKILL.md"
+    # with nothing to tell them apart.
+    parts = relative(path).split('/')
+    name = '/'.join(parts[-2:]) if len(parts) > 1 else parts[-1]
     fails = []
     if em1k > EMDASH_PER_1K:
         fails.append(f'em-dashes {em1k:.1f}/1k words, over {EMDASH_PER_1K} '
                      f'(the human corpus tops out at 10.1)')
-    is_prompt = any(d in path for d in PROMPT_DIRS)
+    is_prompt = relative(path).startswith(PROMPT_DIRS)
     if lead_per_sec > BOLD_LEADIN_PER_SECTION and not is_prompt:
         fails.append(f'{lead} paragraphs open on a bolded lead-in across {sections} '
                      f'sections = {lead_per_sec:.1f} each, over {BOLD_LEADIN_PER_SECTION}')
@@ -240,5 +258,8 @@ if bad:
     print('both are about whether the truth gets read. Detectors do not work on')
     print('technical prose, so this is craft, not a scanner to pass.')
     raise SystemExit(1)
-print(f'{len(rows)}/{len(rows)} user-facing documents inside the style thresholds.')
+for name, words in too_short:
+    print(f'  not measured   {name}: {words} words after stripping, under the 200-word floor')
+print(f'{len(rows)}/{len(rows) + len(too_short)} user-facing documents inside the style thresholds'
+      + (f'; {len(too_short)} too short to measure.' if too_short else '.'))
 PY

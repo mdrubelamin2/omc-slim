@@ -14,7 +14,7 @@ Use this skill proportionately. Small mechanical changes can follow ordinary pro
 
 This skill plans; other components execute. **Everything below is what the plan specifies, not what you personally perform**: the revert-and-re-run ritual, the runnable path, the closing interpretation. You write them into the plan and name their owner. Send the locating work to the `omc-slim:explorer` agent: which checks already exist, what they cover. The resulting edits go to a general-purpose writer briefed with the plan. Where the plan is one stage of a larger migration, the `omc-slim:deepwork` skill owns the sequencing and this owns each stage's failable check. And if you are already inside the `omc-slim:deepwork` skill, this *is* that stage's check. Do not re-enter the sequencing skill to plan one stage of the plan you are already running.
 
-The evidence path uses whatever this machine actually has. A test runner, a browser or devtools server, a database or API client, a coverage tool: any of them turns an assertion into an observation. They arrive from the project's `.claude/` and the user's `~/.claude/`, their names say nothing about their subject, and `ToolSearch` reaches them where tools are deferred. Read the descriptions, prefer a tool built for this stack over a generic one, and name the route in the plan. Where nothing is installed, the project's own commands are the evidence path. Where the project has no commands either, the plan says so and asks; it never specifies a runner the user has not chosen.
+The evidence path uses whatever this machine actually has: a test runner, a browser or devtools server, a database or API client, a coverage tool. Any of them turns an assertion into an observation. Survey them the way the output style says, and name the route in the plan. Where nothing is installed, the project's own commands are the evidence path. Where the project has no commands either, the plan says so and asks; it never specifies a runner the user has not chosen.
 
 ## Build an evidence path
 
@@ -61,3 +61,16 @@ So for any check whose fixture has to *construct* a condition, assert that the c
 Seven steps, in `procedure.md`: frame the claim · design the evidence path · research where the path is unknown · set a budget · create a verification affordance · make the path runnable · close it against the original claim. Each carries its own **Complete when** so a step cannot be declared done by feel.
 
 **Open it when the work is multi-phase**, which is the case § Scope reserves this skill for. A small mechanical change does not need seven steps and should follow the project's own checks directly. But the standard above applies either way, and it is the half that must never be skipped.
+
+## Done
+
+**The plan is delivered when every distinct claim has one named owner and one piece of non-duplicative evidence**, and every check in it can fail. Not when the evidence path is beyond criticism — it never is, and a plan that waits for that is a plan nobody receives.
+
+```
+Claim: what has to become true
+Evidence: the check, and who runs it
+Cannot fail: what would make each check vacuous, and why it will not
+Unproven: what this path does not reach, and what would reach it
+```
+
+Then stop. You planned; you did not verify. Handing the plan over is the deliverable.

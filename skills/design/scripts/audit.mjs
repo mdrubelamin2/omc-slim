@@ -1,15 +1,27 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, resolve } from 'node:path';
-import { platform } from 'node:os';
+import { dirname, resolve, join } from 'node:path';
+import { platform, tmpdir } from 'node:os';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const PROBE_PATH = resolve(HERE, 'probe.js');
+const PROBE_PATH = process.env.OMC_SLIM_PROBE_PATH || resolve(HERE, 'probe.js');
 const SETTLE_MS = 600;
 const LAUNCH_TIMEOUT_MS = 15000;
 const EVAL_TIMEOUT_MS = 20000;
+
+/**
+ * How long to wait for the page's own load event before measuring anything.
+ *
+ * This used to be a fixed 1.2s after navigate, behind a variable called
+ * `loaded` that was a bare timer. A page whose content arrives later was
+ * measured empty and reported as a clean pass: one fixture scored "31 of 31
+ * checks passed" with its text injected at 3s, and two failures with the same
+ * text present at parse time. contentHiddenAtRest cannot cover it, because at
+ * that moment there is no text to find hidden.
+ */
+const LOAD_TIMEOUT_MS = 15000;
 
 const MIN_NODE_MAJOR = 22;
 
@@ -50,7 +62,13 @@ const HEADLESS_FLAG = '--headless=new';
 
 const ERROR_TRAP = `
 window.__designAuditErrors = window.__designAuditErrors || [];
-window.addEventListener('error', function (e) { window.__designAuditErrors.push(String(e.message)); });
+window.addEventListener('error', function (e) {
+  if (e.target && e.target !== window && (e.target.src || e.target.href)) {
+    window.__designAuditErrors.push('failed to load: ' + (e.target.src || e.target.href));
+    return;
+  }
+  window.__designAuditErrors.push(String(e.message));
+}, true);
 window.addEventListener('unhandledrejection', function (e) { window.__designAuditErrors.push('unhandled rejection: ' + String(e.reason)); });
 `;
 
@@ -60,10 +78,6 @@ export function probeSource() {
 
 export function probeFunctionSource() {
   return '() => {\n  return ' + probeSource().trim() + ';\n}\n';
-}
-
-export function errorTrapSource() {
-  return ERROR_TRAP;
 }
 
 function onPath(name) {
@@ -133,14 +147,25 @@ async function connect(wsUrl) {
   });
   let nextId = 0;
   const pending = new Map();
+  // Waiters registered before a navigation, resolved by the page's own load
+  // event. A waiter registered after the event has fired would never resolve,
+  // so onLoad() is called before Page.navigate and never after.
+  let loadWaiters = [];
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
+    if (message.method === 'Page.loadEventFired') {
+      const waiting = loadWaiters;
+      loadWaiters = [];
+      for (const ok of waiting) ok();
+      return;
+    }
     if (message.id && pending.has(message.id)) {
       const { ok, no } = pending.get(message.id);
       pending.delete(message.id);
       message.error ? no(new Error(message.error.message)) : ok(message.result);
     }
   };
+  const onLoad = () => new Promise((ok) => loadWaiters.push(ok));
   const send = (method, params = {}) => new Promise((ok, no) => {
     const id = ++nextId;
     pending.set(id, { ok, no });
@@ -149,13 +174,14 @@ async function connect(wsUrl) {
       if (pending.has(id)) { pending.delete(id); no(new Error(method + ' timed out')); }
     }, EVAL_TIMEOUT_MS);
   });
-  return { send, close: () => socket.close() };
+  return { send, onLoad, close: () => socket.close() };
 }
 
-async function launch(browser, width, height) {
+async function launch(browser, width, height, profileDir) {
   const child = spawn(browser, [
     HEADLESS_FLAG,
     '--remote-debugging-port=0',
+    `--user-data-dir=${profileDir}`,
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-gpu',
@@ -165,28 +191,37 @@ async function launch(browser, width, height) {
     'about:blank'
   ], { stdio: ['ignore', 'ignore', 'pipe'] });
 
-  const browserWs = await new Promise((ok, no) => {
-    let buffer = '';
-    const timer = setTimeout(() => no(new Error('the browser did not report a DevTools endpoint')), LAUNCH_TIMEOUT_MS);
-    child.stderr.on('data', (chunk) => {
-      buffer += chunk.toString();
-      const match = buffer.match(/ws:\/\/[^\s]+/);
-      if (match) { clearTimeout(timer); ok(match[0]); }
+  // Every failure below kills the child before it propagates. Rejecting without
+  // killing left `child` undefined in the caller, so its `finally` could not
+  // reach the process and a browser that never published an endpoint outlived
+  // the run while its profile directory was deleted underneath it.
+  try {
+    const browserWs = await new Promise((ok, no) => {
+      let buffer = '';
+      const timer = setTimeout(() => no(new Error('the browser did not report a DevTools endpoint')), LAUNCH_TIMEOUT_MS);
+      child.stderr.on('data', (chunk) => {
+        buffer += chunk.toString();
+        const match = buffer.match(/ws:\/\/[^\s]+/);
+        if (match) { clearTimeout(timer); ok(match[0]); }
+      });
+      child.on('exit', (code) => { clearTimeout(timer); no(new Error('the browser exited with code ' + code)); });
     });
-    child.on('exit', (code) => { clearTimeout(timer); no(new Error('the browser exited with code ' + code)); });
-  });
 
-  const origin = 'http://' + new URL(browserWs).host;
-  const deadline = Date.now() + LAUNCH_TIMEOUT_MS;
-  let wsUrl = null;
-  while (!wsUrl && Date.now() < deadline) {
-    const targets = await fetch(origin + '/json/list').then((r) => r.json()).catch(() => []);
-    const page = targets.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
-    if (page) wsUrl = page.webSocketDebuggerUrl;
-    else await new Promise((ok) => setTimeout(ok, 100));
+    const origin = 'http://' + new URL(browserWs).host;
+    const deadline = Date.now() + LAUNCH_TIMEOUT_MS;
+    let wsUrl = null;
+    while (!wsUrl && Date.now() < deadline) {
+      const targets = await fetch(origin + '/json/list').then((r) => r.json()).catch(() => []);
+      const page = targets.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
+      if (page) wsUrl = page.webSocketDebuggerUrl;
+      else await new Promise((ok) => setTimeout(ok, 100));
+    }
+    if (!wsUrl) throw new Error('the browser exposed no page target');
+    return { child, wsUrl };
+  } catch (failure) {
+    child.kill();
+    throw failure;
   }
-  if (!wsUrl) throw new Error('the browser exposed no page target');
-  return { child, wsUrl };
 }
 
 export async function audit(target, { width = 1280, height = 800 } = {}) {
@@ -204,24 +239,46 @@ export async function audit(target, { width = 1280, height = 800 } = {}) {
     );
   }
 
-  let child, session;
+  let child, session, profileDir;
   try {
-    const launched = await launch(browser, width, height);
+    // A run must not inherit the user's real Chrome profile: replicate.md
+    // forbids a baseline from a browser carrying extensions, a zoom level or
+    // font smoothing that are not the page's.
+    profileDir = mkdtempSync(join(tmpdir(), 'omc-slim-audit-'));
+    const launched = await launch(browser, width, height, profileDir);
     child = launched.child;
-    const { send, close } = await connect(launched.wsUrl);
+    const { send, close, onLoad } = await connect(launched.wsUrl);
     session = { close };
 
     await send('Page.enable');
     await send('Runtime.enable');
     await send('Page.addScriptToEvaluateOnNewDocument', { source: ERROR_TRAP });
 
-    const loaded = new Promise((ok) => setTimeout(ok, LAUNCH_TIMEOUT_MS));
+    // Under the sweep's mobile width the page must be measured as a touch
+    // device, or floor.md's 44px target floor and its touch-hover rule are both
+    // unreachable: isCoarsePointer() reads (pointer: coarse) and nothing set it.
+    const touch = width < 768;
+    if (touch) {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width, height, deviceScaleFactor: 1, mobile: true,
+      });
+      await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    }
+
+    const loaded = onLoad();
     await send('Page.navigate', { url: target });
-    await Promise.race([
-      new Promise((ok) => setTimeout(ok, SETTLE_MS)),
-      loaded
+    const loadTimedOut = await Promise.race([
+      loaded.then(() => false),
+      new Promise((ok) => setTimeout(() => ok(true), LOAD_TIMEOUT_MS))
     ]);
     await new Promise((ok) => setTimeout(ok, SETTLE_MS));
+    // Every type size, measure and overflow number depends on which font
+    // painted. A flat settle raced font-display: swap on a cold cache.
+    await send('Runtime.evaluate', {
+      expression: 'document.fonts && document.fonts.ready ? document.fonts.ready.then(() => true) : true',
+      awaitPromise: true,
+      returnByValue: true,
+    }).catch(() => {});
 
     const evaluated = await send('Runtime.evaluate', {
       expression: probeSource(),
@@ -236,12 +293,20 @@ export async function audit(target, { width = 1280, height = 800 } = {}) {
     if (!value || typeof value !== 'object') {
       throw new Error('the probe returned no result');
     }
-    return { verified: true, target, ...value };
+    if (loadTimedOut) {
+      value.skipped = (value.skipped || []).concat(
+        'loadEvent(no load event within ' + LOAD_TIMEOUT_MS + 'ms; every number here describes a partial page)'
+      );
+    }
+    return { verified: true, target, requested: { width, height }, loadTimedOut, ...value };
   } catch (failure) {
     return unavailable('the browser ran but the audit could not complete: ' + failure.message);
   } finally {
     session?.close();
     child?.kill();
+    if (profileDir) {
+      try { rmSync(profileDir, { recursive: true, force: true }); } catch { /* a locked profile dir is not a finding */ }
+    }
   }
 }
 
@@ -254,8 +319,15 @@ function report(result) {
   }
   const s = summarise(result);
   const total = s.ran.length;
-  const tripped = new Set([...s.errors, ...s.failures].map((f) => f.check));
-  console.log(`${total - tripped.size} of ${total} checks passed on ${result.target}`);
+  const tripped = new Set([...s.errors, ...s.failures].map((f) => f.check).filter((c) => s.ran.includes(c)));
+  // The viewport is named because a sweep reports per viewport, and a run whose
+  // size argument did not take is otherwise indistinguishable from one that did.
+  const seen = result.viewport ? `${result.viewport.width}x${result.viewport.height}` : 'unknown viewport';
+  const inconclusive = s.skipped.length;
+  console.log(
+    `${Math.max(0, total - tripped.size)} of ${total} checks passed on ${result.target} at ${seen}` +
+      (inconclusive ? `, ${inconclusive} inconclusive` : ''),
+  );
   for (const f of [...s.errors, ...s.failures]) {
     console.log(`  ${f.severity.toUpperCase().padEnd(8)} ${f.check} — ${f.target} — ${f.detail}`);
   }
@@ -285,13 +357,24 @@ if (invokedDirectly) {
     console.error('       audit.mjs --probe-fn   emit it wrapped as a function, for an evaluate tool that requires one');
     process.exit(2);
   }
-  const widthArg = args.indexOf('--width');
-  const heightArg = args.indexOf('--height');
-  const target = /^https?:\/\//.test(args[0]) ? args[0] : pathToFileURL(resolve(args[0])).href;
-  const result = await audit(target, {
-    width: widthArg > -1 ? Number(args[widthArg + 1]) : 1280,
-    height: heightArg > -1 ? Number(args[heightArg + 1]) : 800
-  });
+  // A size that does not parse used to reach Chrome as `--window-size=NaN,800`,
+  // which Chrome ignores: the run then measured the default viewport and said
+  // nothing about it. A viewport nobody chose is not a viewport worth reporting.
+  const size = (flag, fallback) => {
+    const at = args.indexOf(flag);
+    if (at === -1) return fallback;
+    const value = Number(args[at + 1]);
+    if (!Number.isInteger(value) || value < 200 || value > 10000) {
+      console.error(`${flag} needs a whole number of CSS pixels between 200 and 10000, not ${JSON.stringify(args[at + 1])}`);
+      process.exit(2);
+    }
+    return value;
+  };
+  // Any absolute URL is passed through. Matching only http(s) sent a file:// URL
+  // down the path branch, where resolve() read it as a relative path and the
+  // audit measured about:blank while naming the target the caller asked for.
+  const target = /^[a-z][a-z0-9+.-]*:\/\//i.test(args[0]) ? args[0] : pathToFileURL(resolve(args[0])).href;
+  const result = await audit(target, { width: size('--width', 1280), height: size('--height', 800) });
   if (args.includes('--json')) console.log(JSON.stringify(result, null, 2));
   process.exit(report(result));
 }

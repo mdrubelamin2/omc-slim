@@ -42,3 +42,11 @@ Only the artefact in step 3 changes.
 
 **Skip divergence only where the repository already answers the question.** A precedent you can point at is a decision already made; re-deriving it is the ceremony this section warns about. No precedent means at least one alternative,
 however cheap the work is to undo.
+
+## The progress file, for work that outlives this session
+
+Opened when the work spans more than one session, hands over, or runs long enough to be compacted. A run that finishes in the session that started it does not need one.
+
+**Progress file, which is also the handover.** Work that will outlive this session keeps a log at `docs/deepwork/<task-slug>.md`: more than one session, a handover, or a run long enough to be compacted. Write it at every phase boundary from then on, so a fresh session can continue from it. Compaction keeps what was built and loses what was decided against. A run that finishes in this session writes it once, at the end, or not at all — four structured writes nobody reads is the ceremony this skill warns about. It holds current understanding, confirmed findings, phase status, validation results, open questions, what was tried and failed, and the next first action. Reference files by path, never paste contents. Update after decisions, reviews, phase completions and scope changes; re-read it before continuing.
+
+A dead end nobody wrote down gets walked a second time by whoever picks the work up next. One line each is enough. The next first action must be executable without reading anything but this file. "Carry on with the migration" fails that test, "re-run the seed script against staging and compare row counts" passes.

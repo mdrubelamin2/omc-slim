@@ -8,11 +8,11 @@ Every step closes on a **Complete when**, and that is the point of writing them 
 
 ## 1. Frame the claim
 
-State the behavior that needs to become true and the conditions that could make a confident conclusion wrong.
+State the behaviour that needs to become true and the conditions that could make a confident conclusion wrong.
 
-Consider what must change, what must remain true, where the behavior crosses a boundary, and which failure would matter most.
+Consider what must change, what must remain true, where the behaviour crosses a boundary, and which failure would matter most.
 
-**Complete when:** the claim, its meaningful uncertainty, and its important failure modes are concrete enough to investigate.
+**Complete when:** the claim is one sentence naming an input, an observable output, and the condition under which it would be false.
 
 ## 2. Design the evidence path
 
@@ -20,7 +20,7 @@ Derive possible evidence paths from the system itself. Look at its controllable 
 
 Generate alternatives before choosing. Prefer the path that produces a trustworthy conclusion with proportionate cost, safety, and effort.
 
-**Complete when:** there is a preferred path, its limitations are understood, and a weaker or stronger alternative is available if circumstances change.
+**Complete when:** one path is named with the command or observation it rests on, one alternative is written down, and the sentence "this path cannot see X" is answered.
 
 ## 3. Research when the path is unknown
 
@@ -28,7 +28,7 @@ Some evidence paths depend on something you cannot check from here: an unfamilia
 
 Ask for official or project-specific facilities, constraints, and trade-offs that affect this exact verification problem. Use existing project evidence directly when it already resolves the choice.
 
-**Complete when:** the chosen path rests on known capabilities and real constraints rather than assumption.
+**Complete when:** every capability the path depends on is confirmed present on this machine, by a command whose output you read.
 
 ## 4. Set a verification budget
 
@@ -40,11 +40,13 @@ At the final state, state the distinct claims and assign one owner to establish 
 
 When the existing system leaves the decisive truth too indirect or ambiguous, extend the evidence path with a **verification affordance**. An affordance is the smallest capability that makes the relevant state controllable, observable, repeatable, and diagnosable for an agent.
 
-Ask what capability would let an agent establish the claim directly, repeat the scenario from a known state, and explain a failure without inference. Prefer an affordance that strengthens directness, determinism, agent-legibility, isolation, resetability, or future reuse.
+Ask what would let an agent establish the claim directly, repeat the scenario from a known state, and explain a failure without guessing.
+
+A worked case: the claim is "the importer rejects a malformed row without dropping the batch". The system offers no way to see which rows were rejected, so the evidence path stops at "the batch completed". The affordance is a command that imports one fixture file and prints one line per row with its verdict. It makes the state controllable (a fixture you choose), observable (a line per row), repeatable (same file, same output) and diagnosable (the line names the rule that rejected it). That is four properties bought by about twenty lines, and none of them is a product feature.
 
 Treat the affordance as part of the evidence path, not an automatic product feature. Decide deliberately whether it is temporary or durable before building it.
 
-**Complete when:** the chosen path can establish the claim directly enough for its stakes, and any needed affordance has a defined lifecycle.
+**Complete when:** the affordance, if any, is named with the state it makes observable and a line saying whether it is kept or removed.
 
 ## 6. Make the path runnable
 
@@ -54,7 +56,7 @@ Decide whether that support has recurring value or exists only to resolve the cu
 
 Ask before introducing dependencies, persistent diagnostic surfaces, or structural changes whose sole purpose is evidence gathering.
 
-**Complete when:** the path can be followed without guessing about setup, state, or interpretation.
+**Complete when:** someone else can run the path from the written steps alone, and the plan names the output that means pass and the output that means fail.
 
 ## 7. Close the evidence path
 
@@ -62,4 +64,4 @@ After implementation, follow the planned path and interpret the resulting eviden
 
 Report whether the claim was established, limited, or refuted; distinguish known facts from remaining uncertainty.
 
-**Complete when:** a future reader can see what supports the conclusion and what remains outside its reach.
+**Complete when:** the report states the claim, the evidence run, the verdict, and one sentence naming what the evidence does not cover.

@@ -34,7 +34,7 @@ claude --plugin-dir ./omc-slim
 
 **It says what it could not check.** A review finding must quote the line that proves it. A finding with no evidence is dropped, not reported. What could not be verified is written down instead of smoothed over.
 
-**It stays out of your way.** ~2,590 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
+**It stays out of your way.** ~2,811 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
 
 ---
 
@@ -151,6 +151,7 @@ Ask in plain language. You should not need to name any of these.
 | [verification-planning](./skills/verification-planning/SKILL.md) | *"How do I prove this did not break anything?"* | Designs the evidence path. Writes no tests |
 | [simplify](./skills/simplify/SKILL.md) | *"This is over-built."* | Deletes what should never have been written |
 | [codemap](./skills/codemap/SKILL.md) | *"Nobody here has read this repository."* | A codemap per directory plus a root atlas |
+| [design](./skills/design/SKILL.md) | *"Build this page."* · *"This UI is generic."* | Builds or judges an interface, then reports what a script measured |
 
 Every one also has an explicit form, and the agents work with the output style off: `/omc-slim:explorer`, `/omc-slim:librarian`, `/omc-slim:tracer`, `/omc-slim:oracle`, `/omc-slim:review`, `/omc-slim:deepwork`, and the rest.
 
@@ -158,7 +159,7 @@ Every one also has an explicit form, and the agents work with the output style o
 
 ## What it costs
 
-**~2,590 tokens** of always-on context, and nothing injected per tool call. Treat it as a floor. The harness adds framing that no text measurement sees, so the real figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)). `./scripts/measure-context.sh` re-derives it, and also prints **2,931 on a chars/4 basis**, the estimate this project's version series is tracked on.
+**~2,811 tokens** of always-on context, and nothing injected per tool call. Treat it as a floor. The harness adds framing that no text measurement sees, so the real figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)). `./scripts/measure-context.sh` re-derives it, and also prints **3,173 on a chars/4 basis**, the estimate this project's version series is tracked on.
 
 Two settings of yours will save more than this plugin costs. Neither is a plugin change:
 
@@ -237,9 +238,10 @@ Agents are scoped by what they must **not** do, never by a fixed tool list. So e
 
 CI runs all seven `check-*.sh` scripts on every push, along with the hook suite and its mutation runner.
 
-The hook suite runs 163 cases. The mutation runner then breaks the hook 80 ways, and the suite catches every one, to prove those cases would notice a regression. `COVERAGE.tsv` pins every rule to the file that must carry it. `REINFORCEMENT.tsv` pins the *reasoning* too, because one compression pass kept every pinned phrase and broke the behaviour anyway.
+The hook suite runs 171 cases. The mutation runner then breaks the hook 80 ways, and the suite catches every one, to prove those cases would notice a regression. `COVERAGE.tsv` pins every rule to the file that must carry it. `REINFORCEMENT.tsv` pins the *reasoning* too, because one compression pass kept every pinned phrase and broke the behaviour anyway.
 
 ```
+python3 -m pip install -r requirements.txt   # tiktoken, PyYAML — both gates refuse without them
 ./scripts/check-coverage.sh && ./scripts/check-reinforcement.sh
 ```
 

@@ -51,6 +51,8 @@ def front(path):
     except Exception as exc:
         return None, str(exc).splitlines()[0][:80]
 
+GRADER_FOCUS = {'last_message', 'files', 'trace'}
+
 bad = 0
 cases = sorted(glob.glob(os.path.join(evaldir, '*', 'prompt.md')))
 if not cases:
@@ -109,6 +111,22 @@ for case in cases:
             bad += 1
             continue
         types.append(gm['type'])
+
+        # The key that decides WHAT a grader scores, which nothing validated.
+        # Two spellings coexisted — `focus:` and `target:` — across eighteen
+        # graders, and this gate read neither, so up to seven may have scored
+        # against a default while it reported the suite well-formed. That is
+        # the repository's own "a check that ran over nothing looks exactly
+        # like a check that passed", inside the checker.
+        focus = gm.get('focus')
+        if focus is None:
+            print(f'  NO FOCUS      {rel} declares no `focus:`; the runner would pick a default')
+            bad += 1
+            continue
+        if focus not in GRADER_FOCUS:
+            print(f'  BAD FOCUS     {rel} declares focus: {focus!r}, not one of {sorted(GRADER_FOCUS)}')
+            bad += 1
+            continue
 
         # The BODY, which nothing read until now. This block's own header claims
         # it proves the suite "cannot silently degenerate into a trigger-only

@@ -300,9 +300,10 @@ export function isUnreadableHash(hash) {
 // O(folders x files) and dominated `init` on wide trees.
 export function computeFolderHashes(fileHashes) {
   const buckets = new Map();
-  const sortedPaths = Object.keys(fileHashes).sort((a, b) =>
-    a.localeCompare(b),
-  );
+  // Code-unit order, not locale collation: localeCompare varies with ICU build
+  // and LANG, so the same tree could hash differently on two machines and
+  // `stale` would report a change no file made.
+  const sortedPaths = Object.keys(fileHashes).sort();
 
   for (const filePath of sortedPaths) {
     const parts = filePath.split('/');
@@ -414,7 +415,9 @@ export function migrateLegacyState(root) {
 }
 
 export function loadState(root) {
-  migrateLegacyState(root);
+  // No migration here. `stale` and `files` are reporting commands and went
+  // through this path, so a read renamed a file in the user's tree. The two
+  // commands that write call migrateLegacyState themselves.
   const statePath = path.join(root, STATE_DIR, STATE_FILE);
   if (!existsSync(statePath)) return null;
 
@@ -434,10 +437,10 @@ export function saveState(root, state) {
   );
 }
 
-// The body init seeds. The `<!-- Fixer:` marker is also how `stale` recognises a
-// map nobody ever wrote: an empty map registered in AGENTS.md is the worst case
-// this tool has, because it reads as authoritative and says nothing.
-const EMPTY_BODY = `<!-- Fixer: Fill in this section with architectural understanding -->
+// The body init seeds. The marker is also how `stale` recognises a map nobody
+// ever wrote: an empty map registered in AGENTS.md is the worst case this tool
+// has, because it reads as authoritative and says nothing.
+const EMPTY_BODY = `<!-- codemap: Fill in this section with architectural understanding -->
 
 ## Responsibility
 
@@ -456,7 +459,17 @@ const EMPTY_BODY = `<!-- Fixer: Fill in this section with architectural understa
 <!-- How does it connect to other parts of the system? -->
 `;
 
-export const UNWRITTEN_MARKER = '<!-- Fixer: Fill in this section';
+export const UNWRITTEN_MARKER = '<!-- codemap: Fill in this section';
+
+// The marker written by every release up to v0.13.0, which named a `fixer`
+// agent that no longer exists. A map already on disk still carries it, and a
+// `stale` run that stopped recognising it would report an unwritten map as
+// fresh — the one direction this command must never fail in.
+export const LEGACY_UNWRITTEN_MARKER = '<!-- Fixer: Fill in this section';
+
+export function isUnwritten(text) {
+  return text.includes(UNWRITTEN_MARKER) || text.includes(LEGACY_UNWRITTEN_MARKER);
+}
 
 // Provenance header. Every codemap.md this tool writes states, in its own first
 // lines, the commit it was verified against — because the failure mode of a
@@ -468,9 +481,10 @@ export const UNWRITTEN_MARKER = '<!-- Fixer: Fill in this section';
 // invisible to a human skimming the rendered file; the prose alone would need
 // parsing back out of English.
 //
-// The block ends at PROVENANCE_END so the fixer has an unambiguous line to write
-// below and `update` has an unambiguous span to replace. Nothing here is an `##`
-// heading, so the four-heading contract the fixer brief requires is untouched.
+// The block ends at PROVENANCE_END so the writer has an unambiguous line to
+// write below and `update` has an unambiguous span to replace. Nothing here is
+// an `##` heading, so the four-heading contract the writer brief requires is
+// untouched.
 export const PROVENANCE_END = '<!-- /codemap:provenance -->';
 const PROVENANCE_RE =
   /<!-- codemap:provenance commit=(\S+) date=(\S+) files=(\d+) -->/;
@@ -499,7 +513,7 @@ export function readProvenance(text) {
   return { commit: match[1], date: match[2], files: Number(match[3]) };
 }
 
-// Everything the fixer wrote, with the machine-maintained header taken off.
+// Everything the writer wrote, with the machine-maintained header taken off.
 export function stripProvenance(text) {
   const end = text.indexOf(PROVENANCE_END);
   if (end !== -1) {
@@ -546,18 +560,22 @@ export function createEmptyCodemap(folderPath, folderName, provenance, files) {
 // that the maps are current, so it must move the header with the state it saves,
 // or every header stays pinned to the init commit forever.
 //
-// It follows that `update` must be run AFTER the fixers have rewritten the maps,
+// It follows that `update` must be run AFTER the writers have rewritten the maps,
 // not before — running it early certifies maps nobody has touched.
 export function refreshCodemap(folderPath, folderName, provenance, files) {
   const codemapPath = path.join(folderPath, CODEMAP_FILE);
-  const body = existsSync(codemapPath)
-    ? stripProvenance(readFileSync(codemapPath, 'utf8'))
-    : EMPTY_BODY;
+  // A directory added since `init` has no map, and writing an empty template
+  // there is creating one, not re-stamping one. Counting it as re-stamped
+  // reported the run as certifying a map it had just invented.
+  const existed = existsSync(codemapPath);
+  const body = existed ? stripProvenance(readFileSync(codemapPath, 'utf8')) : EMPTY_BODY;
 
-  return writeRegularFile(
+  const ok = writeRegularFile(
     codemapPath,
     renderCodemap(folderName, { ...provenance, files }, body),
   );
+  if (!ok) return false;
+  return existed ? 'restamped' : 'created';
 }
 
 // Files a directory contributes itself, which is what its own codemap.md
@@ -633,6 +651,34 @@ function buildState(
   };
 
   return { state, folders };
+}
+
+// What `init` would cost, before it writes anything.
+//
+// The skill has to state the cost and get a yes, and the number was only
+// available after the mutation: `init` prints "Created N codemap.md files" once
+// N files exist, and `files` is documented as a post-init command. A consent
+// gate whose number arrives after the write is not a gate.
+export function cmdPlan({ root, include = [], exclude = [], exception = [] }) {
+  const resolvedRoot = path.resolve(root);
+  if (!existsSync(resolvedRoot) || !statSync(resolvedRoot).isDirectory()) {
+    console.error(`Error: ${resolvedRoot} is not a directory`);
+    return 1;
+  }
+
+  const includePatterns = include.length ? include : ['**/*'];
+  const selectedFiles = selectFiles(resolvedRoot, includePatterns, exclude, exception);
+  const folders = getFoldersWithFiles(selectedFiles, resolvedRoot);
+  const existing = [...folders].filter((folder) =>
+    existsSync(path.join(folder === '.' ? resolvedRoot : path.join(resolvedRoot, folder), CODEMAP_FILE)),
+  ).length;
+
+  console.log(`Plan for ${resolvedRoot} — nothing written.`);
+  console.log(`  ${selectedFiles.length} file(s) selected across ${folders.size} director(ies)`);
+  console.log(`  ${folders.size - existing} codemap.md to create, ${existing} already present and left alone`);
+  console.log(`  ${folders.size} writer dispatch(es), one per directory, plus .slim/${STATE_FILE} and a section in AGENTS.md`);
+  console.log('Run `init` with the same --include/--exclude to do it.');
+  return 0;
 }
 
 export function cmdInit({ root, include = [], exclude = [], exception = [] }) {
@@ -782,7 +828,7 @@ export function cmdChanges({ root }) {
   // visible once the child's codemap.md has been rewritten — which this script
   // never reads, so the dependency is not computable from hashes. So the
   // ancestor chain is reported as ONE re-aggregation dispatch, deepest first,
-  // instead of a fixer per level: editing src/a/b/c.ts used to spawn four.
+  // instead of a writer per level: editing src/a/b/c.ts used to spawn four.
   const changedDirs = new Set(
     [...added, ...removed, ...modified].map(parentDir),
   );
@@ -796,7 +842,7 @@ export function cmdChanges({ root }) {
 
   const sortedChanged = [...changedDirs].sort();
   console.log(
-    `\n${sortedChanged.length} directories with changed files (one fixer each):`,
+    `\n${sortedChanged.length} directories with changed files (one writer each):`,
   );
   for (const dir of sortedChanged) {
     console.log(`  ${dir}/`);
@@ -813,20 +859,22 @@ export function cmdChanges({ root }) {
   return 0;
 }
 
-// The per-directory file list a codemap fixer is briefed with. Without it the
+// The per-directory file list a codemap writer is briefed with. Without it the
 // orchestrator had to invent the list, and a map that names files nobody opened
 // is the failure this whole tool exists to prevent.
 //
 // Output grammar, one line each: a line starting with '# ' is a comment or a
 // directory header; every other line is a repo-relative path.
 //
+// Every line that is not a header is a repo-relative path belonging to the
+// nearest header above it. A header with no paths under it is a directory that
+// contributes no files of its own and only aggregates its children's maps.
+//
 // A path containing a newline, or beginning with '# ', would break that grammar
 // and hand the orchestrator two paths that do not exist. Such a path is named on
 // stderr and withheld from stdout rather than corrupting the listing: a codemap
-// fixer briefed with a phantom path reads a file that is not there and describes
-// it anyway. belonging to the
-// nearest header above it. A header with no paths under it is a directory that
-// contributes no files of its own and only aggregates its children's maps.
+// writer briefed with a phantom path reads a file that is not there and
+// describes it anyway.
 export function cmdFiles({ root }) {
   const resolvedRoot = path.resolve(root);
   const state = loadState(resolvedRoot);
@@ -845,15 +893,25 @@ export function cmdFiles({ root }) {
 
   // A path holding a newline, or opening with the header marker, cannot be
   // written into a line-per-path listing without splitting into paths that do
-  // not exist. Named on stderr and withheld from stdout: a fixer briefed with a
+  // not exist. Named on stderr and withheld from stdout: a writer briefed with a
   // phantom path opens nothing and describes it anyway.
-  const unlistable = allSelected.filter((f) => f.includes('\n') || f.startsWith('# '));
-  const selectedFiles = allSelected.filter((f) => !unlistable.includes(f));
+  // Tested against the RELATIVE path, which is what gets printed. Filtering the
+  // absolute path meant nothing ever started with "# " and a repo-root file
+  // called `# header.md` was emitted as a bare header line, silently moving
+  // every file after it into a directory that does not exist.
+  const unlistableSet = new Set(
+    allSelected.filter((f) => {
+      const rel = toRelPath(resolvedRoot, f);
+      return rel.includes('\n') || rel.startsWith('# ');
+    }),
+  );
+  const unlistable = [...unlistableSet];
+  const selectedFiles = allSelected.filter((f) => !unlistableSet.has(f));
   if (unlistable.length) {
     console.warn(
       `Warning: ${unlistable.length} path(s) cannot appear in this listing because ` +
         'they contain a newline or begin with "# ". They are excluded from stdout ' +
-        'and must be handed to a fixer by hand: ' +
+        'and must be handed to a writer by hand: ' +
         unlistable.map((f) => JSON.stringify(f)).join(', '),
     );
   }
@@ -905,6 +963,7 @@ export function cmdUpdate({ root }) {
   );
 
   const provenance = runProvenance(resolvedRoot);
+  migrateLegacyState(resolvedRoot);
   const { state: nextState, folders } = buildState(
     resolvedRoot,
     includePatterns,
@@ -918,17 +977,19 @@ export function cmdUpdate({ root }) {
 
   const counts = ownFileCounts(resolvedRoot, selectedFiles, folders);
   let restamped = 0;
+  let created = 0;
   let refused = 0;
   for (const folder of folders) {
     const folderPath =
       folder === '.' ? resolvedRoot : path.join(resolvedRoot, folder);
-    const ok = refreshCodemap(
+    const outcome = refreshCodemap(
       folderPath,
       folderLabel(resolvedRoot, folder),
       provenance,
       counts.get(folder) ?? 0,
     );
-    if (ok) restamped += 1;
+    if (outcome === 'restamped') restamped += 1;
+    else if (outcome === 'created') created += 1;
     else refused += 1;
   }
 
@@ -936,7 +997,8 @@ export function cmdUpdate({ root }) {
     `Updated ${STATE_DIR}/${STATE_FILE} with ${selectedFiles.length} files`,
   );
   console.log(
-    `Re-stamped ${restamped} codemap.md headers (${refused} refused) with ${provenance.commit} (${provenance.date})`,
+    `Re-stamped ${restamped} codemap.md headers, created ${created} for directories added since init ` +
+      `(${refused} refused), with ${provenance.commit} (${provenance.date})`,
   );
   reportUnreadable(nextState.file_hashes);
   return 0;
@@ -990,7 +1052,7 @@ function assessCodemap(mapPath, ownChanges, stateCommit) {
       detail: 'no provenance header — predates it, or was edited out; unverifiable',
     };
   }
-  if (text.includes(UNWRITTEN_MARKER)) {
+  if (isUnwritten(text)) {
     return {
       fresh: false,
       status: 'UNWRITTEN',
@@ -1100,7 +1162,7 @@ export function cmdStale({ root }) {
     `\n${stale.length} of ${rows.length} maps cannot be trusted: ${stale.map((row) => row.folder).join(' ')}`,
   );
   console.log(
-    'For each: regenerate it (changes -> fixers -> update), or ignore the map and read the code.',
+    'For each: regenerate it (changes -> writers -> update), or ignore the map and read the code.',
   );
   return 1;
 }
@@ -1139,11 +1201,12 @@ export function main(argv = process.argv.slice(2)) {
 
     if (!command || !options.root) {
       console.error(
-        'Usage: codemap.mjs <init|changes|files|stale|update> --root /path [--include glob] [--exclude glob] [--exception path]',
+        'Usage: codemap.mjs <plan|init|changes|files|stale|update> --root /path [--include glob] [--exclude glob] [--exception path]',
       );
       return 1;
     }
 
+    if (command === 'plan') return cmdPlan(options);
     if (command === 'init') return cmdInit(options);
     if (command === 'changes') return cmdChanges(options);
     if (command === 'files') return cmdFiles(options);

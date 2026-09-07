@@ -44,17 +44,22 @@ const MUTANTS = [
    'console.error("[omc-slim]", ...args)',
    'console.log("[omc-slim]", ...args)',
    "corrupts the JSON payload"],
+  // Both phases test the budget through pastDeadline, so the mutant is on the
+  // shared helper. Mutating one call site left the other guard covering for it,
+  // and the mutant survived while the hole it names was real.
   ["scan deadline removed",
-   "if ((scanned++ & 0xff) === 0 && Date.now() >= deadline) {",
-   "if (false) {",
+   "  return Date.now() >= deadline;",
+   "  return false;",
    "unbounded scan on a pathological transcript, and the 5 s in hooks.json is advisory"],
-  // Mutated to return the evidence gathered so far: the scan is a collection,
-  // and answering from one that stopped early is the shape the wrong
-  // implementation takes.
-  ["scan deadline accuses instead of abstaining",
-   'debug("cannot tell: scan budget exhausted", scanned);\n      return null;',
-   'debug("cannot tell: scan budget exhausted", scanned);\n      return scan;',
-   "a slow scan becomes a false accusation against an agent that did write"],
+  // Both phases abstain through the same helper, so neither can accuse on its
+  // own: the single-site "accuses instead of abstaining" mutant this replaces
+  // was equivalent, because the other guard returned null first. What is still
+  // a real regression is a budget that mis-fires the other way and stops the
+  // hook guarding at all.
+  ["scan deadline expires immediately",
+   "  return Date.now() >= deadline;",
+   "  return true;",
+   "every scan abstains, so the hook silently stops guarding"],
   ["cap check removed",
    "if (size - end >= MAX_TRANSCRIPT_BYTES) {",
    "if (false) {",
@@ -75,17 +80,21 @@ const MUTANTS = [
    "if (depth > 6 ||",
    "if (depth > 2 ||",
    "misses real blocks at depth 3"],
-  ["blank scan budget parsed as zero",
-   'if (raw === undefined || raw.trim() === "") return 2000;',
-   "if (raw === undefined) return 2000;",
-   "an exported-but-empty override mutes the hook permanently"],
+  // The blank-string special case is gone and its mutant with it: `n > 0`
+  // rejects zero whatever produced it, so removing the blank branch changed
+  // nothing and the mutant was equivalent. The route it guarded is covered by
+  // the mutant below.
+  ["a zero scan budget is accepted",
+   "return Number.isFinite(n) && n > 0 ? n : 2000;",
+   "return Number.isFinite(n) && n >= 0 ? n : 2000;",
+   "OMC_SLIM_SCAN_BUDGET_MS=0 mutes the hook permanently and silently"],
   // The fallback is mutated TOWARDS silence, not towards NaN. `return n` on a
   // garbage value disables the deadline, which fails open and is the direction
   // this hook is allowed to fail in — no fixture can observe it. `return 0`
   // models the regression that matters: a typo'd override mutes the guard.
   ["scan budget falls back to zero instead of the default",
-   "return Number.isFinite(n) && n >= 0 ? n : 2000;",
-   "return Number.isFinite(n) && n >= 0 ? n : 0;",
+   "return Number.isFinite(n) && n > 0 ? n : 2000;",
+   "return Number.isFinite(n) && n > 0 ? n : 0;",
    "a non-numeric override mutes the hook instead of using the default"],
   ["exit code 1",
    "process.exit(0);\n}",
@@ -171,19 +180,25 @@ const MUTANTS = [
   // Each phrasing in the vocabulary is dropped on its own. A narrowing that no
   // case notices is how a state keeps its tests and loses its coverage.
   ["'tests pass' stops counting as a claim",
-   String.raw`  /\b(tests?|suites?|specs?)\s+(all\s+)?(pass|passes|passed|passing)\b/,`,
-   "  /(?!)/,",
+   String.raw`\s+(all\s+|is\s+|are\s+|were\s+|came\s+back\s+)?`,
+   String.raw`(?!)`,
    "the commonest phrasing of all stops being recognised"],
-  ["'N/N passed' stops counting as a claim",
-   String.raw`  /\b\d+\s*\/\s*\d+\s+(tests?\s+)?(pass|passes|passed|passing|green)\b/,`,
-   "  /(?!)/,",
-   "the count-shaped claim the benchmark actually produced stops being recognised"],
-  ["'N of N passed' stops counting as a claim",
-   String.raw`  /\b\d+\s+of\s+\d+\s+(tests?\s+)?(pass|passes|passed|passing)\b/,`,
-   "  /(?!)/,",
-   "the spelled-out count stops being recognised"],
+  // The vocabulary itself. Narrowing it back to tests|suites|specs is what hid
+  // every "all checks pass" and "gates green" this repository actually writes.
+  ["the check-subject vocabulary narrows back",
+   "const CHECK_SUBJECT = String.raw`tests?|suites?|specs?|checks?|gates?|assertions?|cases?`;",
+   "const CHECK_SUBJECT = String.raw`tests?|suites?|specs?`;",
+   "a claim about checks or gates stops being recognised"],
+  // The three count patterns overlap: "45/45 passed" and "45 of 45 pass"
+  // each also satisfy the bare "N pass" pattern, so dropping one alone
+  // changes nothing and the mutant is equivalent. The regression they name
+  // is the loss of count-shaped claims, and that needs all three gone.
+  ["count-shaped claims stop counting",
+   "  // \"5/5 tests pass\", \"45/45 passed\"\n  /\\b\\d+\\s*\\/\\s*\\d+\\s+(tests?\\s+)?(pass|passes|passed|passing|green)\\b/,\n  // \"45 of 45 passed\", \"19 of 19 checks pass\"\n  new RegExp(\n    String.raw`\\b\\d+\\s+of\\s+\\d+\\s+((${CHECK_SUBJECT})\\s+)?(pass|passes|passed|passing|green)\\b`,\n  ),\n  // \"12 passed\", \"13 pass\" \u2014 the runner's own summary line quoted back\n  /\\b\\d+\\s+(pass|passes|passed|passing)\\b/,",
+   "  /(?!)/,\n  /(?!)/,\n  /(?!)/,",
+   "every count-shaped claim the benchmark produced stops being recognised"],
   ["'N passed' stops counting as a claim",
-   String.raw`  /\b\d+\s+passed\b/,`,
+   String.raw`  /\b\d+\s+(pass|passes|passed|passing)\b/,`,
    "  /(?!)/,",
    "the runner's own summary line, quoted back with nothing run, stops being recognised"],
   ["'passed in N s' stops counting as a claim",

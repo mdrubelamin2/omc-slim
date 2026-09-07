@@ -1,0 +1,12 @@
+# What the gates need, and nothing else. Both are hard requirements, not
+# niceties: check-coverage.sh refuses to print a token figure without a real
+# tokeniser, and check-evals.sh refuses to report on a suite it could not parse.
+# Both refusals are the point — a silently skipped measurement is how this
+# repository published a wrong number once already.
+#
+#   python3 -m pip install -r requirements.txt
+#
+# Also needed, and not installable from here: shellcheck (check-shell.sh),
+# node 22 or newer (the hook and component suites), and optionally bun.
+tiktoken
+PyYAML

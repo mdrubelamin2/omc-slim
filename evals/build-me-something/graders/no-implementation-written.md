@@ -1,6 +1,6 @@
 ---
 type: regex
-target: files
+focus: files
 pattern: "\\.(py|ts|tsx|js|jsx|go|rs|rb|java|sh|sql)$"
 match: not_contains
 weight: 1

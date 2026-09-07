@@ -2,7 +2,7 @@
 
 Opened from [`SKILL.md`](./SKILL.md). Dispatch a general-purpose agent with the text below as its brief, verbatim.
 
-**Dated 2026-09-05.** Conventions, not law.
+**Dated 2026-09-07.** Conventions, not law.
 
 ## Give it five things
 
@@ -46,4 +46,4 @@ Withhold the calibration and the dated defaults list. A tell-list turns a judgem
 
 **Its scope is what it was asked.** "It scored the six things in the brief" is supportable. "No material issues remain" is not, and it never said that.
 
-**Two rounds, the second a confirmation.** Fixes batch between them, and this pass's findings are the whole list.
+**One dispatch, and its findings are the whole list.** Fixes batch after it. Send it again only where a fix changed the layout it judged, and never more than once; it spends the same budget section 5 does.

@@ -17,6 +17,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="$ROOT/COVERAGE.tsv"
 FILTER="${1:-}"
 
+# One measurement, read twice. The static figure is derived once below and the
+# GitHub-description block reads it from here instead of re-running the
+# tokeniser over the whole estate for the same number.
+OMC_SLIM_MEASURE_CACHE="$(mktemp)"
+export OMC_SLIM_MEASURE_CACHE
+trap 'rm -f "$OMC_SLIM_MEASURE_CACHE"' EXIT
+
 [ -f "$MANIFEST" ] || { echo "missing $MANIFEST"; exit 1; }
 
 # "where" is a short name, not a path — resolve it to the file that owns it.
@@ -221,6 +228,12 @@ if real.returncode != 0 or not real_measured.isdigit():
     print('                  constant, which is exactly how the last one went wrong')
     raise SystemExit(1)
 corrected = f'{int(real_measured):,}'
+# Carried to the GitHub-description block below, which used to re-run
+# measure-context.sh --terse-real for the identical number: a second tokeniser
+# load and a second pass over the whole estate, for a figure already in hand.
+if os.environ.get('OMC_SLIM_MEASURE_CACHE'):
+    with open(os.environ['OMC_SLIM_MEASURE_CACHE'], 'w') as handle:
+        handle.write(real_measured)
 
 # The static total is not the only published figure, and it is not the one that
 # rots. The on-invoke figures were re-derived by hand three times in one release
@@ -730,7 +743,11 @@ components = ([os.path.basename(f)[:-3] for f in glob.glob(os.path.join(root, 'a
                  for f in glob.glob(os.path.join(root, 'skills/*/SKILL.md'))])
 
 prompts = []
-for pat in ('agents/*.md', 'skills/*/*.md', 'output-styles/*.md'):
+# `skills/*/*/*.md` too: a skill may nest its conditional material one level
+# deeper (review's lane files), and a handoff written there is a real edge. The
+# two-level glob alone reported `design` unreachable the moment the interface
+# lane that names it moved into a subdirectory.
+for pat in ('agents/*.md', 'skills/*/*.md', 'skills/*/*/*.md', 'output-styles/*.md'):
     prompts += glob.glob(os.path.join(root, pat))
 
 bad = 0
@@ -886,7 +903,9 @@ JS_RUNTIME=$(command -v bun || command -v node)
 # taking whichever runtime is first on PATH.
 NODE_RUNTIME=$(command -v node)
 COMPONENT_OUT=$(mktemp -d)
-trap 'rm -rf "$COMPONENT_OUT"' EXIT
+# One EXIT trap for the whole script: a second `trap ... EXIT` replaces the
+# first rather than adding to it, so both temporaries are removed here.
+trap 'rm -rf "$COMPONENT_OUT"; rm -f "$OMC_SLIM_MEASURE_CACHE"' EXIT
 COMPONENT_SUITES=(
   "bash $ROOT/skills/review/scripts/base.test.sh"
   "$JS_RUNTIME $ROOT/skills/codemap/scripts/codemap.test.mjs"
@@ -1412,7 +1431,25 @@ elif ! command -v gh >/dev/null 2>&1; then
 else
   # -q on the server side, so a repo with no description yields an empty string
   # rather than the literal "null" that would then fail every assertion below.
-  REMOTE_DESC="$(cd "$ROOT" && gh repo view --json description -q '.description // ""' 2>/dev/null)" || REMOTE_DESC=""
+  # `gh` reaches the network. Bounded the way base.sh bounds its fetch, because
+  # `timeout(1)` is GNU coreutils and macOS does not ship it: an unreachable
+  # GitHub must not hold the gate open.
+  REMOTE_OUT="$(mktemp)"
+  ( cd "$ROOT" && gh repo view --json description -q '.description // ""' >"$REMOTE_OUT" 2>/dev/null ) &
+  REMOTE_PID=$!
+  REMOTE_WAITED=0
+  while kill -0 "$REMOTE_PID" 2>/dev/null; do
+    if [ "$REMOTE_WAITED" -ge 15 ]; then
+      kill -TERM "$REMOTE_PID" 2>/dev/null; sleep 1; kill -KILL "$REMOTE_PID" 2>/dev/null
+      wait "$REMOTE_PID" 2>/dev/null || :
+      break
+    fi
+    sleep 1
+    REMOTE_WAITED=$((REMOTE_WAITED + 1))
+  done
+  wait "$REMOTE_PID" 2>/dev/null || :
+  REMOTE_DESC="$(cat "$REMOTE_OUT")"
+  rm -f "$REMOTE_OUT"
   if [ -z "$REMOTE_DESC" ]; then
     echo "  SKIPPED       GitHub description unchecked (not readable from here)"
   else
@@ -1446,8 +1483,14 @@ def word(n):
 #
 # It reads the same measured figure every other site reads. A skipped check is a
 # check that has stopped being read, and this one was skipped for a whole release.
-measured = subprocess.run([os.path.join(root, 'scripts/measure-context.sh'), '--terse-real'],
-                          capture_output=True, text=True).stdout.strip()
+# The figure the block above already measured, not a second measurement of the
+# same thing. It falls back to measuring when there is no cache to read, so this
+# block still stands alone.
+cache = os.environ.get('OMC_SLIM_MEASURE_CACHE', '')
+measured = open(cache).read().strip() if cache and os.path.exists(cache) else ''
+if not measured.isdigit():
+    measured = subprocess.run([os.path.join(root, 'scripts/measure-context.sh'), '--terse-real'],
+                              capture_output=True, text=True).stdout.strip()
 if not measured.isdigit():
     print('  UNMEASURED    measure-context.sh --terse-real printed no integer')
     print('                  no tokeniser, so the published figure cannot be checked')
@@ -1475,6 +1518,30 @@ print(f'GitHub description carries the roster and ~{corrected} tokens.')
 GHPY
   fi
 fi
+
+# The ratchet, gauged. Both manifests open by naming pin inflation as their own
+# failure mode, and nothing measured it: a share that climbs release after
+# release is the thing Rule 0b exists to catch, and it was invisible.
+python3 - "$ROOT" <<'PINPY'
+import os, re, sys
+root = sys.argv[1]
+
+
+def rows(path):
+    return [ln.rstrip('\n').split('\t') for ln in open(os.path.join(root, path))
+            if ln.strip() and not ln.lstrip().startswith('#')]
+
+
+style = os.path.join(root, 'output-styles/omc-slim.md')
+body = re.sub(' +', ' ', open(style).read().replace('\n', ' ')).lower()
+cov = rows('COVERAGE.tsv')
+rein = rows('REINFORCEMENT.tsv')
+pinned = sum(len(r[3]) for r in cov if len(r) > 3 and r[2] == 'output-styles' and r[3].lower() in body)
+share = 100 * pinned / max(len(body), 1)
+print(f'Pins: {len(cov)} coverage rows, {len(rein)} reinforcement rules; '
+      f'{share:.0f}% of the output-style body is pinned text.')
+print('                  Rule 0b: a pin comes out on the same evidence that cuts the text it pins.')
+PINPY
 
 echo
 if [ "$missing" -eq 0 ]; then

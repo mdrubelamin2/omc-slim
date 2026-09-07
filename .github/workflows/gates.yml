@@ -34,11 +34,9 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     # A hung node process inherits GitHub's 6-hour job default, and the mutant
-    # runners spawn one process per mutant. A job is about a quarter of an hour:
-    # the hook suites and their mutants run once in their own step and again
-    # inside check-coverage.sh. Anything past this is a hang, and a hang that
-    # reports as a hang beats one that burns the runner pool until someone
-    # notices.
+    # runners spawn one process per mutant. Anything past this is a hang, and a
+    # hang that reports as a hang beats one that burns the runner pool until
+    # someone notices.
     timeout-minutes: 30
     env:
       OMC_SLIM_SKIP_REMOTE: "1"
@@ -69,17 +67,19 @@ jobs:
           python3 -m pip install --quiet tiktoken PyYAML
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
 
-      - name: Hook suites and their mutants
+      # Bun only. check-coverage.sh below runs the same suites under node and
+      # reads their totals against the README, so running node here too meant
+      # the same 80 mutants three times per commit — the duplication that
+      # forced this job's ceiling up in the first place.
+      - name: Hook suites and their mutants, under bun
         run: |
-          failed=0
-          for runtime in node bun; do
-            pids=()
-            for suite in verify-deliverables; do
-              $runtime "hooks/$suite.test.mjs" & pids+=($!)
-              $runtime "hooks/$suite.mutate.mjs" & pids+=($!)
-            done
-            for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+          pids=()
+          for suite in verify-deliverables; do
+            bun "hooks/$suite.test.mjs" & pids+=($!)
+            bun "hooks/$suite.mutate.mjs" & pids+=($!)
           done
+          failed=0
+          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
           exit $failed
 
       - name: Component suites
@@ -101,6 +101,13 @@ jobs:
           ./scripts/check-evals.sh
           ./scripts/check-prose.sh
           ./scripts/check-dated.sh
+
+      # The behavioural instrument, exercised at zero cost. `--execute` spends
+      # real money and stays a release step, but its self-test proves every
+      # behavioural checker can still fail and every fixture still builds — and
+      # nothing ran even that on a commit before now.
+      - name: Behavioural instrument self-test
+        run: ./scripts/bench/smoke-contracts.sh --self-test
 
       - name: Upstream pin drift
         # Reports, never fails: a moved upstream is a decision to make, not a

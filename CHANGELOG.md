@@ -69,7 +69,341 @@ to a real page, a driver the project installs, then the bundled script. It reads
 what each offers instead of assuming a shape, uses that tool's own audits where
 they beat the probe, and names in the report any check it made beyond the
 bundled set. The render is captured at every swept viewport, in dark mode where
-the project has one, and in the states a static capture misses.
+the project has one, and in the states a static capture misses, once each on
+what the run changed.
+
+Verification terminates on a budget rather than on a judgement call. Sections 5
+and 6 shared no counter. Section 5 allowed a third round "while something
+critical is open" and never defined critical; `critic.md` separately allowed two
+rounds of its own; an error re-run reset neither. Every one of those paths fed
+fixes back into the audit, so a run could inspect, judge, fix and re-inspect with
+no terminating condition. The budget is now two rounds across both sections, and
+the verdict pass, an error re-run and any added check all spend from it. A third
+round needs an open failure, which is the audit's exit 1 or a thrown page, and it
+is the last. An advisory, a critic finding and a doubt of the author's own are
+not failures. The critic is dispatched once, after the audit is clean. Network
+and performance views are taken only where the brief asks for speed. That is
++759 characters of skill body, paid once per invocation, against rounds of
+browser captures and a second dispatched agent, paid whenever the loop ran.
+
+Then the audit went to the code, and the audit was the point. Every gate in
+this repository is structural, and `RELEASE-READINESS.md` already records that
+the one behavioural instrument has never been executed because it spends money.
+So a reading pass went over all 186KB of prompt surface and every shipped
+script. What it found in the design audit is the shape of the whole problem: the
+component whose entire claim is "reports what a script measured" was not
+measuring the page.
+
+`audit.mjs` waited a fixed 1.2 seconds after `Page.navigate`, behind a variable
+named `loaded` that was a bare 15-second timer raced against a 600ms one. The
+load event was available — `Page.enable` was already sent — and unused. Proved
+with two fixtures carrying identical markup: text present at parse time scored
+two failures, the same text injected at 3s scored **"31 of 31 checks passed"**.
+The skill's own gate for this, "a page still hiding most of its text after load",
+could not fire, because `contentHiddenAtRest` needs text in the DOM to find
+hidden and an unrendered app has none. It now waits for the page's own load
+event, reports when that event never came, and a new `documentNotRendered` error
+gates a scripted document holding under 200 characters of text. A script's
+source no longer counts as page text, which is what made an empty app look like
+a page whose copy was merely hidden.
+
+Three more measurements were wrong rather than merely missing.
+`ran.push('scaleZeroEntry')` appeared twice, so the denominator in every "N of M
+checks" this skill has ever printed was inflated by one, and the test that
+guards the check list filtered the duplicate out before comparing. `--width abc`
+reached Chrome as `--window-size=NaN,800`, which Chrome ignores: the run measured
+the default viewport and never said so, while the probe was returning the real
+viewport and the report was dropping it. And a `file://` URL passed to the CLI
+was re-resolved as a relative path, so the audit measured `about:blank` while
+naming the target the caller asked for. All three now have cases.
+
+Two thresholds disagreed with the prose that governs them. `probe.js` failed
+non-interactive text under 12px; `floor.md` puts functional text at 11 and
+smallprint at 10, and the number 12 appears in no prompt file. And `noRealImages`
+advised, while `defaults.md` opens its durable list with "these fail a build" —
+a rule pinned in `COVERAGE.tsv` and contradicted by the only implementation of
+it. The gate now fails, and it counts an `svg`, a `canvas` and a CSS-painted
+background as imagery, which the old `img, picture, video` selector did not. Two
+`.slice()` truncations that silently bounded coverage now report what they
+dropped, which is the rule this skill states and did not keep.
+
+The Stop hook could not see the phrasing this plugin teaches. Its subject
+vocabulary was `tests|suites|specs`, so "all checks pass", "gates green" and
+"the suite is green" were invisible, and "13 pass, 0 fail" muted itself on the
+word "fail". The output style's own closing example was a bare "19 of 19", which
+names no subject and which the hook was right to abstain on — so both sides
+moved: the style now writes "19 of 19 tests pass" and the detector reads
+`checks`, `gates`, `assertions` and `cases` alongside tests. Seven cases were
+added, because the 163 that existed were written against the regexes rather than
+against the contract they enforce. The in-process scan deadline covered the
+forward pass only, leaving the backward search — a `JSON.parse` of every line
+across up to the byte cap — outside the bound the header advertises; both phases
+now share one `pastDeadline`, and the mutation suite grew a case for it.
+
+Two mutants turned out to be equivalent, and are recorded as such rather than
+quietly dropped: with one deadline shared by two phases, deleting either guard
+alone leaves the hook abstaining anyway, and the three count-shaped claim
+patterns overlap so precisely that removing one changes nothing. The runner now
+also refuses an anchor that matches more than one site, because `String.replace`
+patches the first occurrence and a mutant that patched one of two sites was
+weaker than its label claimed. 80 of 80 killed.
+
+`fixer` was retired three releases ago and `codemap.mjs` still shipped it,
+thirteen times, two of them user-visible: a line on stdout, and a marker written
+into every generated `codemap.md` in the user's repository. The marker is now
+`<!-- codemap:` and `stale` reads both, because a map already on disk carries the
+old one and failing to recognise it would report an unwritten map as fresh. The
+skill briefs "a general-purpose writer" and the script now says the same word.
+
+Codemap's consent gate had no number either. The skill must state the cost and
+get a yes; the count only existed after `init` had written into every directory.
+`plan` prices the run first — files, directories, writer dispatches — and writes
+nothing.
+
+Four network calls were unbounded beside one that was carefully bounded.
+`base.sh` spends forty lines of comment and a TERM-then-KILL polling loop on
+`git fetch`, then calls `gh pr view` twenty-two lines later with no bound at all;
+`check-coverage.sh` and `check-upstream.sh` do the same with `gh repo view` and
+`git ls-remote`. All three now use the same mechanism, for the reason `base.sh`
+already wrote down. Its changed-line count also stopped charging binary files
+zero lines, which pushed diffs towards the cheaper self-run path.
+
+The gates were doing the same work several times. `check-coverage.sh` ran
+`measure-context.sh --terse-real` twice with identical arguments, loading the
+tokeniser and re-walking the estate for a figure it already held; the second read
+comes from the first now. CI ran both hook suites and their 80 mutants under node
+*and* bun, and then again inside `check-coverage.sh` — three times per commit,
+which is what the workflow's own comment blamed for its 30-minute ceiling. The
+node arm is gone from that step; `check-coverage.sh` is the node run, and it is
+the one that reads the totals back against the README.
+
+Two silences became statements. `check-prose.sh` skipped any file under 200
+words without saying so and printed the measured count as though it were the
+population; both are now reported. And the pin ratchet, which both manifests
+open by naming as their own failure mode, is now gauged on every run: row counts
+and the share of the output-style body that is pinned text.
+
+The prompt-level findings from the same pass follow. `deepwork` held a re-review
+budget *per gate* and nothing held a total, so four phases permitted twelve
+review invocations; there is now a run-level ceiling of six gate openings, with
+the reason stated. Its progress file was unconditional in one sentence and
+multi-session in the next, so a single-session run paid four structured writes
+nobody would read. `simplify` was the only write-capable skill with no size
+ladder. `explorer`'s 150-line cap bounds what it returns and nothing bounded what
+it spends. `review` loaded 17KB of lane checklists for a one-line diff on the
+instruction to "skim past the lanes out of scope", which saves attention and not
+context: the six conditional lanes now live in `lanes.md` and open on trigger,
+and eight pins moved with them. `MAINTAINERS.md` and `REINFORCEMENT.tsv` stated
+opposite principles about rationale in prompt bodies and neither named the
+precedence, which is why prompt bodies grow back after every compression pass;
+the precedence is now written down. `codemap/SKILL.md` was the one component
+whose register the prose gate cannot see, and it read like a different pack.
+`procedure.md` step 5 taught by vocabulary — seven abstract nouns in one clause —
+and now teaches by a worked case.
+
+A dependency manifest, finally. `check-coverage.sh` and `check-evals.sh` both
+refuse without `tiktoken` and `PyYAML`, deliberately, and the install line lived
+only in the CI workflow while the README told contributors to run the gates.
+`requirements.txt` is that line, and the README points at it.
+
+The behavioural instrument now runs on every commit, at zero cost.
+`smoke-contracts.sh --execute` still spends money and stays a release step, but
+its `--self-test` proves every behavioural checker can still fail and every
+fixture still builds, and nothing ran even that on a commit before now. 36 of 36.
+
+Then a user reported the thing none of the above would have caught: `deepwork`
+and `design` runs that go for eight to sixteen hours and never end. Two layers
+of this plugin, between them, described a machine with no exit.
+
+The always-on layer removed the ceiling. Rule 3 read "the user's demand is the
+budget: run at full depth, at any size", which is right about depth and silent
+about duration, and nothing anywhere in the output style said a run has to stop.
+`deepwork` removed the pause: "a running plan does not wait on a human", four
+blocking conditions and no others, plus an anecdote about a run parked for nine
+hours that argued hard in one direction. And `deepwork` was the only skill in
+the plugin with no `## Output` section and no definition of finished — `design`
+states its rounds, `review` says "Then stop", `deep-interview` hard-stops for
+approval, `codemap` ends at `update`. The one component built for long runs was
+the one with no terminating condition. No ceiling, no pause, no definition of
+done: that is not a bug in a rule, it is the absence of one.
+
+Four re-entry paths inside `deepwork` had no counter either. A fix that
+invalidated an earlier stage re-ran that stage's check, with no cascade depth. A
+living map could grow without limit past the map the user approved. Set-shaped
+work re-diffed its enumeration. And every stage could open a new research
+question. Each is defensible alone; together they are a cycle. Lanes were the
+one component in a run with no ceiling of any kind, because a lane sees only its
+brief and the brief carried no bound.
+
+`design` had two of its own, both outside the verify phase the earlier fix
+bounded. The plan self-diff said "where they match, revise" with no cap, so the
+model could revise until its plan stopped resembling its median — a loop before
+any code exists. And the build phase had no edge at all: whole surfaces, every
+state mandatory by the floor, nothing saying when building is done.
+
+So: the output style now says every run ends and names what ended it, and that
+depth is not duration. `deepwork` has a `## Done` section with an output
+contract, a one-level cascade limit, a map ceiling of half the approved stage
+count, a set diffed once, and a bound in every lane brief. `design` diffs its
+plan once, closes its build on the plan rather than on taste, and stops.
+`simplify` — the other skill with no completion criterion and an explicit
+licence to follow a problem across every file — closes on its checklist. Eleven
+new rows across both manifests pin all of it, because a rule that makes a run
+terminate is exactly the kind a later compression pass deletes.
+
+Making room for it moved the handover procedure into `depth.md`, where it is
+opened only by work that outlives the session, and cut the nine-hour anecdote —
+the one line in the file that pushed towards the behaviour the `Done` section
+exists to end. `check-coverage.sh` caught the overrun before it shipped: the
+first draft pushed a pinned rule to token 5,243, past the 5,000 that survive a
+compaction.
+
+Not fixed, and stated rather than absorbed: none of this is verified against a
+run. The defect is structural and the argument is on the page, but the
+instrument that would prove the behaviour changed still spends money and still
+has not been run.
+
+Eight isolated agents then audited the whole surface from eight angles —
+principal engineer, systems, senior web, senior programmer, tech lead, AI/ML,
+prompt, context — none of them shown the findings above, because handing a judge
+the answer turns a judgement into a re-run of a check that already ran. They cost
+about a million tokens and they were worth it: every one of the fixes recorded
+above had a defect in it, and four of the eight found something three earlier
+passes had missed.
+
+The root cause of the reported over-verification was in this repository's own
+research file the whole time. `docs/RESEARCH-2026-08-26.md:90` quotes Anthropic's
+Opus 5 guidance verbatim — "If your prompt contains explicit verification
+instructions ('use a subagent to verify'), **remove them**: instructions like
+these cause over-verification on Claude Opus 5, and removing them reduces wasted
+tokens with no loss in quality" — and line 99 states, in this project's own
+words, that the quote describes the output style and `verification-planning`.
+`review` mandated a fresh-context subagent pass at any size anyway. It now scales
+to the content list and the dispatch threshold, the pin that required it is
+retired under Rule 0b(b), and a skipped pass is reported with its reason so a
+skip and a silent omission stop looking alike.
+
+The design audit was substantially wrong and the agents proved it by running it.
+Contrast fabricated 1.00:1 white-on-white for any text over a hero image, because
+`compositedBackground` walked ancestors for `background-image` and never asked
+what was actually painted underneath; it now hit-tests overlapping media and
+reports indeterminate, which is what `floor.md` promised all along. Foreground
+alpha was parsed and dropped, so `rgba(0,0,0,0.45)` scored 21:1 instead of about
+4.0:1 — a false negative on the only gating accessibility number, over the exact
+translucent ink most design tokens ship. `readStyleRules` never descended into
+`@media`, `@layer` or `@supports`, so every Tailwind v4 page and any design
+system that hides hover behind `@media (hover: hover)` — which this skill's own
+floor tells you to do — was reported as having no hover or focus styles at all.
+`targetSize` implemented none of SC 2.5.8's exceptions and failed every inline
+link. `nonSemanticInteractive` required an `onclick` attribute, so it was inert on
+every framework page while counting as a check that passed. `fixedWidthTextContainer`
+read the inline style attribute only and was dead code. `clippedText` failed
+`line-clamp` and `text-overflow: ellipsis`. `inputFontSize` fired on checkboxes.
+`visible()` ignored ancestor opacity, so a scroll-reveal section was measured for
+contrast while invisible. The harness never emulated touch, so the 44px floor
+could not run at any viewport in the documented sweep, and never awaited
+`document.fonts.ready`, so every type measurement raced a swap. The error trap
+omitted the capture phase, so a 404'd stylesheet — the state that makes every
+later number meaningless — was invisible to it.
+
+Three of this release's own fixes were defective and are reverted or rebuilt. The
+`documentNotRendered` gate errored on an ordinary sign-in page (57 characters, one
+script tag, every check skipped) and now gates on painted boxes rather than
+character count. `noRealImages` was promoted to a gate in the same edit that added
+`svg` to its selector, so one 16px icon satisfied the rule whose own definition is
+"every section an icon in a tile"; it now measures rendered area. The interactive
+cap capped nothing — the value was used only for `.length` and `[0]` — while
+printing a skip that had not happened. The map ceiling was measured against a
+count its own escape hatch replaced, so four stages permitted six, then nine, then
+fourteen; it is measured against the first approved map now. And the eval written
+to score the adversarial pass granted no `Task` tool, which made a fabricated
+`Adversarial:` line the only passing answer, in a plugin whose always-on rule is
+never to claim a check you did not run.
+
+Five reproduced code defects, each with the input that broke it.
+`OMC_SLIM_SCAN_BUDGET_MS=0` muted the Stop hook permanently and silently, a state
+the mutation suite kills as a regression while an environment variable reached it
+in production. A browser that started but never published a DevTools endpoint was
+left running while its profile directory was deleted underneath it, because
+`child` was still undefined in the caller's `finally`. `codemap`'s guard against a
+path masquerading as a directory header tested the absolute path, so it could
+never fire and a file named `# header.md` silently moved every file after it into
+a directory that does not exist. `check-prose.sh` decided whether a document was a
+prompt by substring-matching the absolute path, so a checkout under any directory
+named `skills/` turned the bold-lead-in gate off for the entire repository. And an
+untracked file whose name contains a newline was split into two non-existent paths
+and dropped from the diff every review lane reads, while being announced as
+included.
+
+`review` and `design` each named the other as the right owner for a UI judgement
+and neither carried the clause that closes exactly that shape for `oracle` and
+`tracer`. `design` now takes the work. `review`'s re-review budget reset on every
+invocation with nothing counting above it outside `deepwork`; three invocations a
+session is the ceiling when no gate marker was supplied. Research could be
+injected into a running `deepwork` stage without limit, each one a librarian
+dispatch with an open-web pass; it is one per stage, and a second is a plan built
+on assumptions rather than a fact you missed.
+
+The measurement was blind to 6,480 tokens. `mandatory_sibling()` knew about
+`review` and nothing else, so `design/floor.md` — "Read `floor.md`. It governs
+both modes" — was counted in neither table, along with six more design siblings.
+Every sibling is now counted, the row names which one it summed rather than
+saying "+ checklists" whatever the file was, and the roster label is derived
+instead of hardcoded at twelve over eleven rows. The lane split was half a fix:
+one file of six lanes still charged a single trigger for all six, so the six are
+now one file each under `lanes/`, and the reachability gate learned to look one
+directory deeper — it reported `design` unreachable the moment the lane that
+names it moved.
+
+`deepwork`'s termination condition sat at 93% of the file, where a compaction is
+least likely to keep it, in the skill whose named failure is not terminating. It
+is now the first thing after the depth ladder. Making room moved the handover
+procedure into `depth.md` and cut the justification tails, the self-referential
+history and the per-gate number that `review` already owns.
+
+The documentation described a plugin two releases old. `LIMITATIONS.md` — the
+page the README tells you to read before trusting anything else — described a
+`SessionStart` hook that v0.12.0 removed and cited an `agents/fixer.md` that is
+not shipped. `ROUTING.md`, the file a team reads to predict what fires
+unprompted, is measured on `designer` and `fixer` and now says so at the top. The
+README's skill table listed six of seven. The eval README claimed six cases and
+thirteen graders against eight and eighteen, and eighteen graders carried two
+spellings of the key that decides what they score while the gate validated
+neither.
+
+Three citations carried more weight than their sources support and now state
+their scope: `oracle`'s 99.2% is a disagreement rate among business personas
+rather than a defect yield, `librarian`'s −39.02pp was measured with a
+sub-optimal retriever, and `deep-interview`'s +14.50 is n=3 on one task on
+another harness, which fails this repository's own published power standard.
+`review` cites a paper for its drop filter whose headline finding is that
+detailed review prompting raises misjudgment rates; that now appears beside the
+citation as the standing argument against this skill's prose growing.
+
+Four contradictions are resolved rather than papered over. The always-on layer
+forbade every comment while `simplify` mandated writing one, so the ban carves
+out the deliberate ceiling by name. `floor.md` gated touch targets at 44×44 while
+`lanes.md` stated in terms that 44 is AAA and not the AA floor; the floor now
+says which criterion it is taking and that 44 is a choice. The style asked the
+model to hunt for defects in its own work 46 lines above the rule that its
+clearance of its own diff is not a review; searching is the job, clearing is not.
+And `deep-interview` read a second "up to you" as consent to a spec the user had
+not read — the commonest way a user says "I have not got to it yet" — which
+defeated the gate the same file calls its entire value; it stops and hands back
+the spec instead.
+
+One high finding is deliberately not actioned. The AI/ML lead argues the 1–10
+confidence scale in `review` is a self-scored gate with a written anti-gaming
+clause, and the argument is good. It carries three pins recording a documented
+failure, and Rule 0b requires reading their provenance and showing that failure
+no longer reproduces before one comes out. That work has not been done, so the
+scale stands and the disagreement is recorded here.
+
+Evidence for all of it: hook suite 171 of 171, mutants 80 of 80 killed, codemap
+21 of 21, `base.sh` 29 of 29, statusline 10 of 10, design 20 of 20 — up from 13,
+and the new cases are the ones that would have caught the defects above.
+Coverage 316 of 316, reinforcement 104 of 104, shell 20 of 20, evals 8 of 8,
+prose 46 of 46, dated 6 of 6, smoke-contracts self-test 36 of 36.
 
 The probe emits in two shapes so a browser tool that is already connected can
 run it instead of launching another one. `--probe` gives a bare expression for a

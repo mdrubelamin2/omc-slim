@@ -4,12 +4,13 @@
   var TARGET_MIN = 24;
   var TARGET_MIN_COARSE = 44;
   var UI_TEXT_MIN = 11;
-  var BODY_TEXT_MIN = 12;
+  var BODY_TEXT_MIN = 10;
   var INPUT_MIN = 16;
   var HIDDEN_TEXT_RATIO = 0.3;
   var HIDDEN_TEXT_MIN_CHARS = 150;
   var PAGE_TEXT_MIN_CHARS = 200;
   var OVERLAP_MIN_FRACTION = 0.1;
+  var OVERLAP_MAX_CANDIDATES = 300;
   var EDGE_TOLERANCE = 1;
   var LAYOUT_PROPS = ['top', 'left', 'right', 'bottom', 'width', 'height', 'margin', 'padding'];
   var EM_DASH_MIN_COUNT = 8;
@@ -50,7 +51,25 @@
     return [parts[0], parts[1], parts[2], parts.length > 3 ? parts[3] : 1];
   }
 
+  // Anything painted under the text that is not a solid colour makes the ratio
+  // unknowable. Walking only ancestors' background-image missed the commonest
+  // hero composition — an absolutely positioned heading over a sibling <img> —
+  // and reported white-on-white at 1.00:1, which is worse than a false pass.
+  function paintedMediaBehind(el) {
+    var box = el.getBoundingClientRect();
+    if (box.width === 0 || box.height === 0) return false;
+    var media = document.querySelectorAll('img, picture, video, canvas, svg');
+    for (var i = 0; i < media.length; i++) {
+      if (media[i].contains(el) || el.contains(media[i])) continue;
+      var m = media[i].getBoundingClientRect();
+      if (m.width === 0 || m.height === 0) continue;
+      if (m.left < box.right && m.right > box.left && m.top < box.bottom && m.bottom > box.top) return true;
+    }
+    return false;
+  }
+
   function compositedBackground(el) {
+    if (paintedMediaBehind(el)) return { indeterminate: true };
     var node = el;
     while (node && node.nodeType === 1) {
       var cs = getComputedStyle(node);
@@ -63,6 +82,19 @@
     return { rgb: [255, 255, 255, 1] };
   }
 
+  // Text alpha was parsed and dropped, so rgba(0,0,0,0.45) on white scored 21:1
+  // instead of about 4.0:1 — a false negative on the only gating accessibility
+  // number, over the exact translucent ink most design tokens ship.
+  function over(fg, bg) {
+    if (fg[3] >= 1) return fg;
+    return [
+      fg[0] * fg[3] + bg[0] * (1 - fg[3]),
+      fg[1] * fg[3] + bg[1] * (1 - fg[3]),
+      fg[2] * fg[3] + bg[2] * (1 - fg[3]),
+      1,
+    ];
+  }
+
   function contrastRatio(a, b) {
     var la = luminance(a), lb = luminance(b);
     var hi = Math.max(la, lb), lo = Math.min(la, lb);
@@ -70,8 +102,15 @@
   }
 
   function visible(el) {
-    var cs = getComputedStyle(el);
-    return cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+    var node = el;
+    while (node && node.nodeType === 1) {
+      var cs = getComputedStyle(node);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+      if (cs.contentVisibility === 'hidden') return false;
+      if (node.hasAttribute && (node.hasAttribute('inert') || node.hasAttribute('hidden'))) return false;
+      node = node.parentElement;
+    }
+    return true;
   }
 
   function directText(el) {
@@ -82,18 +121,64 @@
     return out.trim();
   }
 
+  // WCAG 2.2 SC 2.5.8 exempts Inline (a target in a sentence, sized by the
+  // line-height around it), Equivalent (another control does the same job) and
+  // User-agent-control. Implementing none of them failed every inline link and
+  // every visually-hidden native input behind a custom toggle.
+  function targetSizeExempt(el, cs) {
+    if (cs.display === 'inline') return true;
+    if (el.tagName === 'INPUT' && el.labels && el.labels.length) {
+      for (var i = 0; i < el.labels.length; i++) {
+        var lb = el.labels[i].getBoundingClientRect();
+        if (lb.width >= TARGET_MIN && lb.height >= TARGET_MIN) return true;
+      }
+    }
+    return false;
+  }
+
+  // The px width a stylesheet declares for this element, or ''. Needs the rule
+  // walk, so it is populated once the sheets are read.
+  var pxWidthSelectors = null;
+  function declaredPxWidth(el) {
+    if (pxWidthSelectors === null) return '';
+    for (var i = 0; i < pxWidthSelectors.length; i++) {
+      try {
+        if (el.matches(pxWidthSelectors[i].selector)) return pxWidthSelectors[i].width;
+      } catch (e) { /* a selector this browser cannot match is not a finding */ }
+    }
+    return '';
+  }
+
   function isCoarsePointer() {
     return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  }
+
+  function collectRules(list, out, depth) {
+    if (depth > 6) return;
+    for (var i = 0; i < list.length; i++) {
+      var rule = list[i];
+      out.push(rule);
+      // @media, @supports, @layer and @container hold their own cssRules. A
+      // flat walk missed all of them, so a page whose hover styles sit inside
+      // `@media (hover: hover)` — which this file advises — read as having none.
+      var nested = null;
+      try { nested = rule.cssRules; } catch (e) { nested = null; }
+      if (nested && nested.length) collectRules(nested, out, depth + 1);
+    }
   }
 
   function readStyleRules() {
     var rules = [];
     var reachable = 0, blocked = 0;
-    for (var i = 0; i < document.styleSheets.length; i++) {
+    var sheets = Array.prototype.slice.call(document.styleSheets);
+    if (document.adoptedStyleSheets) {
+      sheets = sheets.concat(Array.prototype.slice.call(document.adoptedStyleSheets));
+    }
+    for (var i = 0; i < sheets.length; i++) {
       try {
-        var list = document.styleSheets[i].cssRules;
+        var list = sheets[i].cssRules;
         reachable++;
-        for (var j = 0; j < list.length; j++) rules.push(list[j]);
+        collectRules(list, rules, 0);
       } catch (e) { blocked++; }
     }
     return { rules: rules, reachable: reachable, blocked: blocked };
@@ -121,7 +206,12 @@
     var allText = (document.body ? document.body.innerText || '' : '').length;
     var hiddenChars = 0;
     var nodes = document.body ? Array.prototype.slice.call(document.body.querySelectorAll('*')) : [];
+    // A script's source is not page text. Counting it made an empty app look
+    // like a page whose text was merely hidden, which is a different finding
+    // with a different remedy.
+    var NOT_PAGE_TEXT = { SCRIPT: 1, STYLE: 1, TEMPLATE: 1, NOSCRIPT: 1 };
     for (var h = 0; h < nodes.length; h++) {
+      if (NOT_PAGE_TEXT[nodes[h].tagName]) continue;
       if (!visible(nodes[h])) hiddenChars += (nodes[h].textContent || '').trim().length;
     }
     ran.push('contentHiddenAtRest');
@@ -129,6 +219,26 @@
     if (totalChars >= PAGE_TEXT_MIN_CHARS && hiddenChars >= HIDDEN_TEXT_MIN_CHARS &&
         hiddenChars / totalChars > HIDDEN_TEXT_RATIO) {
       error('contentHiddenAtRest', Math.round(100 * hiddenChars / totalChars) + '% of page text hidden at rest');
+    }
+
+    // A scripted document holding almost no text has either not rendered yet or
+    // has nothing in it, and both make every number below meaningless. The
+    // hidden-text gate above cannot reach this case: it needs text present in
+    // the DOM to find hidden, and here there is none. Without this an app that
+    // paints after the load event scored a clean pass on an empty body.
+    ran.push('documentNotRendered');
+    // Laid-out boxes, not character count. Gating on text length errored on a
+    // sign-in page, a 404 and any empty state: 57 characters and a script tag
+    // was enough. What an unrendered app actually looks like is a body with
+    // nothing painted in it.
+    var painted = 0;
+    for (var v = 0; v < nodes.length; v++) {
+      if (NOT_PAGE_TEXT[nodes[v].tagName]) continue;
+      var box = nodes[v].getBoundingClientRect();
+      if (box.width > 0 && box.height > 0) painted++;
+    }
+    if (painted < 3 && totalChars < PAGE_TEXT_MIN_CHARS && document.querySelector('script')) {
+      error('documentNotRendered', painted + ' painted element(s) and ' + totalChars + ' characters in a scripted document; nothing here can be measured');
     }
 
     if (findings.some(function (f) { return f.severity === 'error'; })) {
@@ -139,6 +249,14 @@
     var vw = window.innerWidth;
     var coarse = isCoarsePointer();
     var sheets = readStyleRules();
+    pxWidthSelectors = [];
+    for (var w = 0; w < sheets.rules.length; w++) {
+      var wr = sheets.rules[w];
+      if (wr.type !== 1 || !wr.selectorText || !wr.style) continue;
+      if (/^\d+px$/.test(wr.style.width || '') && !(wr.style.maxWidth || '')) {
+        pxWidthSelectors.push({ selector: wr.selectorText, width: wr.style.width });
+      }
+    }
     if (sheets.blocked > 0) skipped.push('cssSourceRules(' + sheets.blocked + ' cross-origin sheet(s) unreadable)');
 
     ran.push('documentOverflowX');
@@ -173,7 +291,6 @@
     ran.push('transitionAll');
     ran.push('layoutTransition');
     ran.push('easeInOnInteractive');
-    ran.push('scaleZeroEntry');
     ran.push('fixedWidthTextContainer');
     ran.push('nonSemanticInteractive');
     ran.push('placeholderWithoutLabel');
@@ -190,16 +307,18 @@
       var tag = el.tagName.toLowerCase();
 
       if (el.scrollWidth > el.clientWidth + EDGE_TOLERANCE &&
-          cs.overflowX !== 'auto' && cs.overflowX !== 'scroll') {
+          cs.overflowX !== 'auto' && cs.overflowX !== 'scroll' &&
+          cs.textOverflow !== 'ellipsis') {
         fail('elementOverflowX', el, el.scrollWidth + ' > ' + el.clientWidth);
       }
 
       if (el.scrollHeight > el.clientHeight + EDGE_TOLERANCE && text.length > 0 &&
+          cs.webkitLineClamp === 'none' && cs.textOverflow !== 'ellipsis' &&
           (cs.overflow === 'hidden' || cs.overflowY === 'hidden')) {
         fail('clippedText', el, 'content ' + el.scrollHeight + 'px in ' + el.clientHeight + 'px box');
       }
 
-      if (el.matches(INTERACTIVE)) {
+      if (el.matches(INTERACTIVE) && !targetSizeExempt(el, cs)) {
         var floor = coarse ? TARGET_MIN_COARSE : TARGET_MIN;
         if (r.width < floor || r.height < floor) {
           fail('targetSize', el, Math.round(r.width) + 'x' + Math.round(r.height) + ' below ' + floor);
@@ -214,8 +333,10 @@
         }
       }
 
+      var TEXT_ENTRY = /^(text|email|password|search|tel|url|number|date|datetime-local|month|week|time)$/;
       if (tag === 'input' || tag === 'textarea' || tag === 'select') {
-        if (fs > 0 && fs < INPUT_MIN) fail('inputFontSize', el, fs + 'px zooms the viewport on iOS');
+        var entry = tag !== 'input' || TEXT_ENTRY.test((el.type || 'text').toLowerCase());
+        if (entry && fs > 0 && fs < INPUT_MIN) fail('inputFontSize', el, fs + 'px zooms the viewport on iOS');
         if (el.placeholder && !el.labels?.length && !el.getAttribute('aria-label') && !el.getAttribute('aria-labelledby')) {
           fail('placeholderWithoutLabel', el, 'placeholder "' + el.placeholder + '" is the only label');
         }
@@ -225,7 +346,7 @@
         var fg = parseColor(cs.color);
         var bg = compositedBackground(el);
         if (fg && bg.rgb) {
-          var ratio = contrastRatio(fg, bg.rgb);
+          var ratio = contrastRatio(over(fg, bg.rgb), bg.rgb);
           var large = fs >= 24 || (fs >= 18.66 && Number(cs.fontWeight) >= 700);
           var need = large ? 3 : 4.5;
           if (ratio < need) {
@@ -244,7 +365,7 @@
       if (animates && cs.transitionProperty && cs.transitionProperty !== 'none' && cs.transitionProperty !== 'all') {
         var props = cs.transitionProperty.split(',').map(function (p) { return p.trim(); });
         for (var p = 0; p < props.length; p++) {
-          if (LAYOUT_PROPS.indexOf(props[p].split('-')[0]) >= 0 && LAYOUT_PROPS.indexOf(props[p]) >= 0) {
+          if (LAYOUT_PROPS.indexOf(props[p].split('-')[0]) >= 0) {
             fail('layoutTransition', el, 'transitions ' + props[p]);
             break;
           }
@@ -256,15 +377,24 @@
       }
 
       if (tag === 'div' || tag === 'span') {
-        if (el.hasAttribute('onclick') && !el.getAttribute('role') && !el.hasAttribute('tabindex')) {
-          fail('nonSemanticInteractive', el, tag + ' with a click handler is not a button or a link');
+        // Frameworks attach handlers with addEventListener and leave no
+        // attribute, so an onclick test was inert exactly where the rule
+        // matters. `cursor: pointer` is the tell that ships.
+        var clickable = el.hasAttribute('onclick') ||
+          (cs.cursor === 'pointer' && !el.closest('a,button,label,[role=button],[role=link]'));
+        if (clickable && !el.getAttribute('role') && !el.hasAttribute('tabindex')) {
+          fail('nonSemanticInteractive', el, tag + ' styled or wired as clickable is not a button or a link');
         }
       }
 
-      if (text.length > 40 && cs.width && /px$/.test(cs.width)) {
-        var declared = el.style.width || '';
-        if (/^\d+px$/.test(declared)) {
-          fail('fixedWidthTextContainer', el, 'width: ' + declared + ' will not hold a longer translation');
+      // An AUTHORED px width, not a computed one: every laid-out block computes
+      // to px, so testing cs.width failed each paragraph inside a max-width
+      // body. Reading only el.style.width was the opposite error — real fixed
+      // widths come from a class — so both sources are checked.
+      if (text.length > 40 && cs.maxWidth === 'none') {
+        var declared = /^\d+px$/.test(el.style.width || '') ? el.style.width : declaredPxWidth(el);
+        if (declared) {
+          fail('fixedWidthTextContainer', el, 'width: ' + declared + ' with no max-width will not hold a longer translation');
         }
       }
     }
@@ -291,8 +421,11 @@
     var cand = els.filter(function (e) {
       return e.matches('a,button,input,select,textarea,h1,h2,h3,p,label,img');
     }).map(function (e) { return [e, e.getBoundingClientRect()]; })
-      .filter(function (pair) { return pair[1].width > 4 && pair[1].height > 4; })
-      .slice(0, 300);
+      .filter(function (pair) { return pair[1].width > 4 && pair[1].height > 4; });
+    if (cand.length > OVERLAP_MAX_CANDIDATES) {
+      skipped.push('elementOverlap(' + (cand.length - OVERLAP_MAX_CANDIDATES) + ' of ' + cand.length + ' candidates past the ' + OVERLAP_MAX_CANDIDATES + ' cap)');
+      cand = cand.slice(0, OVERLAP_MAX_CANDIDATES);
+    }
     for (var a = 0; a < cand.length; a++) {
       for (var b = a + 1; b < cand.length; b++) {
         var ea = cand[a][0], eb = cand[b][0], ra = cand[a][1], rb = cand[b][1];
@@ -324,7 +457,10 @@
     }
 
     ran.push('missingInteractionState');
-    var interactives = els.filter(function (e) { return e.matches('a[href],button,[role=button]'); }).slice(0, 200);
+    // No cap: this check reads only the count and the first element, so it is
+    // O(1) in the page size. An earlier slice capped nothing and printed a skip
+    // that had not happened.
+    var interactives = els.filter(function (e) { return e.matches('a[href],button,[role=button]'); });
     var hoverRules = sheets.rules.filter(function (rl) {
       return rl.type === 1 && rl.selectorText && /:hover|:focus-visible|:focus/.test(rl.selectorText);
     });
@@ -335,25 +471,49 @@
     }
 
     ran.push('hoverNotGated');
+    // Its own set: hoverRules above also matches :focus and :focus-visible, and
+    // advising that those be hidden behind (hover: hover) would take focus
+    // styling away from every touch user.
+    var trueHover = sheets.rules.filter(function (rl) {
+      return rl.type === 1 && rl.selectorText && /:hover/.test(rl.selectorText);
+    });
     var gatedHover = sheets.rules.some(function (rl) {
       return rl.type === 4 && /hover:\s*hover/.test(rl.conditionText || '');
     });
-    if (hoverRules.length > 0 && !gatedHover) {
-      advise('hoverNotGated', document.body, hoverRules.length + ' hover rule(s) outside @media (hover: hover)');
+    if (trueHover.length > 0 && !gatedHover) {
+      advise('hoverNotGated', document.body, trueHover.length + ' hover rule(s) outside @media (hover: hover)');
     }
 
     ran.push('noRealImages');
-    var imgs = document.querySelectorAll('img, picture, video, [style*="background-image"]');
+    // Imagery means something to look at, so it is measured by rendered area.
+    // Counting any <svg> let one 16px icon clear a rule whose own definition is
+    // "every section an icon in a tile above a heading above two lines".
+    var IMAGERY_MIN_AREA = 8000;
+    var media = Array.prototype.slice.call(
+      document.querySelectorAll('img, picture, video, canvas, svg, object[type^="image"]'),
+    );
+    var imgs = media.filter(function (e) {
+      var box = e.getBoundingClientRect();
+      return box.width * box.height >= IMAGERY_MIN_AREA;
+    });
+    var bgPainted = els.some(function (e) {
+      if (getComputedStyle(e).backgroundImage.indexOf('url(') < 0) return false;
+      var box = e.getBoundingClientRect();
+      return box.width * box.height >= IMAGERY_MIN_AREA;
+    });
     var sections = document.querySelectorAll('section, article, main > div');
-    if (sections.length >= 3 && imgs.length === 0) {
-      advise('noRealImages', document.body, sections.length + ' sections and no image, picture or video');
+    if (sections.length >= 3 && imgs.length === 0 && !bgPainted) {
+      fail('noRealImages', document.body, sections.length + ' sections and nothing to look at: ' + media.length + ' media element(s), none over ' + IMAGERY_MIN_AREA + 'px²');
     }
 
     ran.push('brokenImage');
     var allImgs = document.querySelectorAll('img');
     for (var im = 0; im < allImgs.length; im++) {
-      var src = allImgs[im].getAttribute('src');
-      if (!src || !src.trim() || src.trim() === '#') fail('brokenImage', allImgs[im], 'img with no usable src');
+      var img = allImgs[im];
+      var src = img.getAttribute('src');
+      var hasSource = (src && src.trim() && src.trim() !== '#') || img.hasAttribute('srcset');
+      if (!hasSource) fail('brokenImage', img, 'img with no usable src or srcset');
+      else if (img.complete && img.naturalWidth === 0) fail('brokenImage', img, 'img failed to load: ' + (src || img.currentSrc));
     }
 
     ran.push('uniformRadius');
@@ -372,6 +532,7 @@
     }
 
     ran.push('ghostCard');
+    var ghosts = [];
     for (var g = 0; g < boxed.length; g++) {
       var gc = getComputedStyle(boxed[g]);
       var bw = parseFloat(gc.borderTopWidth) || 0;
@@ -380,8 +541,11 @@
       var blurMatch = shadow.match(/(\d+(?:\.\d+)?)px\s+(\d+(?:\.\d+)?)px\s+(\d+(?:\.\d+)?)px/);
       var blur = blurMatch ? parseFloat(blurMatch[3]) : 0;
       if (bw > 0 && bw <= 1.5 && bc && bc[3] >= 0.28 && blur >= 16) {
-        advise('ghostCard', boxed[g], bw + 'px opaque border under a ' + blur + 'px shadow declares elevation twice');
+        ghosts.push(boxed[g]);
       }
+    }
+    if (ghosts.length) {
+      advise('ghostCard', ghosts[0], ghosts.length + ' surface(s) declare elevation twice: an opaque hairline border under a soft shadow');
     }
 
     ran.push('gradientText');

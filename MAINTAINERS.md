@@ -10,6 +10,23 @@ This file exists so the rationale does **not** live inside prompt bodies. It
 originally did, and cost ~328 tokens of system prompt across three files:
 12% of the plugin's entire static budget spent on notes to ourselves.
 
+**An argument that defends a rule moves; it does not vanish.** In text that
+shapes behaviour, the passage answering "why bother" reads as padding and often
+is not. Cut it and the rule stops firing under pressure while the file still
+reads correctly, so nothing catches it. Relocate each rebuttal to where the
+excuse gets made: a rationalization row, or the step it guards. (This lived in
+`skills/simplify/SKILL.md` until v0.13.0, where it was advice to whoever edits
+prompts sitting in the context of a model simplifying someone's TypeScript.)
+
+**Where that pulls against `REINFORCEMENT.tsv`, reinforcement wins.** That file
+exists because 51dfbcc kept every pinned phrase, cut the sentence explaining
+one of them, and measured behaviour broke while the coverage gate stayed green.
+So the rule is: a passage that makes a rule FIRE stays in the prompt and is
+pinned; a passage that explains a decision to a future maintainer comes here. The
+test is not length, it is whether deleting the passage changes what the model
+does. Two files stated opposite principles and neither named the precedence, and
+that gap is why prompt bodies grow back after every compression pass.
+
 ---
 
 ## Agent frontmatter

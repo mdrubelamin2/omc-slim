@@ -34,29 +34,6 @@ REAL=""
 INVOKE=""
 [ "${1:-}" = "--terse-invoke-real" ] && INVOKE=1
 
-# Count real BPE tokens over the concatenation of whatever is piped in.
-#
-# The chars/4 basis is kept because the version series is measured on it, but it
-# is an estimate and it was believed with a hard-coded correction: chars/4 ÷ 1.135,
-# a whole-estate average taken once in the 2026-08-25 audit. That average does not
-# hold per file. Measured 2026-08-29, it read `review/SKILL.md` as 4,956 tokens
-# against a 5,000 cap — 44 under — while the real count was 5,298, nearly 300 OVER.
-# A gate that guards a cap must not estimate the thing it guards.
-#
-# Prints an integer, or nothing when no tokeniser is installed. Callers that need
-# the number treat empty as "cannot tell" and say so; they never fall back to the
-# estimate and call it measured.
-real_tokens() {
-  python3 - "$@" 2>/dev/null <<'RTPY'
-import sys
-try:
-    import tiktoken
-except ImportError:
-    raise SystemExit(1)
-enc = tiktoken.get_encoding("cl100k_base")
-print(sum(len(enc.encode(open(p, encoding="utf-8").read())) for p in sys.argv[1:]))
-RTPY
-}
 
 # The static surface as one string, so it is tokenised the way the model sees it
 # rather than summed per fragment — BPE is not additive across concatenation.
@@ -147,11 +124,18 @@ tok() { echo $(( $1 / 4 )); }
 # review/checklists.md is mandatory — "Read checklists.md now, before judging
 # anything" — so a figure that omits it understates every review by ~1,900
 # tokens, which it silently did until v0.9.0. The conditional siblings
-# (performance.md, depth.md, principles.md) are listed below the total and
+# (the lanes/ files, performance.md, depth.md, principles.md) are listed below and
 # excluded from it, because a file you open on one run in five is not a cost you
 # pay on every run.
 mandatory_sibling() {
-  case "$1" in review) echo "$ROOT/skills/review/checklists.md" ;; *) echo "" ;; esac
+  case "$1" in
+    review) echo "$ROOT/skills/review/checklists.md" ;;
+    # design/SKILL.md: "Read floor.md. It governs both modes." Mandatory on
+    # every run and counted nowhere, so the published on-invoke figure for
+    # design understated it by the whole file.
+    design) echo "$ROOT/skills/design/floor.md" ;;
+    *) echo "" ;;
+  esac
 }
 
 # Every file the on-invoke ceiling sums, one per line, so the table below and the
@@ -282,10 +266,11 @@ printf '  %-34s %8s  %10s\n' "---------" "-----" "-------"
 # review/checklists.md is mandatory — "Read checklists.md now, before judging
 # anything" — so a figure that omits it understates every review by ~1,900
 # tokens, which it silently did until v0.9.0. The conditional siblings
-# (performance.md, depth.md, principles.md) are listed below the total and
+# (the lanes/ files, performance.md, depth.md, principles.md) are listed below and
 # excluded from it, because a file you open on one run in five is not a cost you
 # pay on every run.
 invoke_c=0
+invoke_n=0
 for f in "$ROOT"/agents/*.md "$ROOT"/skills/*/SKILL.md; do
   [ -e "$f" ] || continue
   c=$(body_chars "$f")
@@ -294,22 +279,34 @@ for f in "$ROOT"/agents/*.md "$ROOT"/skills/*/SKILL.md; do
   sib=$(mandatory_sibling "$n")
   if [ -n "$sib" ] && [ -f "$sib" ]; then
     c=$(( c + $(body_chars "$sib") ))
-    n="$n + checklists"
+    # Named, not hardcoded: the row said "+ checklists" whatever the sibling
+    # was, so design's floor.md would have reported as review's file.
+    n="$n + $(basename "$sib" .md)"
   fi
   invoke_c=$(( invoke_c + c ))
+  invoke_n=$(( invoke_n + 1 ))
   printf '  %-34s %8d  %10d\n' "$n" "$c" "$(tok "$c")"
 done
 printf '  %-34s %8s  %10s\n' "" "--------" "----------"
-printf '  %-34s %8d  %10d\n' "all twelve, if every one fires" "$invoke_c" "$(tok $invoke_c)"
+printf '  %-34s %8d  %10d\n' "all $invoke_n, if every one fires" "$invoke_c" "$(tok $invoke_c)"
 printf '\n'
 printf 'That total is the ceiling, not a typical session: it assumes every\n'
 printf 'component fires once. One skill and one agent is the common case.\n\n'
 
 printf '  conditional siblings — excluded above, opened only when they apply\n'
-for sib in "$ROOT"/skills/review/performance.md \
+# Every sibling a component can open, so none is invisible to both tables. The
+# design skill shipped seven and none was counted anywhere.
+for sib in "$ROOT"/skills/review/lanes/*.md \
+           "$ROOT"/skills/review/performance.md \
            "$ROOT"/skills/deepwork/depth.md \
            "$ROOT"/skills/simplify/principles.md \
-           "$ROOT"/skills/verification-planning/procedure.md; do
+           "$ROOT"/skills/verification-planning/procedure.md \
+           "$ROOT"/skills/design/replicate.md \
+           "$ROOT"/skills/design/calibration.md \
+           "$ROOT"/skills/design/defaults.md \
+           "$ROOT"/skills/design/domains.md \
+           "$ROOT"/skills/design/gesture.md \
+           "$ROOT"/skills/design/critic.md; do
   [ -f "$sib" ] || continue
   c=$(body_chars "$sib")
   printf '  %-34s %8d  %10d\n' "$(basename "$(dirname "$sib")")/$(basename "$sib")" "$c" "$(tok "$c")"

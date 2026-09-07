@@ -23,7 +23,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/review/scripts/base.sh"
 ```
 
 
-It fetches first, because a **stale base = phantom findings**. Then it resolves the branch's PR target, else the repository default, then `origin/HEAD`, then `main`, then `master`, then without the prefix, and prints which it used. It diffs against `git merge-base`, not `HEAD` and not the base tip, so uncommitted **edits to tracked files** are included. Review runs before the commit, and whatever landed on the base since the merge-base is not included. **A brand-new file is untracked and no `git diff` contains it**, which is a problem precisely because review runs before the commit, when new files exist. The script lists them separately. Read each one directly, and treat an unread new file the way the completeness lane treats a missed member of a set. An empty tree, or no repository, and it says so and stops; say so too. No plugin root, or no POSIX shell? The chain is in `base.sh`; run its steps by hand.
+It fetches first, because a **stale base = phantom findings**, and prints the base it resolved — read that line. It diffs against `git merge-base`, so uncommitted edits to tracked files are in and whatever landed on the base since is not. **A brand-new file is untracked and no `git diff` contains it**, which bites precisely because review runs before the commit, when new files exist: the script lists them separately, and an unread new file is a missed member of a set. An empty tree, or no repository, and it says so and stops; say so too. No plugin root, or no POSIX shell? The chain is in `base.sh`; run its steps by hand.
 
 **Read the whole diff before flagging anything**. The commonest false positive is a problem the same diff fixes three hunks later.
 
@@ -51,9 +51,11 @@ They state what the author believed the change should do, so the implementation 
 **Then find what judges this better than you can.** You have a cutoff; this repository has law you have not read.
 
 - **Read the project's own rules first**: `CLAUDE.md`/`AGENTS.md`, `.claude/rules/`, the lint, formatter and type config, a design system. They outrank your preferences; a finding contradicting a deliberate project decision is not a finding.
-- **Survey the toolset, in both scopes**: the project's `.claude/` and the user's `~/.claude/`, which usually carries more. Other plugins ship security, performance and framework reviewers built for this stack, and a documentation MCP is authoritative where you would be inferring. `ToolSearch` reaches deferred tools. An unsearched tool is invisible, not absent. Name what you found, and prefer a specialist built for this stack.
+- **Survey the toolset** the way the output style says. Other plugins ship security, performance and framework reviewers built for this stack, and a documentation MCP is authoritative where you would be inferring. Name what you found.
 
-**Read `checklists.md` now, before judging anything.** It holds what each lane looks for, and exists because the items worth catching are the ones that do not come to mind unprompted. Skim past the lanes out of scope; do not skip the file. A review that never opened it runs on recall, the failure this skill was built against.
+**Read `checklists.md` now, before judging anything.** It holds the four always-on lanes, the specialist briefs and the report-time suppression list, and exists because the items worth catching are the ones that do not come to mind unprompted. A review that never opened it runs on recall, the failure this skill was built against.
+
+**Then open only the conditional lanes the table triggers**, one file each in `lanes/`: `security.md`, `data-and-schema.md`, `api-contract.md`, `interface.md`, `operations.md`, `performance.md`. One file per trigger, because skimming does not un-read: these were one file, then one file of six lanes, and both charged a typo fix for every lane it did not run.
 
 | Lane | Runs when |
 |---|---|
@@ -61,16 +63,16 @@ They state what the author believed the change should do, so the implementation 
 | Completeness | always — the only lane that reads outside the diff |
 | Simplicity | always |
 | Tests | always |
-| Security | auth, session, token, permission, secret or crypto in the diff — **at any size** — or backend and non-trivial |
-| Data and schema | a migration, a schema change, raw SQL |
-| API contract | a route, handler, published type, or a changed response shape |
-| Interface | a component, template or stylesheet |
-| Operations | CI, deploy or release config |
-| Performance | a query, IO inside a loop, a bundle entry, a render path |
+| Security | auth, session, token, permission, secret or crypto in the diff — **at any size** — or a backend change that reads or writes persisted data · `lanes/security.md` |
+| Data and schema | a migration, a schema change, raw SQL · `lanes/data-and-schema.md` |
+| API contract | a route, handler, published type, or a changed response shape · `lanes/api-contract.md` |
+| Interface | a component, template or stylesheet · `lanes/interface.md` |
+| Operations | CI, deploy or release config · `lanes/operations.md` |
+| Performance | a query, IO inside a loop, a bundle entry, a render path · `lanes/performance.md` |
 
 **Every lane triggers on the diff's content, never on its length.** The table above is the whole rule. A migration is a schema change at 30 lines and at 3,000, and a changed response shape breaks its consumers either way. "Too small to review" is how it ships.
 
-Size decides only **who runs the lane, not whether it runs.** Under roughly 50 changed lines, run the triggered lanes yourself rather than paying for a dispatch — **including on a diff this session wrote**. A self-run covers the lanes, never the verdict: on an authored diff the fresh-context adversarial pass below is mandatory at any size, and it, not the author, carries the sign-off. Above 50 lines, dispatch the lanes **in parallel, in one message**, one general-purpose subagent each. Give each **a path to a prepared diff file**, not the diff and not a command to derive one. Plus its lane text and the evidence gates in section 5. Either way, a lane the table triggers gets run and reported. **A dispatched lane returns its findings in its final message**. One that signs off with "done" has returned nothing, because nothing else reaches you.
+Size decides only **who runs the lane, not whether it runs.** Under roughly 50 changed lines, run the triggered lanes yourself rather than paying for a dispatch — **including on a diff this session wrote**. A self-run covers the lanes, never the verdict: on an authored diff the fresh-context adversarial pass below is mandatory at any size, and it, not the author, carries the sign-off. Above 50 lines, dispatch the lanes **in parallel, in one message**, one general-purpose subagent each. Give each **a path to a prepared diff file**, not the diff and not a command to derive one. Plus its lane text and the two gates every finding must clear: quote the `file:line` that motivates it, and cite a current source for any claim from outside this repository. The rest of section 5 is yours at report time, not theirs. Either way, a lane the table triggers gets run and reported. **A dispatched lane returns its findings in its final message**. One that signs off with "done" has returned nothing, because nothing else reaches you.
 
 Write it once before dispatching, with `base.sh --out <file>`: commit list, `--stat`, `git diff -U10`. Exit 1, or no `diff written to:` line, means no file exists; fix the path before dispatching. It never enters your context. Every lane reads the same bytes, and a lane needs **one Read instead of the 40–67 tool calls** measured when reviewers rebuild the range themselves.
 
@@ -84,7 +86,9 @@ Report which lanes ran and **which did not, with the reason**; a lane silently s
 
 **Two lanes reading the same bytes and agreeing is not corroboration.** Dispatch more than one and at least two get **different evidence**. `checklists.md` names the four sources, and which one is the cheap win.
 
-**Then one adversarial pass, always**, whatever the size. Line count is not a proxy for risk, and a five-line auth change can be the worst thing in the release.
+**Then one adversarial pass, where the cost of missing is asymmetric.** It runs on a diff that touches the content list — auth, money, permissions, secrets, a migration, a delete, a published response shape — and on any diff above the dispatch threshold that this session wrote. Line count is not a proxy for risk, and a five-line auth change can be the worst thing in the release.
+
+**It does not run on a trivial change outside that list, and that is measured rather than preferred.** Anthropic's Opus 5 guidance names "use a subagent to verify" as an instruction to remove: it causes over-verification on this model and removing it "reduces wasted tokens with no loss in quality" (`docs/RESEARCH-2026-08-26.md:90`). Where you skip it, say so on the `Adversarial:` line with the reason.
 
 Run it **in a fresh context**. A subagent that did not write this code and holds no checklist, told what the lanes already found and asked for what they missed. **No component here can be it**. `checklists.md` says why, and carries the brief. A pass that both wrote a change and blesses it is not a review, however carefully it reads. The reasoning that produced the bug is still resident, and still finds it reasonable. This is the one step you cannot do to yourself.
 
@@ -100,7 +104,7 @@ Where a checklist partitions the work, the gaps between the partitions are where
 
 **The remedy gets the same rigour as the finding.** Reviewers are audited on the bug and trusted on the fix, which is backwards. Check whether the platform, the framework or a newer dependency already solves it. And before anything bespoke **look for prior art**: a named algorithm, a standard, an RFC, a widely used implementation. "Add a retry loop with jitter" is worse than naming the backoff the ecosystem already settled on.
 
-**Write the fix, and let it test the finding.** Before reporting, name the change that would resolve it, then ask what input behaves differently before and after. If you cannot name one, or the "fix" changes nothing observable, **the finding was a false positive. Drop it from the list and carry the count.** **One line per drop, not one line per review**: `file:line  what it was, and what the fix would not have changed`. A bare total is a disappearance nobody can audit, and it is exactly what makes this filter launderable. The laundering move is to propose an anaemic fix, watch nothing change, and drop anything that is not Critical. The mechanism is published as a fix-guided verification filter ([arXiv:2603.00539](https://arxiv.org/abs/2603.00539)). **It never drops a Critical.** One you cannot yet cost out goes to Open questions, per the confidence rule below.
+**Write the fix, and let it test the finding.** Before reporting, name the change that would resolve it, then ask what input behaves differently before and after. If you cannot name one, or the "fix" changes nothing observable, **the finding was a false positive. Drop it from the list and carry the count.** **One line per drop, not one line per review**: `file:line  what it was, and what the fix would not have changed`. A bare total is a disappearance nobody can audit, and it is exactly what makes this filter launderable. The laundering move is to propose an anaemic fix, watch nothing change, and drop anything that is not Critical. The mechanism is published as a fix-guided verification filter ([arXiv:2603.00539](https://arxiv.org/abs/2603.00539)) — a paper whose headline finding is that reviewers over-flag correct code and that **more detailed review prompting raises misjudgment rates**, which is the standing argument against this skill's prose growing. **It never drops a Critical.** One you cannot yet cost out goes to Open questions, per the confidence rule below.
 
 **Clearance needs evidence too.** "Handled elsewhere" cites the handling code; "tests cover this" names the test. *Likely handled* and *probably tested* are not review outputs: verify, or record it unverified. "Looks fine" is not a finding *and not a clearance*.
 
@@ -121,7 +125,7 @@ Where a checklist partitions the work, the gaps between the partitions are where
 
 **Propose the move, not just the problem.** "This is complex" leaves the author guessing. Name it. Typed dispatch for the conditional chain, the canonical helper instead of the third copy, the type boundary made explicit so the downstream branching disappears. Prefer the remedy that **removes moving pieces** over one that spreads the same complexity around. Correct is only the floor. Where a meaningfully better approach existed, that is a finding too: *Optional*, unless the chosen one carries real risk.
 
-**Report at most five nits, then a count**, in the `NITS` block. "…and 6 further minor points, say the word" is a complete disposition. List every small thing and the reader skims all of it, the structural finding included.
+**Report at most five nits, then a count**, in the `NITS` block. "…and 6 further minor points, say the word" is a complete disposition. **Every suppressor carries the drop filter's audit trail**: a count for the nits held back, one line for anything `Do not flag` removed. A suppression nobody can see and one that never happened read identically. List every small thing and the reader skims all of it, the structural finding included.
 
 **One structural problem beats ten nits.** With both, the structural problem *is* the review. Correctness and security are **read before style**, the algorithm before the pattern it is written in. Twenty smells catalogued over a wrong core is the classic way to review nothing.
 
@@ -151,7 +155,7 @@ Re-run the project's own checks whose inputs the review changed, not every check
 
 **Evidence has a shelf life**: output from before the last edit describes a tree that no longer exists. A green build **says the code compiles, not that it does what was asked**. "All tests pass" with no output, or a conclusion carried by *should*, *seems to* or *probably*, is a claim, not a result. **And a pass needs its denominator**: "14 of 14" is a result; "tests pass" is a claim about whatever subset ran.
 
-Then stop. **This budget covers one invocation of this skill.** One review and **at most two re-reviews, three while a Critical is still open**, each stating where it is (`review attempt 2 of 3`). **Invoked as a gate by the `omc-slim:deepwork` skill, you carry the marker it gave you**, `Gate 2 — attempt 2 of 3`, and the budget with it. And one invocation is one gate. You do not issue either: two components keeping their own count is how one gate quietly becomes two. A re-review covers what was unresolved and what the remediation broke; it **does not reopen concerns already accepted**. Spend one only when remediation changed the picture, or the concern survived focused evidence: never to re-confirm a mechanical fix. Budget gone with real risk still open: name it and ask whether to accept it, cut scope, or authorise another pass. Never quietly loop, and never keep **polishing because polishing is possible**.
+Then stop. **This budget covers one invocation of this skill.** **Invoked without a gate marker, three invocations in a session is the ceiling**: nothing else counts them, so review→fix→review otherwise has a per-invocation budget and no total. At the third, say what is still open. One review and **at most two re-reviews, three while a Critical is still open**, each stating where it is (`review attempt 2 of 3`). **Invoked as a gate by the `omc-slim:deepwork` skill, you carry the marker it gave you**, `Gate 2 — attempt 2 of 3`, and the budget with it. And one invocation is one gate. You do not issue either: two components keeping their own count is how one gate quietly becomes two. A re-review covers what was unresolved and what the remediation broke; it **does not reopen concerns already accepted**. Spend one only when remediation changed the picture, or the concern survived focused evidence: never to re-confirm a mechanical fix. Budget gone with real risk still open: name it and ask whether to accept it, cut scope, or authorise another pass. Never quietly loop, and never keep **polishing because polishing is possible**.
 
 ## Output
 

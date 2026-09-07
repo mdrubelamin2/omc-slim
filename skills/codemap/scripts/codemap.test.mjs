@@ -16,9 +16,9 @@
  *
  * ...and the three a second audit found:
  *
- *   6. `files` emits the per-directory file list the fixer brief pastes, and it
+ *   6. `files` emits the per-directory file list the writer brief pastes, and it
  *      covers exactly the directories init writes a codemap.md into (A2)
- *   7. a changed leaf dispatches one fixer for its own directory, not one per
+ *   7. a changed leaf dispatches one writer for its own directory, not one per
  *      ancestor (C1)
  *   8. ignore rules come from `git check-ignore` in a repository — nested
  *      .gitignore files included — and the fallback matcher anchors a pattern
@@ -29,7 +29,7 @@
  *
  *   9. every generated codemap.md states the commit, date and file count it was
  *      written against, without breaking the four-heading contract
- *  10. `update` re-stamps that header and keeps the body the fixer wrote
+ *  10. `update` re-stamps that header and keeps the body the writer wrote
  *  11. `stale` is silent and zero when nothing moved, non-zero and specific when
  *      it did, and it names the unverifiable cases instead of passing them
  *  12. outside a repository, and in a shallow clone, it says what it cannot
@@ -151,9 +151,9 @@ In, then out.
 Consumed by checkout.
 `;
 
-// What a codemap fixer does to the file init seeded: replace the body, leave the
+// What a codemap writer does to the file init seeded: replace the body, leave the
 // machine-maintained header where it is.
-function fixerRewrite(mapPath) {
+function writerRewrite(mapPath) {
   const text = readFileSync(mapPath, 'utf8');
   const end = text.indexOf(PROVENANCE_END);
   if (end === -1) throw new Error(`no provenance header in ${mapPath}`);
@@ -359,7 +359,7 @@ const cases = [
     },
   },
   {
-    // A2: the brief tells a fixer to read "the file list codemap.mjs reported
+    // A2: the brief tells a writer to read "the file list codemap.mjs reported
     // for this dir". Nothing reported one, so every run invented it.
     name: 'files lists each mapped directory with the files it contributes',
     check() {
@@ -393,7 +393,7 @@ const cases = [
           return `${directory} listed [${actual}], expected [${files.join(' ')}]`;
         }
         // Every header must be a directory init wrote a codemap.md into,
-        // or the orchestrator dispatches a fixer at a path with no map.
+        // or the orchestrator dispatches a writer at a path with no map.
         const mapPath = path.join(root, directory, 'codemap.md');
         if (!existsSync(mapPath)) return `no codemap.md for header ${directory}`;
       }
@@ -402,9 +402,9 @@ const cases = [
   },
   {
     // C1: one edit under src/a/b used to report '.', 'src', 'src/a' and
-    // 'src/a/b' as equals — four fixers, three of them rewriting a map whose
+    // 'src/a/b' as equals — four writers, three of them rewriting a map whose
     // own files had not changed.
-    name: 'a changed leaf dispatches one fixer, not one per ancestor',
+    name: 'a changed leaf dispatches one writer, not one per ancestor',
     check() {
       const root = fixture('ancestors', {
         'top.js': 'a',
@@ -415,13 +415,13 @@ const cases = [
       writeFileSync(path.join(root, 'src/a/b/c.ts'), 'changed');
       const changes = run('changes', '--root', root);
 
-      const perFixer = indentedBlock(
+      const perWriter = indentedBlock(
         changes.output,
-        'directories with changed files \\(one fixer each\\):',
+        'directories with changed files \\(one writer each\\):',
       );
-      if (!perFixer) return `no per-fixer section:\n${changes.output}`;
-      if (perFixer.join(' ') !== 'src/a/b/') {
-        return `dispatches ${perFixer.length}: ${perFixer.join(' ')}`;
+      if (!perWriter) return `no per-writer section:\n${changes.output}`;
+      if (perWriter.join(' ') !== 'src/a/b/') {
+        return `dispatches ${perWriter.length}: ${perWriter.join(' ')}`;
       }
 
       const batch = indentedBlock(
@@ -544,7 +544,7 @@ const cases = [
         if (provenance.files !== files) {
           return `${directory}: files=${provenance.files}, expected ${files}`;
         }
-        // The header must not cost the fixer its four-heading contract, and it
+        // The header must not cost the writer its four-heading contract, and it
         // must leave an unambiguous line to write below.
         if (headings(text).join(',') !== 'Responsibility,Design,Flow,Integration') {
           return `${directory}: headings ${headings(text).join(',')}`;
@@ -560,7 +560,7 @@ const cases = [
   {
     // The header is only worth reading if it moves. Pinned to the init commit
     // forever it would age into exactly the artefact it warns about.
-    name: 'update re-stamps the header and keeps the body the fixer wrote',
+    name: 'update re-stamps the header and keeps the body the writer wrote',
     check() {
       const root = fixture('restamp', { 'main.js': 'a', 'src/app.js': 'b' });
       if (!gitInit(root) || !gitCommit(root, 'one')) {
@@ -570,7 +570,7 @@ const cases = [
 
       run('init', '--root', root);
       const initSha = headSha(root);
-      fixerRewrite(path.join(root, 'src/codemap.md'));
+      writerRewrite(path.join(root, 'src/codemap.md'));
 
       // A map written before headers existed: no header, its own H1 on top.
       writeFileSync(
@@ -620,7 +620,7 @@ const cases = [
 
       run('init', '--root', root);
       for (const directory of ['.', 'src', 'src/deep']) {
-        fixerRewrite(path.join(root, directory, 'codemap.md'));
+        writerRewrite(path.join(root, directory, 'codemap.md'));
       }
       run('update', '--root', root);
 
@@ -668,7 +668,7 @@ const cases = [
 
       run('init', '--root', root);
       for (const directory of ['.', 'legacy', 'blank', 'edited']) {
-        fixerRewrite(path.join(root, directory, 'codemap.md'));
+        writerRewrite(path.join(root, directory, 'codemap.md'));
       }
       run('update', '--root', root);
 
@@ -710,6 +710,39 @@ const cases = [
     },
   },
   {
+    // The current marker, beside the legacy one above.
+    name: 'stale recognises the marker init writes today',
+    check() {
+      const root = fixture('unwritten-now', { 'src/a.ts': 'a' });
+      run('init', '--root', root);
+      run('update', '--root', root);
+      const result = run('stale', '--root', root);
+      if (result.status === 0) return `an untouched init template passed:\n${result.output}`;
+      const row = staleRow(result.stdout, 'src/');
+      if (!row || !row.includes('UNWRITTEN')) return `src/ row was ${row}`;
+      return null;
+    },
+  },
+  {
+    // The skill has to state the cost and get a yes, and before this the number
+    // only existed after init had already written into every directory.
+    name: 'plan prices the run without writing anything',
+    check() {
+      const root = fixture('plan-first', { 'src/a.ts': 'a', 'src/b/c.ts': 'c' });
+      const result = run('plan', '--root', root);
+      if (result.status !== 0) return `plan exited ${result.status}: ${result.output}`;
+      if (existsSync(path.join(root, '.slim', 'codemap.json'))) return 'plan wrote state';
+      if (existsSync(path.join(root, 'src', 'codemap.md'))) return 'plan wrote a codemap.md';
+      if (!/2 file\(s\) selected across 3 director\(ies\)/.test(result.stdout)) {
+        return `plan did not price the run:\n${result.stdout}`;
+      }
+      if (!/3 writer dispatch\(es\)/.test(result.stdout)) {
+        return `plan did not name the dispatch count:\n${result.stdout}`;
+      }
+      return null;
+    },
+  },
+  {
     // Two places a commit distance is unanswerable. Printing '0 commits behind'
     // in either would be wrong in the reassuring direction, and a shallow clone
     // is precisely what CI checks out.
@@ -736,7 +769,7 @@ const cases = [
         return null;
       }
       run('init', '--root', source);
-      fixerRewrite(path.join(source, 'codemap.md'));
+      writerRewrite(path.join(source, 'codemap.md'));
       run('update', '--root', source);
       if (!gitCommit(source, 'two')) return 'commit of the maps failed';
       writeFileSync(path.join(source, 'later.js'), 'b');

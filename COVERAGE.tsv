@@ -51,11 +51,11 @@ fable-mode	self-critique-least-confident	deepwork	least confident
 fable-mode	self-critique-unknown-unknown	deepwork	biggest thing you are missing
 fable-mode	no-manufactured-weakness	deepwork	manufacture a weakness
 fable-mode	warning-threshold	deepwork	At three, stop and surface
-fable-mode	verify-before-flagging	deepwork	Absence of evidence is not the finding
+fable-mode	verify-before-flagging	verification-planning	Absence of evidence is not the finding
 fable-mode	find-replace-word-boundaries	deepwork	Anchor on word boundaries
 fable-mode	domain-variations	deepwork/depth.md	Domain variations
 fable-mode	when-not-to-use	deepwork	When NOT to use this
-fable-mode	not-a-capability-transplant	deepwork	does not make the underlying reasoning better
+fable-mode	not-a-capability-transplant	deepwork	It shapes procedure, not reasoning
 fable-mode	verify-before-flagging	verification-planning	Absence of evidence is not the finding
 fable-mode	verify-before-flagging	tracer	Absence of evidence is not the finding
 audit	stale-recall-external	output-styles	plausibly changed since training
@@ -67,7 +67,7 @@ audit	one-level-is-enforced	deepwork	enforced, not advisory
 audit	scope-allows-large-work	simplify	that **is** the scope
 audit	codemap-announce-cost	codemap	Announce before you start
 omo-slim	parallel-structure-scan	deepwork	Scan structure in the same message
-omo-slim	oracle-rereview-budget	deepwork	at most two re-reviews
+omo-slim	oracle-rereview-budget	review	at most two re-reviews
 omo-slim	phase-checkpoint-commit	deepwork	Checkpoint at a delivery boundary
 audit	deepwork-crosscutting-trigger	output-styles	only correct once every layer lands
 audit	deepwork-crosscutting-trigger	deepwork	every affected layer lands together
@@ -106,7 +106,14 @@ audit	abstraction-pays-rent-now	simplify	pays rent when a second
 audit	exported-wrapper-is-api	simplify	deleting it is an API change
 gstack	diff-against-merge-base	review	merge-base
 gstack	fetch-base-first-or-phantom-findings	review	stale base = phantom findings
-gstack	base-branch-resolution-cascade	review	then `origin/HEAD`, then `main`, then `master`
+# RETIRED v0.13.0 — base-branch-resolution-cascade pinned prose narrating a
+# chain that skills/review/scripts/base.sh implements and prints on its own
+# `base:` line, with 29 cases in base.test.sh covering the fallbacks. Rule 0b is
+# satisfied the way design-name-nothing satisfied it: the gate outlives the
+# prose, and the documented failure (a review run against the wrong base) is
+# closed mechanically rather than by a paragraph the reader pays for on every
+# invocation.
+# gstack	base-branch-resolution-cascade	review	then `origin/HEAD`, then `main`, then `master`
 gstack	read-whole-diff-before-flagging	review	Read the whole diff before flagging
 gstack	intent-before-quality	review	Scope creep
 gstack	deliverable-not-the-machinery	review	handles a deliverable is not the deliverable
@@ -124,7 +131,17 @@ gstack	auth-scope-is-size-independent	review	at any size
 gstack	size-picks-who-runs-the-lane	review	roughly 50 changed lines
 gstack	dispatch-lanes-in-one-message	review	in parallel, in one message
 gstack	report-lanes-that-did-not-run	review	which did not, with the reason
-gstack	adversarial-pass-always	review	one adversarial pass, always
+# RETIRED v0.13.0 — adversarial-pass-always pinned "one adversarial pass,
+# always, whatever the size". Rule 0b(b): the upstream justification is
+# documented as reversed. Anthropic's Opus 5 prompting page names "use a
+# subagent to verify" as an instruction to REMOVE because it causes
+# over-verification on this model, quoted in full at
+# docs/RESEARCH-2026-08-26.md:90, and this repository's own research file states
+# that the quote describes its own design. The pass survives where the cost of
+# missing is asymmetric — the content list, and an authored diff above the
+# dispatch threshold — and that narrower rule is pinned as
+# adversarial-pass-on-asymmetric-cost below.
+# gstack	adversarial-pass-always	review	one adversarial pass, always
 gstack	loc-is-not-risk	review	not a proxy for risk
 gstack	adversarial-told-what-others-found	review	told what the lanes already found
 gstack	fix-first-mechanical	review	Fix directly
@@ -144,13 +161,13 @@ addy	remedy-removes-moving-pieces	review	removes moving pieces
 addy	structural-problem-outranks-nits	review	One structural problem beats ten nits
 addy	security-before-style	review	read before style
 addy	ai-code-more-scrutiny	review	more scrutiny, not less
-addy	dependency-one-at-a-time	review/checklists.md	one dependency change at a time
-addy	semver-is-a-promise	review/checklists.md	promise the maintainer may not have kept
-addy	llm-output-is-a-trust-boundary	review/checklists.md	model output
-addy	permissions-in-code-not-prompt	review/checklists.md	enforced in code, not in the prompt
+addy	dependency-one-at-a-time	review/lanes/security.md	one dependency change at a time
+addy	semver-is-a-promise	review/lanes/security.md	promise the maintainer may not have kept
+addy	llm-output-is-a-trust-boundary	review/lanes/security.md	model output
+addy	permissions-in-code-not-prompt	review/lanes/security.md	enforced in code, not in the prompt
 addy	measure-before-optimising	review/performance.md	Optimise only what a measurement proves
-addy	never-fabricate-metrics	review/checklists.md	Never state a number you did not observe
-addy	potential-vs-measured	review/checklists.md	*potential* impact
+addy	never-fabricate-metrics	review/lanes/performance.md	Never state a number you did not observe
+addy	potential-vs-measured	review/lanes/performance.md	*potential* impact
 addy	fixed-budget-re-measure	review/performance.md	same fixed budget
 addy	cache-state-asymmetry	review/performance.md	measures the cache, not your change
 addy	one-optimisation-at-a-time	review/performance.md	One change at a time
@@ -158,8 +175,8 @@ addy	beat-the-noise-not-the-mean	review/performance.md	Beat the noise, not the m
 addy	neutral-is-a-revert	review/performance.md	"Neutral" is a revert, not a keep
 addy	correctness-gates-the-number	review/performance.md	Correctness gates the number
 addy	optimisation-ledger	review/performance.md	including the ones you reverted
-addy	wrong-stack-advice-forbidden	review/checklists.md	Fit the advice to the actual stack
-addy	over-memoisation-is-a-defect	review/checklists.md	over-memoisation costs more than it saves
+addy	wrong-stack-advice-forbidden	review/lanes/performance.md	Fit the advice to the actual stack
+addy	over-memoisation-is-a-defect	review/lanes/performance.md	over-memoisation costs more than it saves
 addy	project-budget-overrides-defaults	review/performance.md	overrides every number here
 omc	no-self-approval-same-context	review	cannot do to yourself
 omc	no-self-approval-orchestrator	output-styles	the step you cannot do to yourself
@@ -189,9 +206,9 @@ audit	performance-lane-precondition	review	applied or accepted, **open `performa
 audit	severity-vs-mechanicalness	review	severity decides whether the *decision* is yours
 audit	finding-vs-change-measurement	review/performance.md	bars unmeasured *changes*, not unmeasured *findings*
 audit	read-project-rules-first	review	Read the project's own rules first
-audit	survey-both-scopes	review	in both scopes
-audit	toolsearch-reaches-deferred	review	an unsearched tool is invisible, not absent
-audit	prefer-stack-specific-specialist	review	prefer a specialist built for this stack
+audit	survey-both-scopes	output-styles	Both scopes carry components
+audit	toolsearch-reaches-deferred	output-styles	An unsearched tool is invisible, not absent
+audit	prefer-stack-specific-specialist	output-styles	Prefer one built for this stack
 audit	cite-the-source-gate	review	Cite the source, or you do not have a claim
 audit	external-claims-never-recalled	review	never recalled
 audit	remedy-checked-against-current	review	The remedy gets the same rigour as the finding
@@ -226,8 +243,8 @@ audit	fixer-do-not-reopen-closed-bug	output-styles	fix causes not symptoms
 # ballast (svy04) — a memory/verification plugin. Five rules fit a delegation
 # plugin; the memory tree, skill-forge and the label taxonomy were refused.
 ballast	constraints-dont-travel	output-styles	the specialist sees only the brief
-ballast	progress-file-dead-ends	deepwork	what was tried and failed
-ballast	next-first-action-is-executable	deepwork	executable without reading anything but this file
+ballast	progress-file-dead-ends	deepwork/depth.md	what was tried and failed
+ballast	next-first-action-is-executable	deepwork/depth.md	executable without reading anything but this file
 ballast	zero-context-executor	verification-planning	receives it and nothing else
 # aniruddha-adhikary/skills — a Joern/CPG static-analysis pack. Four rules fit a
 # delegation plugin; the CPG domain, a second hook and its publication boundary
@@ -254,7 +271,13 @@ superpowers	brief-with-evidence-not-verdict	deepwork	evidence, never a verdict
 superpowers	readonly-does-not-move-git-state	explorer	they discard uncommitted work that is not yours
 superpowers	readonly-does-not-move-git-state	tracer	they discard uncommitted work that is not yours
 superpowers	deleting-config-selects-the-default	simplify	Deleting a config key selects the default
-superpowers	rebuttal-relocates-never-vanishes	simplify	An argument that defends a rule moves
+# RETIRED v0.13.0 — rebuttals-relocate-not-vanish pinned advice about editing
+# prompt files, inside a skill a model runs to simplify a user's codebase. The
+# rule itself is unchanged and now lives in MAINTAINERS.md beside the
+# rationale-placement precedence it belongs to. Rule 0b: the documented failure
+# it answers is a compression pass cutting reasoning, which REINFORCEMENT.tsv
+# and check-reinforcement.sh enforce mechanically on every gate run.
+# superpowers	rebuttal-relocates-never-vanishes	simplify	An argument that defends a rule moves
 superpowers	change-not-live-in-this-session	verification-planning	not live in the session that made them
 audit	exemption-scopes-length-only	output-styles	exempts length, and nothing else
 audit	safety-never-simplified-away	output-styles	Never simplified away
@@ -283,7 +306,7 @@ research	verification-revert-and-rerun	verification-planning	Revert and re-run
 research	verification-structural-red	verification-planning	Structural red is not behavioural red
 research	explorer-positive-control	explorer	Prove the instrument before you report a negative
 research	explorer-search-funnel	explorer	Open wide, then narrow
-research	explorer-cap-yields-to-completeness	explorer	The cap does not apply to an enumeration
+research	explorer-cap-yields-to-completeness	explorer	is returned complete
 research	tracer-categories-differ-in-kind	tracer	They must differ in kind, not in detail
 research	tracer-predeclare-falsifiers	tracer	what would confirm and what would falsify each one
 research	tracer-undetermined-verdict	tracer	is not `ruled out`
@@ -291,7 +314,7 @@ research	librarian-conditional-web-pass	librarian	That is a condition, not a rit
 research	librarian-silent-disk	librarian	Disk can be silent rather than empty
 research	codemap-cite-symbols	codemap	Cite symbols, never line numbers
 research	deep-interview-files-and-interfaces	deep-interview	## Files and interfaces
-research	deep-interview-gate-is-measured	deep-interview	That is now measured
+research	deep-interview-gate-is-measured	deep-interview	That is measured, and the measurement is small
 research	deep-interview-score-is-not-the-gate	deep-interview	It does not decide whether to build
 research	explorer-turn-budget	explorer	maxTurns: 100
 research	explorer-open-wide-then-narrow	explorer	`rg -n` only once you know which files matter
@@ -337,7 +360,7 @@ audit	speed-needs-a-number	output-styles	owes no benchmark
 design	design-two-modes	design	Two modes
 design	design-survey-project-first	design	A value the project set is the answer
 design	design-references-before-brief	design	Ask for references before you ask for anything else
-design	design-self-diff-against-median	design	diff the plan against your own median
+design	design-self-diff-against-median	design	diff the plan against the dated list
 design	design-bounded-passes	design	at most one confirming round
 design	design-audit-at-checkpoint	design	at a checkpoint rather than per edit
 design	design-errors-gate	design	means every later number is meaningless
@@ -350,7 +373,7 @@ design	design-project-outranks-skill	design/floor.md	outranks this skill entirel
 design	design-licence-to-disagree	design/floor.md	Following a rule you know to be wrong
 design	design-evidence-rule-not-arguable	design/floor.md	a check you did not run is not a result
 design	design-contrast-gate	design/floor.md	Contrast gates on WCAG 2
-design	design-target-floor-and-touch	design/floor.md	24 is the legal minimum
+design	design-target-floor-and-touch	design/floor.md	Target size gates at 24 by 24 CSS px
 design	design-states-shipped-whole	design/floor.md	Cutting one is a defect, not a scope decision
 design	design-reduced-motion-substitutes	design/floor.md	substitutes, it does not delete
 design	design-concentric-radii	design/floor.md	Choose the outer value; derive the inner
@@ -367,3 +390,15 @@ design	design-critic-cannot-point-is-not-a-finding	design/critic.md	A finding yo
 design	design-critic-is-not-a-gate	design/critic.md	The audit gates. This pass reports.
 design	design-adopt-session-tools	design	strongest instrument available
 design	design-extend-beyond-the-probe	design	beyond the bundled set
+audit	run-ends-with-a-report	output-styles	Every run ends, and you say what ended it
+audit	depth-is-not-duration	output-styles	never another lap over work already done
+audit	deepwork-done-condition	deepwork	every stage on the approved map carries its check or its waiver
+audit	deepwork-cascade-one-level	deepwork	That backward step goes one level
+audit	deepwork-map-ceiling	deepwork	The map the user saw is the run
+audit	deepwork-set-diffed-once	deepwork	closes by diffing the set, once
+audit	deepwork-lane-carries-a-bound	deepwork	Every lane brief carries its own bound
+audit	simplify-done-is-the-checklist	simplify	not the absence of anything left to simplify
+audit	design-self-diff-once	design	diff the plan against the dated list
+audit	design-build-closes-on-the-plan	design	Build closes on the plan, not on taste
+audit	design-then-stop	design	A surface is never finished
+audit	adversarial-pass-on-asymmetric-cost	review	where the cost of missing is asymmetric

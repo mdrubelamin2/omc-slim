@@ -84,11 +84,10 @@ back. That was verified against a project explicitly pinned to `Explanatory`.
 Another plugin can take the style slot, and you will not be told. Claude Code
 applies exactly one forced plugin style and picks it by plugin load order, which
 is not ours to control. The loser is reported at a log level nobody reads, so
-omc-slim can go entirely inert while every component still loads. The
-`SessionStart` hook warns when a competing plugin is installed and enabled, but it
-warns about the **condition**: it cannot see which style actually won, because
-the SessionStart payload does not carry one. Settle it with
-`claude -p "One line: which output style is active?"`.
+omc-slim can go entirely inert while every component still loads, **and nothing
+in this plugin will tell you.** A `SessionStart` hook used to warn on the
+condition; v0.12.0 removed it, so today there is no warning at all. Settle it
+with `claude -p "One line: which output style is active?"`.
 
 The core mechanism sits on a surface the platform once deprecated. Output
 styles were deprecated around CC v2.0.30 and restored at v2.0.32 on community
@@ -105,9 +104,10 @@ is mirror-sourced, releases that old are pruned). One documented limit stands
 regardless: *"styles don't change how subagents respond"* — the style governs
 the main loop only, and every specialist runs on its own file's prose.
 
-It reads your plugin configuration at startup. That hook parses
-`~/.claude/settings.json`, `installed_plugins.json` and other plugins' output-style
-frontmatter. It reads nothing else, sends nothing anywhere, and writes nothing.
+It reads nothing of your configuration. The hook that parsed
+`~/.claude/settings.json`, `installed_plugins.json` and other plugins'
+output-style frontmatter was removed in v0.12.0. The one hook that ships reads
+the session transcript it is handed, sends nothing anywhere, and writes nothing.
 
 It used to connect two remote MCP servers, and this page denied it. Until
 v0.8.3 both this page and the README called the output style "the only global
@@ -157,12 +157,13 @@ negative in exactly the audit this script exists to survive. It reports the stat
 as open now, and `statusline.test.sh` fails if that regresses.
 
 The published static figure is a floor, not the whole charge. It counts the
-output style body plus the text of twelve descriptions. The harness charges more:
+output style body plus the text of eleven descriptions. The harness charges more:
 measured 2026-08-29 against the installed v0.9.1, `claude plugin details` reports
-**1,461 always-on tokens** for the twelve components where our own basis measures
-**962** — roughly **42 tokens per component** of framing (name, type, list
-structure) that no measurement of the text can see. Across the ten-component roster that is
-about **420 tokens**, so the true always-on cost is nearer 2,767 than the ~2,590 this repository publishes.
+**1,461 always-on tokens** for the twelve components of that release where our own
+basis measured **962** — roughly **42 tokens per component** of framing (name,
+type, list structure) that no measurement of the text can see. Across today's
+eleven-component roster that is about **462 tokens**, so the true always-on cost
+is nearer 3,343 than the ~2,811 this repository publishes.
 
 It is not folded into the headline, and the reason is a scar: 42 rests on a
 single observation of a number the harness itself labels an estimate, and this
@@ -194,7 +195,7 @@ the exact failure mode this project has criticised in others.
 next increase is visible while it happens rather than three releases later.
 
 Two consequences worth knowing. **`review` is the heaviest component**, and its
-SKILL.md, frontmatter included, is 5,253 tokens on the chars/4 basis, ~4,797 corrected —
+SKILL.md, frontmatter included, is 5,633 tokens on the chars/4 basis, ~5,140 corrected —
 against a post-compaction re-injection limit that keeps only the **first 5,000
 tokens of a skill**.
 
@@ -236,7 +237,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Ten components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **32,001 chars/4, ~28,892 corrected**.
+The ceiling if every component fires once is **34,090 chars/4, ~30,801 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging
@@ -337,7 +338,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~2,931 tok** | see above |
+| **omc-slim** | **~3,173 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -346,7 +347,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 omc-slim is the most expensive row in that table. It has grown on net across
-every release: 2,774 at v0.1.0 against 2,931 today, though not monotonically.
+every release: 2,774 at v0.1.0 against 3,173 today, though not monotonically.
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is
@@ -382,9 +383,10 @@ mv, a bulk rewrite) or an MCP server, ignore this."*
 
 Two things follow, and the second is the one that matters.
 
-It does not false-accuse. The advisory names the shell case and tells the reader
-to disregard it, which is the behaviour `agents/fixer.md` already relies on when
-it requires the agent to name its mechanism.
+It did not false-accuse. The advisory named the shell case and told the reader
+to disregard it, which was the behaviour the `fixer` agent of that release relied
+on when it required the agent to name its mechanism. Neither that agent nor that
+hook ships today; this section is the record of why they went.
 
 But the advisory was written for an occasional case and auto mode makes it the
 common one. A warning that is correct to ignore on most dispatches is a warning

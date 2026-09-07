@@ -1,6 +1,6 @@
 ---
 type: regex
-target: trace
+focus: trace
 pattern: "(deep-interview|deepwork|codemap|verification-planning)"
 match: not_contains
 flags: "i"

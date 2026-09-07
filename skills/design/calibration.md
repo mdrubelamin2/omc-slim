@@ -48,8 +48,6 @@ Prefer transitions to keyframes, which restart from zero instead of retargeting.
 
 **The frequency gate outranks every duration here.** An action performed 100 or more times a day gets no animation, and a keyboard-initiated action is disqualified by that alone.
 
-## Two tests before you call it done
-
-**The squint test.** Blur the detail. Primary, secondary and the major groups must still read in that order.
+## One test before you call it done
 
 **The skeleton test.** Strip the copy out and look at the bare structure. If it only works once the words come back, the boldness was in the type size, not the design.
