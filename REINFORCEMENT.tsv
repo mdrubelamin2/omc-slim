@@ -81,11 +81,18 @@ librarian-prior-art	librarian	Report whether the problem is already solved	the n
 librarian-no-established-solution	librarian	there is no established solution	It is a real finding and it licenses the caller to build something bespoke
 librarian-say-you-dont-know	librarian	If the docs do not cover it, say so and report what they *do* cover	A confident answer assembled from adjacent facts is the failure mode of this role
 librarian-sources-travel	librarian	Every load-bearing claim gets a source	No source, no claim
-codemap-cost-is-real	codemap	This skill is expensive	it reads the whole tree and spawns one writer agent per directory|writes files into the user's repository|a `codemap.md` in every mapped directory|`.slim/codemap.json`, and a section in root `AGENTS.md`
-codemap-announce-gate	codemap	say what it will cost and what it will write, and get a yes first	Reaching for it unprompted is correct; doing so silently is not
-codemap-exclusions-mandatory	codemap	Select the core code and config, and nothing else	Exclude tests|`.gitignore` is applied for you|A map of the tests describes the tests, not the system
-codemap-agents-md-idempotent	codemap	skip this step	already contains a `## Repository Map` section|the reference is already set up
-codemap-registration-reason	codemap	auto-loads `AGENTS.md` into agent context on every session	To ensure agents automatically discover and use the codemap|update (or create) `AGENTS.md` at the repo root
+# RETIRED v0.14.0 — the codemap skill was removed. Three contract runs against
+# three fixtures of increasing size all ended in the same correct refusal: the
+# skill's own rule is "If the repo is small enough to read, read it", and a
+# fixture large enough to earn a map is larger than the case can cheaply build
+# or the suite can cheaply run. A component whose documented right answer is to
+# decline is a component the roster does not need. Rule 0b is met by deletion of
+# the text the rows pinned.
+# codemap-cost-is-real	codemap	This skill is expensive	it reads the whole tree and spawns one writer agent per directory|writes files into the user's repository|a `codemap.md` in every mapped directory|`.slim/codemap.json`, and a section in root `AGENTS.md`
+# codemap-announce-gate	codemap	say what it will cost and what it will write, and get a yes first	Reaching for it unprompted is correct; doing so silently is not
+# codemap-exclusions-mandatory	codemap	Select the core code and config, and nothing else	Exclude tests|`.gitignore` is applied for you|A map of the tests describes the tests, not the system
+# codemap-agents-md-idempotent	codemap	skip this step	already contains a `## Repository Map` section|the reference is already set up
+# codemap-registration-reason	codemap	auto-loads `AGENTS.md` into agent context on every session	To ensure agents automatically discover and use the codemap|update (or create) `AGENTS.md` at the repo root
 deep-interview-wrong-tool	deep-interview	Stop and say so if the request is already specific	Interviewing someone who has already told you exactly what they want is not diligence, it is friction|A one-line bug fix does not need a spec
 deep-interview-threshold	deep-interview	Threshold: keep interviewing above 4	Sum the scores|Report the starting score to the user so the gate is visible, not implied
 deep-interview-score-is-not-the-gate	deep-interview	It does not decide whether to build	the approval in step 5 does|a supported outcome, not a failure|teach itself to be ignored

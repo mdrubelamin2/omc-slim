@@ -5,6 +5,32 @@ Notable releases. Full reasoning for each is in
 
 ## v0.13.0
 
+The codemap skill is gone, and the contract suite is why.
+
+It was asked to map three fixtures of increasing size — 4 files, then 50, then
+50 across eight packages — and correctly declined every one. Its own
+`when_to_use` says "If the repo is small enough to read, read it", and each time
+it read the repo instead, mapped it in the reply, and explained the refusal. The
+third run named the fixture's own weakness: forty files "byte-identical except
+for its function name". A fixture large enough to earn a map is larger than the
+case can cheaply build or the suite can cheaply run, so the one behaviour the
+skill exists for is the one behaviour nothing could test. A component whose
+documented right answer is to decline is a component the roster does not need.
+
+Removed with it: the skill and its 1,184-line script, its 21-case suite, its
+contract case, checker and fixture, its CI step, its `SMOKE_FIXTURE` seam — which
+existed only for its filesystem assertion and became a variable nothing read —
+its routing exemption, and seven pins across both manifests, retired under Rule
+0b by deletion of the text they pinned. `docs/NATIVE.md` already argued this
+skill sat on the wrong side of a native comparison; that section stays, in the
+past tense, as the record of an argument that turned out to point the same way.
+
+Six skills now, not seven. Static surface 2,703 real tokens.
+
+No version bump: v0.13.0 was never tagged or published, so the removal folds
+into the entry below rather than opening a version nobody could have installed.
+
+
 The design owner is back, and this time it can look at what it built.
 
 `designer` was deleted in v0.10.0 on a cost argument: its slot "belongs to the

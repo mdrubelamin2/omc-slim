@@ -24,7 +24,7 @@ Craft. These fail a build, and they are what people cite when they want to be ri
 
 # What is dated
 
-**Calibrated 2026-09-05.** Past six months treat every item as a hypothesis to re-check.
+**Calibrated 2026-09-08.** Past six months treat every item as a hypothesis to re-check.
 
 Advisory only. Any one is a legitimate choice; all of them together is the fingerprint, and the finding is that none of them was decided.
 

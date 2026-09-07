@@ -151,7 +151,6 @@ here so it is not mistaken for an oversight.
 | `designer` | A first-party frontend-design skill | A bounded **writer agent** rather than guidance. Same taste injection, different mechanism — and this is the component the project's own keep/cut audit rated "Yet", meaning it compensates for timidity rather than incapability. |
 | `oracle` | `/security-review` covers the security slice (native since Aug 2025 — carried forward from the 2026-08-28 pass and **not re-verified against 2.1.251**; treat as dated) | The **architecture** slice is uncovered, and the assigned-opposing-position mechanism is not a native behaviour. Measured: assigning the opposing position produced 99.2% disagreement against a 48.3% baseline, while merely instructing dissent was statistically indistinguishable from baseline. |
 | `simplify` | `/simplify` — *"Review the changed code for reuse, simplification, efficiency, and altitude cleanups, then apply the fixes. Quality only — it does not hunt for bugs"*, model-invocable | Deliberate **Chesterton-fence deletion**: the introducing commit cited, the citation refused on a shallow clone or a move commit, and a declared-public-entrypoint check that runs before anything else. Native does post-change cleanup; this deletes what should never have been written. |
-| `codemap` | One `CLAUDE.md`/`AGENTS.md` | Hierarchical per-directory maps. Weakest row in this table, and the project says so — see below. |
 
 ## The output style, and the argument with an expiry date
 
@@ -233,9 +232,9 @@ an omission.
 | Class | Who owns it | Why it is not here |
 |---|---|---|
 | Crash and compaction survival | `planning-with-files` — plan, findings and progress on disk, re-injected each turn | `LIMITATIONS.md` names compaction eviction as a top failure mode and ships no mechanism for it |
-| Cost attribution per rule | `token-warden` — every rule pays rent against a frozen benchmark or is evicted | This plugin ships ~2,811 always-on tokens with no per-component accounting |
+| Cost attribution per rule | `token-warden` — every rule pays rent against a frozen benchmark or is evicted | This plugin ships ~2,703 always-on tokens with no per-component accounting |
 | Session resumption as an artefact | native `SessionStart` resume payload, `claude agents` | one hook that reports a condition |
-| Codebase indexing as a token strategy | `Graphify` — a queryable graph | `codemap` writes markdown |
+| Codebase indexing as a token strategy | `Graphify` — a queryable graph | nothing; `codemap` was removed in v0.13.0 |
 | Security posture | ECC's `agentshield`, native `--restricted` | there is no security section in this repository |
 | Team conventions and multi-repo | the project that owned this is dying, so the slot is open | flagged as a gap and never taken |
 
@@ -244,6 +243,14 @@ good at than orchestration is: **drift detection** — does the agent still foll
 the rule forty turns in? — and **onboarding quality**.
 
 ## `codemap`, and why a mitigation is not a fix
+
+**Resolved by removal in v0.13.0.** This section argued the skill sat on the
+wrong side of a native comparison and that its mitigations did not move it. It
+was removed for a different reason that points the same way: across three
+contract runs against three fixtures, the skill correctly declined every time,
+because its own rule is to read a repo small enough to read. The section stays as
+the record of the argument, in the past tense.
+
 
 The most-cited artefact complaint in the current corpus, dated 2026-08-27:
 *"I spent months blaming the model. The bugs were in my markdown: 50+ pointers to

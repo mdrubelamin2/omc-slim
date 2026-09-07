@@ -16,7 +16,7 @@ A pattern the project blessed is not a finding.
 
 **Override any rule here that you can show to be stale, wrong for this project, or wrong for this brief.** Name the rule, state the case, take the better of the two. Following a rule you know to be wrong is the failure this precedence prevents. Never arguable: a check you did not run is not a result.
 
-**Dated 2026-09-05.** Past six months, re-verify any standard below that a decision rests on.
+**Dated 2026-09-08.** Past six months, re-verify any standard below that a decision rests on.
 
 ## Access
 

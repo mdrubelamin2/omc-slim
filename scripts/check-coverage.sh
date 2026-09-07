@@ -731,7 +731,6 @@ root = sys.argv[1]
 
 ENTRY_POINTS = {
     # component: why nothing routes to it
-    'codemap': 'user-invoked on an unfamiliar repo, before any component runs',
     'deep-interview': 'runs before there is a plan for anything to route from',
 }
 # An exemption for a component that no longer exists silently shrinks the
@@ -892,12 +891,10 @@ NSPY
 # Not enrolled in the README hook counts above: those describe the hook suites,
 # and folding a component suite into that sentence would make it wrong in a
 # different way.
-# Both component suites, not just the one. codemap.mjs is 800+ lines, is the only
-# thing here that writes into the USER's repository, and its suite was reachable
-# from CI and from nothing else — so a local `check-coverage.sh` reported green
-# over a broken codemap. The hook suites above are enrolled with README counts
-# because those counts are published; these two are enrolled for the exit code.
-JS_RUNTIME=$(command -v bun || command -v node)
+# Every component suite, not just the hook ones: a suite reachable from CI and
+# from nothing else means a local `check-coverage.sh` reports green over a broken
+# component. The hook suites above are enrolled with README counts because those
+# counts are published; these are enrolled for the exit code.
 # The design audit drives a headless browser over the DevTools protocol and needs
 # the global WebSocket that Node 22 carries, so it is pinned to node rather than
 # taking whichever runtime is first on PATH.
@@ -908,7 +905,6 @@ COMPONENT_OUT=$(mktemp -d)
 trap 'rm -rf "$COMPONENT_OUT"; rm -f "$OMC_SLIM_MEASURE_CACHE"' EXIT
 COMPONENT_SUITES=(
   "bash $ROOT/skills/review/scripts/base.test.sh"
-  "$JS_RUNTIME $ROOT/skills/codemap/scripts/codemap.test.mjs"
   "bash $ROOT/scripts/optional/statusline.test.sh"
   "${NODE_RUNTIME:-node} $ROOT/skills/design/scripts/audit.test.mjs"
 )

@@ -40,22 +40,37 @@ Lead with the answer. No preamble, no restating the question, no narrating your 
 
 ## Output
 
+Three live runs settled the cause with a reproduction and wrote it as prose,
+because a hypothesis ledger is shaped for an investigation that is still open.
+This is the shape they reached for, with the two things the ledger protected
+kept: what you killed carries the evidence that killed it, and `undetermined`
+stays distinct from `ruled out`.
+
 ```
 <observation>
-Exact symptom, verbatim where possible.
+The symptom verbatim, and the command that reproduces it.
 </observation>
-<hypotheses>
-H1 <one line>
-   for:     file.ts:42  what supports it
-   against: file.ts:88  what contradicts it
-   verdict: likely | possible | ruled out | undetermined
-H2 ...
-</hypotheses>
-<conclusion>
-Most probable cause and why. If unresolved, say so plainly and state the one check that would settle it.
-</conclusion>
+<cause>
+The one that survived, at file:line, with the evidence that settled it — a run,
+a diff, a reproduction on a scratch copy. No cause survived? Say `undetermined`
+and name the check that would decide it.
+</cause>
+<killed>
+Every competing cause you ruled out, one line each: the cause, then what killed
+it. `undetermined` where the evidence you can reach does not settle it — that is
+not `ruled out`, and collapsing the two costs the caller the difference between
+a closed door and one you could not open.
+</killed>
+<next>
+Who acts and on what. What you did not change.
+</next>
 ```
 
-Never end with a confident single cause when the evidence supports two. Reporting genuine ambiguity is a correct answer.
+**`<killed>` is not optional and it is not prose.** You generated at least three
+competing causes before gathering evidence; this is where the caller reads which
+ones died and on what. A rejected cause mentioned in a sentence is not a rejected
+cause with its evidence attached, and the ledger is the only part of your answer
+they cannot reconstruct for themselves.
 
-**`undetermined` is not `ruled out`.** One says the evidence you can reach does not settle it; the other says it is false. Collapsing them loses the caller the distinction between a closed door and one you could not open, and only the second is worth their time. Where a hypothesis is undetermined, name the check that would decide it.
+Never end with a confident single cause when the evidence supports two. Reporting
+genuine ambiguity is a correct answer.

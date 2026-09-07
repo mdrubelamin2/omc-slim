@@ -42,7 +42,6 @@ Multiple readings of the request? Present them; do not pick silently. Work that 
 - **deep-interview**: requirements, then a hard stop for approval.
 - **simplify**: delete code that should never have been written; behaviour preserved exactly.
 - **verification-planning**: design the evidence path that would prove a change.
-- **codemap**: map an unfamiliar repository. Expensive: state the cost, get a yes.
 - **design**: build or judge an interface, then render it and report what a script measured.
 
 **Survey the toolset before settling for a built-in.** Both scopes carry components, the project's `.claude/` and the user's `~/.claude/`, which usually holds more. Names say nothing about subject, so read descriptions; `ToolSearch` reaches deferred tools. An unsearched tool is invisible, not absent. Prefer one built for this stack, name the route, once a session.

@@ -22,22 +22,24 @@
 #   ./scripts/bench/smoke-contracts.sh             # dry run, prints the calls
 #   ./scripts/bench/smoke-contracts.sh --self-test # prove the checkers can fail
 #   ./scripts/bench/smoke-contracts.sh --execute   # spends real money
+#   ./scripts/bench/smoke-contracts.sh --execute design codemap   # only those
+#
+# SMOKE_LOG_DIR=<dir> keeps each response on disk. Without it a failing case
+# returns a verdict and nothing to act on, and the only way to diagnose one is
+# to pay for the whole run again.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EXECUTE=""
 SELF_TEST=""
 case "${1:-}" in
-  --execute)   EXECUTE=1 ;;
-  --self-test) SELF_TEST=1 ;;
+  --execute)   EXECUTE=1; shift ;;
+  --self-test) SELF_TEST=1; shift ;;
   "")          : ;;
-  *)           echo "usage: $(basename "$0") [--execute | --self-test]" >&2; exit 2 ;;
+  *)           echo "usage: $(basename "$0") [--execute [name...] | --self-test]" >&2; exit 2 ;;
 esac
-
-# Set by the runner to the throwaway fixture a case ran in, so a checker can
-# assert on the filesystem as well as on the text. Empty for the cases that run
-# against the real repository, which is what keeps those assertions off it.
-SMOKE_FIXTURE=""
+# Remaining arguments name the cases to run. Empty means all of them.
+ONLY=("$@")
 
 # =============================================================================
 # Checkers
@@ -83,24 +85,6 @@ check_librarian() {
     || { echo "no source URL or on-disk path; librarian must cite, never recall"; return 1; }
   return 0
 }
-
-# fixer: the output contract at agents/fixer.md "## Register and output
-# contract" — summary, changes, and a verification block that names what ran and
-# what it said. The verification block is the half that rots first, because an
-# agent that just edited files has already "finished" in its own telling.
-check_fixer() {
-  local out; out="$(cat)"
-  printf '%s' "$out" | grep -q '<changes>' \
-    || { echo "no <changes> block; fixer must list what it touched"; return 1; }
-  printf '%s' "$out" | grep -q '<verification>' \
-    || { echo "no <verification> block; the contract requires one on every return"; return 1; }
-  printf '%s' "$out" | grep -qE '^[[:space:]]*-[[:space:]]*performed:' \
-    || { echo "<verification> names no command performed"; return 1; }
-  printf '%s' "$out" | grep -qEi '^[[:space:]]*-[[:space:]]*result:[[:space:]]*(passed|failed|not run)' \
-    || { echo "<verification> states no result of passed|failed|not run"; return 1; }
-  return 0
-}
-
 # designer: agents/designer.md "## Report what you found, not what you feel" —
 # asked to audit, it ships the mechanical fixes and reports the rest with
 # locations and a measured number, its own example being a contrast ratio at
@@ -113,17 +97,21 @@ check_fixer() {
 # pointing the other way. Asserting it would be asserting a contract that does
 # not exist, which is the one failure worse than no check. The audit is the
 # cheapest thing the file does promise.
-check_designer() {
+check_design() {
   local out; out="$(cat)"
   local located="" fixed=""
   printf '%s' "$out" | grep -qE '[A-Za-z0-9_./-]+\.(tsx|jsx|ts|js|css|html|svelte):[0-9]+' && located=1
-  printf '%s' "$out" | grep -q '<changes>' \
-    && printf '%s' "$out" | grep -qE '^[[:space:]]*-[[:space:]]*[A-Za-z0-9_./-]+\.(tsx|jsx|ts|js|css|html|svelte)([[:space:]]|$)' \
+  printf '%s' "$out" | sed -n '/<changes>/,/<\/changes>/p' \
+    | grep -qE '[A-Za-z0-9_./-]+\.(tsx|jsx|ts|js|css|html|svelte)' \
     && fixed=1
   [ -n "$located$fixed" ] \
     || { echo "no file:line finding and no <changes> entry naming a file; an audit locates what it leaves and lists what it fixed"; return 1; }
-  printf '%s' "$out" | grep -qiE 'contrast|ratio|focus|aria|semantic|keyboard|reduced-motion|tab order' \
+  printf '%s' "$out" | grep -qiE 'contrast|ratio|focus|aria|semantic|keyboard|reduced-motion|tab order|target size' \
     || { echo "no concrete interface property named; this is advice, not a finding"; return 1; }
+  printf '%s' "$out" | grep -q '<verification>' \
+    || { echo "no <verification> block; SKILL.md's Output contract requires one"; return 1; }
+  printf '%s' "$out" | grep -qiE 'NOT VISUALLY VERIFIED|[0-9]+ of [0-9]+ check|[0-9]+ of [0-9]+ passed|advisor' \
+    || { echo "verification names neither a measured count nor what did not run"; return 1; }
   return 0
 }
 
@@ -133,15 +121,20 @@ check_designer() {
 # fail even if it is right.
 check_tracer() {
   local out; out="$(cat)"
-  local h
-  for h in H1 H2 H3; do
-    printf '%s' "$out" | grep -q "$h" \
-      || { echo "only found hypotheses up to ${h%[0-9]}$((${h#H} - 1)); contract requires three"; return 1; }
-  done
-  printf '%s' "$out" | grep -qi 'for:' \
-    || { echo "no evidence-for line; a hypothesis without evidence is a guess"; return 1; }
-  printf '%s' "$out" | grep -qi 'against:' \
-    || { echo "no evidence-against line; a hypothesis you only confirmed is untested"; return 1; }
+  printf '%s' "$out" | grep -q '<cause>' \
+    || { echo "no <cause> block; the contract names the one that survived, or undetermined"; return 1; }
+  printf '%s' "$out" | grep -q '<killed>' \
+    || { echo "no <killed> block; the ledger of what you ruled out is the part the caller cannot reconstruct"; return 1; }
+  local killed
+  killed=$(printf '%s' "$out" | sed -n '/<killed>/,/<\/killed>/p' | grep -cE '^[[:space:]]*[^<[:space:]]')
+  [ "$killed" -ge 2 ] \
+    || { echo "<killed> lists $killed cause(s); at least three competed, so at least two died"; return 1; }
+  # Evidence attached, not mentioned: a path, a command, a commit or a run.
+  printf '%s' "$out" | sed -n '/<killed>/,/<\/killed>/p' \
+    | grep -qE '[A-Za-z0-9_./-]+\.(py|ts|tsx|js|mjs|sh|md):[0-9]+|`[^`]+`|[0-9a-f]{7}' \
+    || { echo "nothing in <killed> points at evidence; a cause dismissed without it is an opinion"; return 1; }
+  printf '%s' "$out" | grep -qi 'undetermined\|ruled out' \
+    || { echo "no verdict vocabulary; undetermined and ruled out are different answers"; return 1; }
   return 0
 }
 
@@ -179,8 +172,8 @@ check_review() {
     || { echo "no 'Review: <verdict>' header; that line is the skill's output contract"; return 1; }
   printf '%s' "$out" | grep -qE '^[[:space:]]*Lanes:' \
     || { echo "no 'Lanes:' line; a lane silently skipped reads as a lane that found nothing"; return 1; }
-  printf '%s' "$out" | grep -qE '^[[:space:]]*Lanes:.*Adversarial:' \
-    || { echo "no 'Adversarial:' on the Lanes line; a pass nobody reports reads the same as one nobody ran"; return 1; }
+  printf '%s' "$out" | grep -qE 'Adversarial:[[:space:]]*[^[:space:]]' \
+    || { echo "no 'Adversarial:' field with a value; a pass nobody reports reads the same as one nobody ran"; return 1; }
   printf '%s' "$out" | grep -qE '[1-9][0-9]* finding' \
     || { echo "reported no findings; the fixture plants an interpolated SQL query"; return 1; }
   printf '%s' "$out" | grep -qE '[A-Za-z0-9_./-]+\.(py|js|ts|sh|mjs):[0-9]+' \
@@ -257,26 +250,6 @@ check_simplify() {
 # say what it costs, say what it will write, and get a yes FIRST. This is the
 # only skill case with evidence outside the text: the fixture must still be
 # clean afterwards. A skill that announced the gate and then wrote anyway fails
-# on the filesystem, not the prose.
-check_codemap() {
-  local out; out="$(cat)"
-  printf '%s' "$out" | grep -qiE 'expensive|cost|\$|minutes' \
-    || { echo "did not announce the cost; the skill must state it before starting"; return 1; }
-  printf '%s' "$out" | grep -q 'codemap.md' \
-    || { echo "did not say it writes codemap.md into the repository"; return 1; }
-  printf '%s' "$out" | grep -qiE 'shall i|should i|do you want|want me to|go ahead|proceed|confirm' \
-    || { echo "did not ask; reaching for it unprompted is correct, doing so silently is not"; return 1; }
-  printf '%s' "$out" | grep -q '?' \
-    || { echo "no question asked before writing"; return 1; }
-  if [ -n "$SMOKE_FIXTURE" ]; then
-    local written
-    written="$(find "$SMOKE_FIXTURE" \( -name 'codemap.md' -o -name 'codemap.json' \) -print -quit 2>/dev/null)"
-    [ -z "$written" ] \
-      && return 0 || { echo "wrote $written before the gate; the ask is not decoration"; return 1; }
-  fi
-  return 0
-}
-
 # =============================================================================
 # Sourcing this file defines the checkers and runs nothing, so they can be tested
 # against known-bad input from elsewhere. A checker that cannot fail proves
@@ -380,35 +353,9 @@ PY
   commit_all "$dir" "initial"
   printf '%s' "$dir"
 }
-
-# A shared function missing a guard that three callers depend on. The spec in the
-# prompt names the fix; the case asserts fixer returned its verification block.
-fixture_fixer() {
-  local dir; dir="$(new_fixture)" || return 1
-  cat >"$dir/stats.py" <<'PY'
-def mean(values):
-    return sum(values) / len(values)
-
-
-def daily_average(readings):
-    return mean(readings)
-
-
-def weekly_average(readings):
-    return mean(readings)
-
-
-def sensor_average(readings):
-    return mean([r for r in readings if r is not None])
-PY
-  init_git_repo "$dir"
-  commit_all "$dir" "initial"
-  printf '%s' "$dir"
-}
-
 # One header component with three findable interface defects: a div acting as a
 # button, #aaa on #ffffff (about 2.3:1), and no focus style anywhere.
-fixture_designer() {
+fixture_design() {
   local dir; dir="$(new_fixture)" || return 1
   cat >"$dir/Header.tsx" <<'TSX'
 export function Header({ onSignIn }: { onSignIn: () => void }) {
@@ -640,19 +587,6 @@ PY
 
 # A throwaway tree for codemap to want to map. It has no codemap.md, no
 # .slim/codemap.json and no AGENTS.md, so anything the checker finds afterwards
-# was written past the gate.
-fixture_codemap() {
-  local dir; dir="$(new_fixture)" || return 1
-  mkdir -p "$dir/src/api" "$dir/src/store"
-  printf 'from src.store import records\n\n\ndef handle_get(record_id):\n    return records.load(record_id)\n' >"$dir/src/api/handlers.py"
-  printf 'ROUTES = {"/records/<id>": "handle_get"}\n' >"$dir/src/api/routes.py"
-  printf '_DATA = {}\n\n\ndef load(record_id):\n    return _DATA.get(record_id)\n\n\ndef save(record_id, value):\n    _DATA[record_id] = value\n' >"$dir/src/store/records.py"
-  printf '{"name": "scratch", "version": "0.1.0"}\n' >"$dir/package.json"
-  init_git_repo "$dir"
-  commit_all "$dir" "initial"
-  printf '%s' "$dir"
-}
-
 # =============================================================================
 # Non-vacuity: every checker rejects a realistic bad output and accepts a
 # realistic good one.
@@ -735,84 +669,82 @@ As far as I recall, when_to_use is supported and its text loads with the skill
 description at session start.
 EOF
 
-  expect check_fixer accept "full output contract" <<'EOF'
-<summary>
-mean() now raises a clear error on empty input instead of dividing by zero.
-</summary>
+
+
+
+
+
+  expect check_design accept "measured audit that shipped the mechanical fixes" <<'EOF'
+<mode>replicate</mode>
 <changes>
-- stats.py — guard added in mean(), the shared function all three callers reach
+- Header.tsx  div with onClick became a button; #aaaaaa became #595959; outline: none replaced by a 2px focus ring
 </changes>
-<verification>
-- performed: python3 -c "import stats; stats.mean([])"
-- result: passed
-</verification>
+<verification>29 of 31 checks passed at 1280x713; contrast and target size were the two that failed before the fix; 0 advisory</verification>
 EOF
 
-  expect check_fixer reject "edits reported without a verification block" <<'EOF'
-<summary>
-mean() now raises a clear error on empty input instead of dividing by zero.
-</summary>
-<changes>
-- stats.py — guard added in mean()
-</changes>
-I did not run anything, but the change is small and obviously correct.
+  expect check_design accept "no browser, named honestly" <<'EOF'
+<mode>replicate</mode>
+Header.tsx:8 — the sign-in control is a div with onClick: no keyboard path, no role.
+Header.tsx:10 — outline: none removes the focus ring with nothing replacing it.
+<verification>NOT VISUALLY VERIFIED. No browser and no connected devtools tool, so every rendered assertion in floor.md is unrun: contrast ratios, target sizes, overflow.</verification>
 EOF
 
-  expect check_designer accept "located, concrete interface findings" <<'EOF'
-Header.tsx:8 — the sign-in control is a div with onClick: no keyboard path and
-no role. Header.tsx:10 — #aaaaaa on #ffffff is 2.3:1, under the 4.5:1 minimum,
-and outline: none removes the focus ring with nothing replacing it.
+  expect check_design reject "a verdict with no verification block" <<'EOF'
+<mode>replicate</mode>
+Header.tsx:10 — #aaaaaa on #ffffff fails the contrast floor and outline: none removes the focus ring.
+Looks good otherwise.
 EOF
 
-  expect check_designer accept "audit that shipped the mechanical fixes" <<'EOF'
-<summary>
-The sign-in control is a real button with a visible focus ring and 7.0:1 contrast.
-</summary>
-<changes>
-- Header.tsx  div with onClick became a button; #aaaaaa became #595959 (7.0:1 on white); outline: none replaced by a 2px focus ring
-</changes>
-<verification>
-- performed: npx tsc --noEmit
-- result: passed — 1/1 file
-</verification>
-EOF
-
-  expect check_designer reject "vague advice with no location" <<'EOF'
+  expect check_design reject "vague advice with no location" <<'EOF'
 The header could be stronger. Consider improving the accessibility and the
 visual hierarchy, and giving the sign-in action more presence.
 EOF
 
-  expect check_tracer accept "three hypotheses, evidence both ways" <<'EOF'
+  expect check_tracer accept "cause settled, ledger carries what died" <<'EOF'
 <observation>
-render(["9.0", "10.0"]) returns "10.0\n9.0".
+render(["9.0","10.0"]) returns "10.0\n9.0". Repro: python3 -c "from report import render; print(render(['9.0','10.0']))"
 </observation>
-<hypotheses>
-H1 versions.py sorts lexically
-   for:     versions.py:8 — plain sorted(names)
-   against: none found
-   verdict: likely
-H2 _CACHE holds a pre-fix result
-   for:     versions.py:5 — returns the cached list unconditionally
-   against: report.py re-sorts afterwards, so the cache cannot decide the output
-   verdict: ruled out
-H3 report.py re-sorts and overrides
-   for:     report.py:6 — sorted(ordered) with no key
-   against: git log shows the key was reverted deliberately
-   verdict: possible
-</hypotheses>
-<conclusion>
-H1 and H3 both hold; the lexical sort at report.py:6 decides the output today.
-</conclusion>
+<cause>
+report.py:6 re-sorts unkeyed and overwrites whatever versions.py returned. A numeric key applied at report.py:6 alone on a scratch copy returns "9.0\n10.0".
+</cause>
+<killed>
+The memoised list in versions.py — ruled out: the scratch copy re-sorts whatever the cache returns, `9d25198` replayed cold and warm gives the same order.
+Stale bytecode — ruled out: the .pyc mtimes match their sources and only one copy of each module exists.
+Which input the user re-tested with — undetermined: nothing in the repo records the command, and `1.0-rc1` would have raised ValueError rather than sorting wrong.
+</killed>
+<next>
+A briefed writer puts the numeric key in versions.py:8 with a test that fails against HEAD. I changed nothing.
+</next>
 EOF
 
-  expect check_tracer reject "one confident cause" <<'EOF'
+  expect check_tracer reject "one confident cause, nothing killed" <<'EOF'
 <observation>
-render(["9.0", "10.0"]) returns "10.0\n9.0".
+render(["9.0","10.0"]) returns "10.0\n9.0".
 </observation>
-<conclusion>
-versions.py:8 sorts lexically. That is the cause. Add a numeric key.
-</conclusion>
+<cause>
+report.py:6 sorts lexically. Fix that line.
+</cause>
+<next>
+Apply the fix.
+</next>
 EOF
+
+  expect check_tracer reject "causes dismissed with no evidence" <<'EOF'
+<observation>
+render(["9.0","10.0"]) returns "10.0\n9.0".
+</observation>
+<cause>
+report.py:6 re-sorts unkeyed.
+</cause>
+<killed>
+The cache — ruled out, it seemed unlikely.
+Stale bytecode — ruled out, probably not the issue.
+</killed>
+<next>
+A briefed writer applies it.
+</next>
+EOF
+
 
   expect check_review accept "two-line header, located finding" <<'EOF'
 Review: fix first [attempt 1 of 3]. 2 findings (1 critical, 1 required, 0 optional; 0 of them pre-existing)
@@ -899,40 +831,12 @@ I made notify.py simpler. The factory is gone, the helpers read better now, and
 the config is tidier than it was.
 EOF
 
-  expect check_codemap accept "announces cost, names writes, asks" <<'EOF'
-Before I start: this is expensive. It reads the whole tree and dispatches one
-fixer per directory — on this repo that is roughly $3 and several minutes.
-
-It also writes into your repository: a codemap.md in src/api/ and src/store/,
-.slim/codemap.json, and a Repository Map section in AGENTS.md.
-
-Shall I go ahead?
-EOF
-
-  expect check_codemap reject "starts mapping without the gate" <<'EOF'
-Mapping the repository now. I will begin with src/api/ and work down the tree.
-EOF
-
-  # The same good text, with the fixture showing a file was written anyway. This
-  # is the sub-assertion that no format imitation can satisfy.
-  local written_dir
-  written_dir="$(new_fixture)" && FIXTURES+=("$written_dir")
-  printf '# src/api/\n' >"$written_dir/codemap.md"
-  SMOKE_FIXTURE="$written_dir"
-  expect check_codemap reject "gate announced but a codemap.md was written anyway" <<'EOF'
-Before I start: this is expensive, roughly $3 and several minutes. It writes a
-codemap.md into every mapped directory and a section in AGENTS.md.
-
-Shall I go ahead?
-EOF
-  SMOKE_FIXTURE=""
-
   # A fixture that fails to build fails its case with no evidence either way, and
   # nothing else in a dry run would notice. Build each one for real.
   echo
   local builder dir files review_dir=""
-  for builder in fixture_scratch fixture_fixer fixture_designer fixture_tracer \
-                 fixture_review fixture_simplify fixture_codemap; do
+  for builder in fixture_scratch fixture_design fixture_tracer \
+                 fixture_review fixture_simplify; do
     dir="$("$builder")"
     if [ -z "$dir" ] || [ ! -d "$dir" ]; then
       st_fail=$((st_fail + 1)); printf '  FAIL  %-28s did not build\n' "$builder"; continue
@@ -991,8 +895,6 @@ CASES=(
   "explorer|agent|check_explorer|-|12|Use the omc-slim explorer agent. Where is the transcript size cap defined and enforced in this repository's hook?"
   "oracle|agent|check_oracle|-|12|Use the omc-slim oracle agent. Is shelling out to a destructive-then-restore mutation suite from inside a routine repository checker the right design here?"
   "librarian|agent|check_librarian|-|12|Use the omc-slim librarian agent. Is when_to_use a currently supported Claude Code skill frontmatter field, and when is its text loaded?"
-  "fixer|agent|check_fixer|fixture_fixer|20|Use the omc-slim fixer agent with this spec: stats.py mean() divides by zero on an empty list. Add the guard in the shared function rather than in each of the three callers, and leave one runnable check behind."
-  "designer|agent|check_designer|fixture_designer|14|Use the omc-slim designer agent to audit Header.tsx: fix the interface problems that are mechanical, and report the rest with their locations."
   "tracer|agent|check_tracer|fixture_tracer|18|Use the omc-slim tracer agent. render([\"9.0\", \"10.0\"]) returns \"10.0\" before \"9.0\". I already tried fixing the sort and it is still broken. Why?"
 
   # --- Skills: output shape is the evidence, and it is weaker ----------------
@@ -1002,7 +904,7 @@ CASES=(
   "deep-interview|skill|check_deep_interview|fixture_scratch|14|Use the omc-slim:deep-interview skill. I have an idea: build me a dashboard for this service."
   "verification-planning|skill|check_verification_planning|fixture_scratch|16|Use the omc-slim:verification-planning skill. How do I prove that switching app/store.py from a dict to SQLite did not break app/api.py?"
   "simplify|skill|check_simplify|fixture_simplify|28|Use the omc-slim:simplify skill on notify.py."
-  "codemap|skill|check_codemap|fixture_codemap|10|Use the omc-slim:codemap skill on this repository."
+  "design|skill|check_design|fixture_design|24|Use the omc-slim:design skill on Header.tsx. Judge the interface and fix what is mechanical."
 )
 
 # The denominator is read off disk, not hard-coded, so adding a thirteenth
@@ -1023,6 +925,11 @@ echo
 pass=0; fail=0; total_cost="0"
 for spec in "${CASES[@]}"; do
   IFS='|' read -r name kind checker fixture turns prompt <<<"$spec"
+  if [ ${#ONLY[@]} -gt 0 ]; then
+    wanted=""
+    for pick in "${ONLY[@]}"; do [ "$pick" = "$name" ] && wanted=1; done
+    [ -n "$wanted" ] || continue
+  fi
 
   # A case with a throwaway tree may write in it; a case running against this
   # repository may not. Same tool string as run-arm.sh:50 for the write set.
@@ -1040,33 +947,114 @@ for spec in "${CASES[@]}"; do
   printf '  %-22s ' "$name"
 
   workdir="$ROOT"
-  SMOKE_FIXTURE=""
   if [ "$fixture" != "-" ]; then
     workdir="$("$fixture")"
     if [ -z "$workdir" ] || [ ! -d "$workdir" ]; then
       echo "FAIL  fixture $fixture did not build"; fail=$((fail + 1)); continue
     fi
     FIXTURES+=("$workdir")
-    SMOKE_FIXTURE="$workdir"
   fi
 
+  # stream-json, not json. `json` returns only the MAIN THREAD's final message,
+  # so an agent case was grading the orchestrator's paraphrase against the
+  # subagent's output contract — the agent's own text never reached the checker.
+  # explorer, oracle and librarian passed anyway because a file:line map and a
+  # cited source survive being summarised; a structured block does not. The
+  # stream carries the Agent tool_result, which is the agent's real answer.
   argv=(claude -p "$prompt" --plugin-dir "$ROOT" --setting-sources "project" \
-    --output-format json --allowedTools "$tools" --max-turns "$turns")
+    --output-format stream-json --verbose --allowedTools "$tools" --max-turns "$turns")
 
-  envelope="$(cd "$workdir" && "${argv[@]}" </dev/null 2>/dev/null)"
-  if [ -z "$envelope" ]; then
+  stream_file="$(mktemp "${TMPDIR:-/tmp}/omc-stream.XXXXXX")"
+  (cd "$workdir" && "${argv[@]}" </dev/null 2>/dev/null) > "$stream_file"
+  if [ ! -s "$stream_file" ]; then
+    rm -f "$stream_file"
     echo "FAIL  (no response)"; fail=$((fail + 1)); continue
   fi
 
-  read -r spawned kinds cost < <(printf '%s' "$envelope" | python3 -c '
+  if ! parsed="$(SMOKE_KIND="$kind" python3 -c '
+import json, os, sys
+
+kind = os.environ.get("SMOKE_KIND", "")
+rows = []
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        rows.append(json.loads(line))
+    except ValueError:
+        continue
+
+final = next((r for r in reversed(rows) if r.get("type") == "result"), {})
+st = final.get("subagent_stats") or {}
+by = st.get("by_type") or {}
+
+def content_of(row):
+    # Some stream rows carry `message` as a plain string rather than an object.
+    # Assuming a dict crashed the parser mid-suite and, before the exit code was
+    # checked, that crash read as "no subagent spawned" — a parse fault reported
+    # as a component failure.
+    msg = row.get("message")
+    if not isinstance(msg, dict):
+        return None
+    content = msg.get("content")
+    return content if isinstance(content, list) else None
+
+
+# The agent contract is checked against the AGENT, not against the summary of it.
+agent_ids = set()
+for r in rows:
+    content = content_of(r)
+    if content:
+        for b in content:
+            if isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") in ("Agent", "Task"):
+                agent_ids.add(b.get("id"))
+
+def text_of(block):
+    c = block.get("content")
+    if isinstance(c, str):
+        return c
+    if isinstance(c, list):
+        return "".join(x.get("text", "") for x in c if isinstance(x, dict))
+    return ""
+
+agent_out = []
+for r in rows:
+    content = content_of(r)
+    if content:
+        for b in content:
+            if isinstance(b, dict) and b.get("type") == "tool_result" and b.get("tool_use_id") in agent_ids:
+                agent_out.append(text_of(b))
+
+body = "\n\n".join(t for t in agent_out if t.strip()) if kind.startswith("agent") else ""
+if not body:
+    body = final.get("result") or ""
+
+meta = {
+    "spawned": st.get("spawned", 0),
+    "kinds": ",".join(sorted(by)) or "-",
+    "cost": round(final.get("total_cost_usd") or 0, 4),
+}
+sys.stdout.write(json.dumps(meta) + "\n" + body)
+' < "$stream_file")"; then
+    rm -f "$stream_file"
+    echo "FAIL  (stream could not be parsed; not a verdict on the component)"
+    fail=$((fail + 1)); continue
+  fi
+  rm -f "$stream_file"
+
+  read -r spawned kinds cost < <(printf '%s' "$parsed" | head -1 | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
-st = d.get("subagent_stats") or {}
-by = st.get("by_type") or {}
-kinds = ",".join(sorted(by)) or "-"
-print(st.get("spawned", 0), kinds, round(d.get("total_cost_usd") or 0, 4))
+print(d["spawned"], d["kinds"], d["cost"])
 ')
-  response="$(printf '%s' "$envelope" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("result") or "")')"
+  response="$(printf '%s' "$parsed" | tail -n +2)"
+  # Kept, not discarded. A failing case used to return a verdict and nothing to
+  # act on, so the only way to diagnose one was to pay for the run again.
+  if [ -n "${SMOKE_LOG_DIR:-}" ]; then
+    mkdir -p "$SMOKE_LOG_DIR"
+    printf '%s' "$response" > "$SMOKE_LOG_DIR/$name.txt"
+  fi
   total_cost="$total_cost + $cost"
 
   # Dispatch evidence, before the contract check. For an agent the contract

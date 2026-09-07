@@ -4,7 +4,7 @@ Opened from [`SKILL.md`](./SKILL.md) when authoring. A replication run takes its
 
 Starting positions. Each is a reasonable default and none is a target. **Arriving at all of them unchanged is the tell.**
 
-**Dated 2026-09-05.** Conventions, not law. Everything above this file in the precedence list in [`floor.md`](./floor.md) outranks it, and [`domains.md`](./domains.md) overrides individual values.
+**Dated 2026-09-08.** Conventions, not law. Everything above this file in the precedence list in [`floor.md`](./floor.md) outranks it, and [`domains.md`](./domains.md) overrides individual values.
 
 ## Typography
 

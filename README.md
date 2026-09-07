@@ -13,7 +13,7 @@ It is honest about what it cannot do, on this page, further down. Read that part
 /plugin install omc-slim@omc-slim
 ```
 
-That is the whole setup. Four agents, seven skills, one hook, four commands and one output style turn on together.
+That is the whole setup. Four agents, six skills, one hook, four commands and one output style turn on together.
 
 Try it first without installing:
 
@@ -34,7 +34,7 @@ claude --plugin-dir ./omc-slim
 
 **It says what it could not check.** A review finding must quote the line that proves it. A finding with no evidence is dropped, not reported. What could not be verified is written down instead of smoothed over.
 
-**It stays out of your way.** ~2,811 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
+**It stays out of your way.** ~2,703 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
 
 ---
 
@@ -44,11 +44,7 @@ You should not have to remember any names. Ask in plain language and routing usu
 
 ### "I have never seen this repository before"
 
-Ask a question about it first: *"where does the retry logic live?"* That is the `omc-slim:explorer` agent. It returns a `file:line` map, not prose, and it refuses to fix anything it finds.
-
-Only reach for the `omc-slim:codemap` skill when nobody on the team has read the repo and several people need to. It writes a `codemap.md` into every directory plus a root atlas. It is expensive — one 362-file repo cost $6.09 — so it states the cost and waits for your yes.
-
-> Rule of thumb: the `omc-slim:explorer` agent answers one question about one place. The `omc-slim:codemap` skill maps a whole repo for many people and leaves it on disk. If you could just read the repo, read it.
+Ask a question about it first: *"where does the retry logic live?"* That is the `omc-slim:explorer` agent. It returns a `file:line` map, not prose, and it refuses to fix anything it finds. If you could just read the repo, read it.
 
 ### "This bug keeps coming back"
 
@@ -118,7 +114,6 @@ These are the pairs people confuse.
 
 | If you are torn between | Choose by asking |
 |---|---|
-| explorer / codemap | Do I need one answer, or a durable map for the whole team? |
 | explorer / review | Am I locating code, or judging it? explorer never judges. |
 | tracer / review | Do I know the cause? No → tracer. Yes, and there is a diff → review. |
 | oracle / review | Is the thing a decision or a diff? Decisions go to oracle. |
@@ -150,7 +145,6 @@ Ask in plain language. You should not need to name any of these.
 | [deep-interview](./skills/deep-interview/SKILL.md) | *"I want to build something, not sure what."* | Interviews you, writes a spec, stops for approval |
 | [verification-planning](./skills/verification-planning/SKILL.md) | *"How do I prove this did not break anything?"* | Designs the evidence path. Writes no tests |
 | [simplify](./skills/simplify/SKILL.md) | *"This is over-built."* | Deletes what should never have been written |
-| [codemap](./skills/codemap/SKILL.md) | *"Nobody here has read this repository."* | A codemap per directory plus a root atlas |
 | [design](./skills/design/SKILL.md) | *"Build this page."* · *"This UI is generic."* | Builds or judges an interface, then reports what a script measured |
 
 Every one also has an explicit form, and the agents work with the output style off: `/omc-slim:explorer`, `/omc-slim:librarian`, `/omc-slim:tracer`, `/omc-slim:oracle`, `/omc-slim:review`, `/omc-slim:deepwork`, and the rest.
@@ -159,7 +153,7 @@ Every one also has an explicit form, and the agents work with the output style o
 
 ## What it costs
 
-**~2,811 tokens** of always-on context, and nothing injected per tool call. Treat it as a floor. The harness adds framing that no text measurement sees, so the real figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)). `./scripts/measure-context.sh` re-derives it, and also prints **3,173 on a chars/4 basis**, the estimate this project's version series is tracked on.
+**~2,703 tokens** of always-on context, and nothing injected per tool call. Treat it as a floor. The harness adds framing that no text measurement sees, so the real figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)). `./scripts/measure-context.sh` re-derives it, and also prints **3,061 on a chars/4 basis**, the estimate this project's version series is tracked on.
 
 Two settings of yours will save more than this plugin costs. Neither is a plugin change:
 

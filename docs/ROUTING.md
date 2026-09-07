@@ -1,6 +1,8 @@
 # What invokes automatically
 
 > **Measured against the v0.9.x roster, which is not the roster that ships.**
+> `codemap` was removed in v0.13.0 as well, so its rows below describe a skill
+> the plugin no longer carries.
 > `designer` and `fixer` appear below and were deleted in v0.10.0; the `design`
 > skill added in v0.13.0 has never been probed. Every row naming either agent
 > describes a component you cannot invoke, and the absence of a `design` row is

@@ -161,7 +161,7 @@ Then stop. **This budget covers one invocation of this skill.** **Invoked withou
 
 ```
 Review: <ship | fix first | needs a decision> [attempt N of M]. N findings (X critical, Y required, Z optional; P of them pre-existing)
-Lanes: <ran>. Skipped: <lane (reason)>. Adversarial: <N found | nothing>
+Lanes: <ran>. Skipped: <lane (reason)>. Adversarial: <N found | nothing | skipped (reason)>
 
 DROPPED
 - file:line  what it was, and what the proposed fix would not have changed

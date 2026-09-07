@@ -65,7 +65,14 @@ audit	verification-floor	output-styles	one check that can fail
 audit	prior-art-before-inventing	librarian	Prior art is part of the job
 audit	one-level-is-enforced	deepwork	enforced, not advisory
 audit	scope-allows-large-work	simplify	that **is** the scope
-audit	codemap-announce-cost	codemap	Announce before you start
+# RETIRED v0.14.0 — the codemap skill was removed. Three contract runs against
+# three fixtures of increasing size all ended in the same correct refusal: the
+# skill's own rule is "If the repo is small enough to read, read it", and a
+# fixture large enough to earn a map is larger than the case can cheaply build
+# or the suite can cheaply run. A component whose documented right answer is to
+# decline is a component the roster does not need. Rule 0b is met by deletion of
+# the text the rows pinned.
+# audit	codemap-announce-cost	codemap	Announce before you start
 omo-slim	parallel-structure-scan	deepwork	Scan structure in the same message
 omo-slim	oracle-rereview-budget	review	at most two re-reviews
 omo-slim	phase-checkpoint-commit	deepwork	Checkpoint at a delivery boundary
@@ -312,7 +319,7 @@ research	tracer-predeclare-falsifiers	tracer	what would confirm and what would f
 research	tracer-undetermined-verdict	tracer	is not `ruled out`
 research	librarian-conditional-web-pass	librarian	That is a condition, not a ritual
 research	librarian-silent-disk	librarian	Disk can be silent rather than empty
-research	codemap-cite-symbols	codemap	Cite symbols, never line numbers
+# research	codemap-cite-symbols	codemap	Cite symbols, never line numbers
 research	deep-interview-files-and-interfaces	deep-interview	## Files and interfaces
 research	deep-interview-gate-is-measured	deep-interview	That is measured, and the measurement is small
 research	deep-interview-score-is-not-the-gate	deep-interview	It does not decide whether to build

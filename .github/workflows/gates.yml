@@ -85,7 +85,6 @@ jobs:
       - name: Component suites
         run: |
           pids=()
-          node skills/codemap/scripts/codemap.test.mjs & pids+=($!)
           bash skills/review/scripts/base.test.sh & pids+=($!)
           bash scripts/optional/statusline.test.sh & pids+=($!)
           node skills/design/scripts/audit.test.mjs & pids+=($!)
