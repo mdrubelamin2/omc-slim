@@ -34,7 +34,7 @@ claude --plugin-dir ./omc-slim
 
 **It says what it could not check.** A review finding must quote the line that proves it. A finding with no evidence is dropped, not reported. What could not be verified is written down instead of smoothed over.
 
-**It stays out of your way.** ~2,703 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
+**It stays out of your way.** ~2,696 tokens of always-on context. Nothing injected per tool call. No MCP servers of its own. It registers one hook, on `Stop` alone, so nothing of this plugin runs when a session starts. It writes no file into your project unless you run one of the three that do.
 
 ---
 
@@ -153,7 +153,7 @@ Every one also has an explicit form, and the agents work with the output style o
 
 ## What it costs
 
-**~2,703 tokens** of always-on context, and nothing injected per tool call. Treat it as a floor. The harness adds framing that no text measurement sees, so the real figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)). `./scripts/measure-context.sh` re-derives it, and also prints **3,061 on a chars/4 basis**, the estimate this project's version series is tracked on.
+**~2,696 tokens** of always-on context, and nothing injected per tool call. Treat it as a floor. The harness adds framing that no text measurement sees, so the real figure is nearer 5,400 ([LIMITATIONS.md](./docs/LIMITATIONS.md)). `./scripts/measure-context.sh` re-derives it, and also prints **3,053 on a chars/4 basis**, the estimate this project's version series is tracked on.
 
 Two settings of yours will save more than this plugin costs. Neither is a plugin change:
 

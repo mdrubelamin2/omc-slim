@@ -16,7 +16,7 @@ Opened from [`SKILL.md`](./SKILL.md), not read by default. Everything here is co
 
 Only the artefact in step 3 changes.
 
-- **Software**: read the whole relevant section before writing; plan the diff, then execute. Check: tests run, error paths exercised, not just the happy path.
+- **Software**: read the code you are about to change and its callers; plan the diff, then execute. Check: tests run, error paths exercised, not just the happy path.
 - **Research**: gather sources before synthesising; do not write as you search. Distinguish confirmed fact from inference. Check: every load-bearing claim traces to a source actually read.
 - **Data**: understand the shape first; state the hypothesis before computing, not after seeing the numbers. Check: quality assertions run against real data.
 - **Multi-session**: define done criteria upfront, written and testable.

@@ -41,8 +41,15 @@ CLAUDE.md	research-before-edit	output-styles	Read the artefact before concluding
 fable-mode	stage-map-first	deepwork	Write the stage map before touching anything
 fable-mode	one-artefact-per-stage	deepwork	Every stage produces one verifiable artefact
 fable-mode	merge-uncheckable-stages	deepwork	producing no artefact at all merges into the next
-fable-mode	delegate-independent-work	deepwork	dispatch them in one message
-fable-mode	one-level-delegation	deepwork	Keep delegation one level deep
+# RETIRED v0.14.1 — the lane machinery is gone from deepwork. These rows pinned
+# rules whose only job was to manage a fan-out: one-level delegation, the
+# Consumes/Produces block, the fan-out floor, the lane bound and the lane-brief
+# comment rule. Rule 0b is met by deletion of the text they pinned, and the
+# evidence that removed it is the same evidence that never justified it — nine
+# benchmark arms delegated zero times, criterion 1 "Delegation pays, measured"
+# is unrun, and the one documented fan-out spent 68M tokens on ~3,000 lines.
+# fable-mode	delegate-independent-work	deepwork	dispatch them in one message
+# fable-mode	one-level-delegation	deepwork	Keep delegation one level deep
 fable-mode	failable-check-per-stage	deepwork	check that can fail
 fable-mode	introspection-is-not-a-check	deepwork	pass its own introspection
 fable-mode	mark-unverified-stages	deepwork	mark its output unverified
@@ -63,7 +70,7 @@ audit	prior-art-before-inventing	output-styles	prior art beats inventing
 audit	no-green-washing	output-styles	wearing a passing badge
 audit	verification-floor	output-styles	one check that can fail
 audit	prior-art-before-inventing	librarian	Prior art is part of the job
-audit	one-level-is-enforced	deepwork	enforced, not advisory
+# audit	one-level-is-enforced	deepwork	enforced, not advisory
 audit	scope-allows-large-work	simplify	that **is** the scope
 # RETIRED v0.14.0 — the codemap skill was removed. Three contract runs against
 # three fixtures of increasing size all ended in the same correct refusal: the
@@ -302,10 +309,14 @@ research	simplify-introducing-commit	simplify	Blame the *introducing* commit
 research	simplify-shallow-clone-trap	simplify	A shallow clone
 research	simplify-rename-trap	simplify	Refuse the citation
 research	simplify-green-tests-insufficient	simplify	you have not verified the deletion
-research	deepwork-consumes-produces	deepwork	Give every lane a `Consumes:` / `Produces:` block
-research	deepwork-preflight-rows	deepwork	is not a scan you ran
+# research	deepwork-consumes-produces	deepwork	Give every lane a `Consumes:` / `Produces:` block
+# RETIRED v0.14.1 — deepwork-preflight-rows pinned "one row per lane pair
+# sharing a file or an interface", which has no subject once the lanes are gone.
+# The evidence-not-verdict rule it generalised survives in review's brief-a-lane
+# rule and in deepwork's own "give it evidence, never a verdict".
+# research	deepwork-preflight-rows	deepwork	is not a scan you ran
 research	deepwork-rulings-not-stalls	deepwork	Rulings, not stalls
-research	deepwork-fan-out-floor	deepwork	do not fan out when the work is coupled
+# research	deepwork-fan-out-floor	deepwork	do not fan out when the work is coupled
 research	deepwork-show-the-map	deepwork	Show the map before you execute it
 research	deepwork-conditional-structure-scan	deepwork	when the phase moved structure
 research	verification-prove-the-fixture	verification-planning	Prove the arranged input
@@ -330,7 +341,7 @@ research	compaction-eviction-risk	docs/LIMITATIONS.md	30% on average after compa
 research	env-tool-search	README.md	ENABLE_TOOL_SEARCH
 research	env-subagent-cache-ttl	README.md	subagentPromptCacheTtl
 research	keep-cut-audit-applied	docs/RESEARCH-2026-08-26.md	The keep/cut audit, applied
-audit	fixer-grep-every-caller	output-styles	read every caller first
+audit	fixer-grep-every-caller	output-styles	Read every caller before you edit
 audit	size-ladder	output-styles	Four rules size everything
 audit	size-content-override	output-styles	the only self-escalator
 audit	small-owes-one-check	output-styles	No plan, no review, no dispatch
@@ -355,7 +366,7 @@ research	oracle-assigned-opposition	oracle	Argue the other side, as an assignmen
 research	oracle-one-pass-not-debate	oracle	One pass, not a debate
 audit	rigor-never-scales-down	output-styles	Rigor never scales down
 audit	blunt-no-flattery	output-styles	Be blunt with the person and brutal with the work
-audit	deepwork-lane-brief-zero-comments	deepwork	Every writer lane's brief says: add zero comments
+# audit	deepwork-lane-brief-zero-comments	deepwork	Every writer lane's brief says: add zero comments
 audit	three-shapes-never-written	output-styles	Three shapes are never yours to write
 audit	linear-modular-small	output-styles	one unit does one thing
 audit	principles-are-the-floor	output-styles	are the floor, not aspirations
@@ -403,7 +414,7 @@ audit	deepwork-done-condition	deepwork	every stage on the approved map carries i
 audit	deepwork-cascade-one-level	deepwork	That backward step goes one level
 audit	deepwork-map-ceiling	deepwork	The map the user saw is the run
 audit	deepwork-set-diffed-once	deepwork	closes by diffing the set, once
-audit	deepwork-lane-carries-a-bound	deepwork	Every lane brief carries its own bound
+# audit	deepwork-lane-carries-a-bound	deepwork	Every lane brief carries its own bound
 audit	simplify-done-is-the-checklist	simplify	not the absence of anything left to simplify
 audit	design-self-diff-once	design	diff the plan against the dated list
 audit	design-build-closes-on-the-plan	design	Build closes on the plan, not on taste

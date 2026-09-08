@@ -51,7 +51,14 @@ in-full-exempts-length-only	output-styles	exempts length, and nothing else	every
 close-with-what-now	output-styles	what the user does next	never a claim|Nothing left to do says so
 three-options-at-most	output-styles	at most three options	which one you would pick
 simplify-scope	simplify	the guard is on *unrequested* work	that **is** the scope|Follow one problem across every file it occupies|name the restructure and let the caller decide
-one-level-delegation	deepwork	Keep delegation one level deep	enforced, not advisory|Specialists cannot spawn agents|split into parallel lanes
+# RETIRED v0.14.1 — the lane machinery is gone from deepwork. These rows pinned
+# rules whose only job was to manage a fan-out: one-level delegation, the
+# Consumes/Produces block, the fan-out floor, the lane bound and the lane-brief
+# comment rule. Rule 0b is met by deletion of the text they pinned, and the
+# evidence that removed it is the same evidence that never justified it — nine
+# benchmark arms delegated zero times, criterion 1 "Delegation pays, measured"
+# is unrun, and the one documented fan-out spent 68M tokens on ~3,000 lines.
+# one-level-delegation	deepwork	Keep delegation one level deep	enforced, not advisory|Specialists cannot spawn agents|split into parallel lanes
 introspection-is-not-a-check	deepwork	is not a check	will also pass its own introspection|mark its output unverified
 introspection-is-not-a-check	verification-planning	is not a check	A check must be able to fail|will also pass its own introspection
 register-simple-english	output-styles	Simplified Technical English (ASD-STE100)	not baby talk and not|fragments
@@ -136,7 +143,7 @@ oracle-verdict-first	oracle	Rank findings by severity	Lead with the verdict|do n
 comments-are-last-resort	output-styles	You write zero comments	Two things put one in, and nothing else|Never narrate, never address the reader|git owns history
 rigor-never-scales-down	output-styles	Rigor never scales down	a small task is a small amount of that, never a softer version of it|Demand sizes the spend, never the standard
 blunt-no-flattery	output-styles	Be blunt with the person and brutal with the work	No flattery, no praise for the request, no agreement you do not hold|once, then build what they reaffirm
-deepwork-lane-brief-zero-comments	deepwork	Every writer lane's brief says: add zero comments	Subagents do not inherit the output style|the brief carries it
+# deepwork-lane-brief-zero-comments	deepwork	Every writer lane's brief says: add zero comments	Subagents do not inherit the output style|the brief carries it
 three-shapes-never-written	output-styles	Three shapes are never yours to write	a catch that swallows an error or logs and continues|a failure that becomes a default value|a status envelope around something that throws|hides a defect from the caller
 linear-modular-small	output-styles	one unit does one thing	one fact has one owner|are the floor, not aspirations|a second caller exists today
 established-solution-first	output-styles	Take the established solution first	the standard library before a dependency|costs more than it saves
@@ -153,7 +160,7 @@ run-ends-with-a-report	output-styles	Every run ends, and you say what ended it	W
 deepwork-done-condition	deepwork	every stage on the approved map carries its check or its waiver	Not when nothing is left to improve|a run that waits for that state never ends
 deepwork-cascade-one-level	deepwork	That backward step goes one level	means the plan is wrong, not the tree|name the cascade, and re-map with the user
 deepwork-map-ceiling	deepwork	The map the user saw is the run	capped at half the count in the map they **first** approved|show the new map beside the original
-deepwork-lane-carries-a-bound	deepwork	Every lane brief carries its own bound	A lane inherits none of this skill's budgets|no ceiling
+# deepwork-lane-carries-a-bound	deepwork	Every lane brief carries its own bound	A lane inherits none of this skill's budgets|no ceiling
 simplify-done-is-the-checklist	simplify	not the absence of anything left to simplify	There is always something left to simplify|what a second pass would take
 design-self-diff-once	design	One revision, then build	The second self-diff re-runs the first|will always find something|neither is worth another hour
 design-build-closes-on-the-plan	design	Build closes on the plan, not on taste	Polish you think of while building is a finding for the report

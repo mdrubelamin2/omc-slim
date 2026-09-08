@@ -95,26 +95,11 @@ The map is living, not a contract. Update it when what you learn invalidates the
 
 Without this the map is written and never seen, and every later clause about the commit points the user saw is gated on a moment that never happened. It is a presentation, not a gate.
 
-## 2. Delegate independent work
+## 2. Run the stages
 
-Stages that do not depend on each other: dispatch them in one message so they run concurrently. Brief each with its task, its expected output, and the context it needs from earlier stages. Good: "research X while Y is implemented", "process these three files", "verify this independently". Bad: splitting one coherent thought across lanes to use more agents.
+Stages run in order on the main thread. Independent ones still run in order: the concurrency a fan-out buys was never measured here, nine benchmark arms delegated zero times, and the one documented case spent **68M tokens on ~3,000 lines**, 22.5M of it on planning alone. What fan-out reliably costs is a cold context per lane and four rules to keep lanes from drifting apart. What it reliably buys is wall clock nobody has measured.
 
-**Read a lane's last result before dispatching that lane again.** Reading it is what authorises the retry; re-dispatching an unread result buys a second copy of an answer you already hold, at full price.
-
-**Keep delegation one level deep**: enforced, not advisory. Specialists cannot spawn agents, so a stage needing its own fan-out must be split into parallel lanes by you, before dispatch. A lane you expect to subdivide itself is a lane that runs sequentially.
-
-**Every lane brief carries its own bound**: what it must produce, and that it returns a partial result naming what it did not reach rather than working until something stops it. A lane inherits none of this skill's budgets, so one briefed without a bound is the only thing in the run with no ceiling.
-
-**Give every lane a `Consumes:` / `Produces:` block.** Names and types, not prose. A lane sees only its own brief, so this is the only way it learns what the neighbouring lanes call things. Without it, parallel lanes drift and the drift surfaces at integration, when it is most expensive.
-
-```
-Consumes: SessionToken { id: string, expiresAt: Date } from lane 2
-Produces: refreshToken(token: SessionToken): Promise<SessionToken>
-```
-
-**The preflight conflict scan emits rows, not a verdict.** One row per lane pair sharing a file or an interface, with the shared thing named. *"The scan is clean" without those rows is not a scan you ran*. It is a claim about a scan. Same evidence-not-verdict rule the review lanes already follow, applied to planning.
-
-**And a floor: do not fan out when the work is coupled.** Fan-out buys independence and taxes coupling. Each lane rebuilds context from cold, and you pay that N times for isolation two coupled lanes cannot use: one documented case, on another harness and model, spent **68M tokens on ~3,000 lines**, 22.5M of it on planning alone. Two lanes that must agree on an interface are one lane.
+**Where a stage genuinely cannot fit one context, that is the finding.** Say so, split the stage, and re-map with the user. Do not answer it by dispatching, which trades a bounded problem you can see for an unbounded one you cannot.
 
 ## 3. Verify each stage with a check that can fail
 
@@ -132,23 +117,23 @@ The loop runs backward too: **if a fix invalidates an earlier stage, re-run that
 
 **Set-shaped work closes by diffing the set, once.** Re-run the enumeration that defined it and list every member you did not touch, each with a reason. Members the second enumeration turns up are reported, not absorbed: a diff that keeps finding work is a set that was never defined, and re-diffing until it is empty is the same loop by another name. "Already conformant" is a reason; absence from the list is not. Derive the set from a command and show it. One glob misses a whole subtree, and a second, differently shaped search is what catches that.
 
-### Review gates
+### Phase verification, and who asks for a review
 
-**One gate per phase, and the phase's kind picks who runs it.** A phase that lands code is gated by the `omc-slim:review` skill. A phase that makes an architecture, security or data-integrity call is gated by the `omc-slim:oracle` agent. A phase that does both gets the `omc-slim:review` skill as its gate plus **at most one** oracle escalation on the named decision. Never both as parallel gates, which doubles the spend and holds two budgets for one gate.
+**Every phase closes on its own failable check, not on a dispatch.** §3 already requires one: a test that runs, a file provably in the expected shape, output diffed against the spec. That check is yours to run and yours to report. A phase is verified when its check passes, not when another component has looked at it.
 
-**You own the marker and the count; the gate does not.** Stamp `Gate N — attempt M of K` into whichever gate you open, and the per-gate budget with it. A gate carries the marker you gave it and never issues its own. Two components each keeping a count is how one gate silently becomes two.
+**You do not open the `omc-slim:review` skill on your own.** Offer it in one line at the checkpoint and open it on a yes. The always-on layer's rule is the same one — "run the relevant checks yourself and offer the review skill in one line. Never silently dispatch" — and a staged run is where breaking it costs most: six phases that each opened a review is six skill bodies, their lanes and their adversarial passes, for work the user never asked to have reviewed six times.
 
-**Open a gate through its own tool.** `omc-slim:review` is a skill and goes through the Skill tool; `omc-slim:oracle` is an agent and goes through the Agent tool. This section says "gate" for both because the phase decides which one, not because they are dispatched alike.
+**The content list makes the offer mandatory, not the dispatch.** Auth, money, permissions, secrets, a migration, a delete, a published response shape: on those you always offer, and you say which of them the phase touched. Everywhere else the offer is yours to judge and one line is the whole of it.
 
-Gates go after each phase, never after each edit. Take the phases from the work's own dependencies and delivery boundaries; never split work to shrink a gate. Hand the gate the confirmed findings and file references you already have, so it assesses the work instead of redoing discovery. Give it evidence, never a verdict: naming a severity or a concern to skip decides the review before it runs. Batch its material findings into one remediation pass and verify that. Once validation passes and no material blocker remains, advance. Do not keep refining because refinement is possible.
+**A phase that makes an architecture, security or data-integrity call may open the `omc-slim:oracle` agent directly**, because it is one read-only agent answering one named question rather than a skill that fans out. Never both it and a review for one phase: that doubles the spend and holds two budgets for one decision.
+
+**When a review is opened, you own the marker and the count.** Stamp `Gate N — attempt M of K` into it and the per-gate budget with it. It carries the marker you gave it and never issues its own. Two components each keeping a count is how one gate silently becomes two. **Six openings is the run-level ceiling**, and every opening was a yes, so reaching it means the user has said yes six times. Hand it the confirmed findings and file references you already have, so it assesses the work instead of redoing discovery. Give it evidence, never a verdict: naming a severity or a concern to skip decides the review before it runs. Batch its material findings into one remediation pass and verify that. Once validation passes and no material blocker remains, advance. Do not keep refining because refinement is possible.
 
 **Scan structure in the same message, when the phase moved structure.** Dispatch an explorer alongside the gate, over the phase's changed paths and their immediate dependencies, **if that phase changed module boundaries, dependency direction, or where files live.** A phase that only changed behaviour inside existing files has no structure to scan, and the scan returns a map of what you already knew.
 
 Cheapest agent, runs in parallel, so when it does run the gate costs no extra wall time. Do not open a second gate for what the scan found.
 
 **Brief it for locations, never for judgements.** Duplication, responsibility overlap and a misplaced file are all conclusions about what was found, and the `omc-slim:explorer` agent is forbidden to draw one. Ask it to and you get either a refusal or a judgement from the agent least equipped to make it. Ask instead for the evidence a judgement needs: every file matching these two shapes, every import edge crossing this boundary, every caller of the symbols this phase moved. **You read the map and decide what warrants action.**
-
-**Cap the re-reviews.** **This budget is per gate, not per run**: a run with four gates holds four budgets. The per-gate number is the review skill's, and it carries the marker you give it. **Yours is the run-level ceiling over all of them: six gate openings.** Per-gate budgets multiply — four gates at three attempts is twelve reviews, each one a skill body plus its lanes and its adversarial pass — and nothing held the total. At six, stop and say which phases are gated, which are not, and what you would spend the next opening on. Every gate you open states where it is: `Gate 2 — attempt 2 of 3`. Spend one only when remediation materially changed the decision, or the original concern resisted focused evidence: never to re-confirm a mechanical change. Budget exhausted with a material risk still open: record it and ask whether to accept it, cut scope, or authorise another pass. Do not quietly loop.
 
 **Checkpoint at a delivery boundary, not after every phase.** A commit point belongs where the phase leaves the tree in a state someone could ship, revert to, or hand over. Not wherever a stage happened to end. Phases that only make sense together get one checkpoint, at the end of the group. Those points were in the map the user saw before execution started (§1). Commit once per checkpoint, after the phase, or the group, validates and its findings reconcile. Work that goes wrong later costs back to the last boundary, not the run. Asked not to commit? Say the checkpoint is available and carry on.
 
@@ -187,9 +172,7 @@ A confirmation-shaped review confirms; only a seat that reads the history can ov
 
 **Warning threshold.** Minor concerns accumulate over a long run. Keep count. **At three, stop and surface** them together: three small things pointing the same way usually mean one real problem needing a decision. The count does not reset either.
 
-**Find-and-replace safety.** Anchor on word boundaries, and check the result. The writer lane running the bulk edits carries that procedure in its brief.
-
-**Every writer lane's brief says: add zero comments.** Subagents do not inherit the output style, so the always-on comment rule reaches a lane only when the brief carries it. A lane briefed without it writes the narration the style forbids, and the gate then pays to remove it.
+**Find-and-replace safety.** Anchor on word boundaries, and check the result.
 
 **Work that outlives this session keeps a progress file**, which is also the handover. `depth.md` holds what it contains and when it is written; a run that finishes here does not need one.
 
@@ -201,4 +184,4 @@ A confirmation-shaped review confirms; only a seat that reads the history can ov
 
 ## What this does not do
 
-It shapes procedure, not reasoning. When a task is genuinely beyond reach, say so rather than producing plausible-sounding wrong output.
+It shapes procedure, not reasoning. When a task is genuinely beyond reach, say so rather than producing plausible sounding wrong output.

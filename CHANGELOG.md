@@ -3,6 +3,41 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.14.1
+
+Deepwork stops dispatching, and the lane machinery goes with it.
+
+It opened `omc-slim:review` on its own at every code phase — six gate openings a
+run, each a skill body plus its lanes and its adversarial pass, while the
+always-on layer said "offer the review skill in one line. Never silently
+dispatch." Now it closes each phase on its own failable check, offers the review
+at the checkpoint, and opens it on a yes. The content list makes the offer
+mandatory, never the dispatch.
+
+Writer lanes are gone. Nothing measured ever justified them: nine benchmark arms
+delegated zero times, `RELEASE-READINESS.md` criterion 1 is unrun, and the one
+documented fan-out spent 68M tokens on ~3,000 lines. What went with them is the
+machinery that existed only to manage them: the `Consumes:`/`Produces:` block,
+one-level delegation, the fan-out floor, the preflight conflict scan, the lane
+bound and the lane-brief comment rule. Where a stage genuinely cannot fit one
+context, that is now a finding to re-map on, not a reason to dispatch.
+
+`depth.md` no longer says "read the whole relevant section", which was the one
+instruction that pulled unbounded file content into the orchestrator. The output
+style now says the main thread holds "unless a named skill or the roster below
+says otherwise", because the exception used to sit thirty lines away in another
+section, and its writer-brief clause is gone, with its three rules rehomed in
+Build, where they apply to the thread doing the work.
+
+A timing assertion in `base.test.sh` asserted a hanging fetch returns inside 10
+seconds. It failed three times under parallel load and never once alone. The
+polling loop's 1s granularity plus the TERM-then-KILL wait drifts on a busy box.
+The bound under test is that the script does not wait out a 15s hang, so it is 30
+seconds now, proved by three runs under the six-way load that broke it.
+
+Eleven pins retired across both manifests, each on the deletion of the text it
+pinned. Static surface 2,696 real tokens, 304 under the ceiling.
+
 ## v0.14.0
 
 The codemap skill is gone, and the contract suite is why.

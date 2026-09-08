@@ -185,7 +185,7 @@ component name, or any repo-relative `*.md` path. The second form was added on
 2026-08-29, after a sweep found three live behaviours pinned by nothing because
 they are documented rather than prompted.
 [`COVERAGE.tsv`](../COVERAGE.tsv) maps every load-bearing rule to where it now
-lives — 323 rows, and growing with each release: 323/323 adopted behaviours present.
+lives — 315 rows, and growing with each release: 315/315 adopted behaviours present.
 
 The roster it asserts is **four agents, six skills, one hook**. It is stated here
 in prose because the check requires this file to carry it, and a sentence
