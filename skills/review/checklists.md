@@ -64,6 +64,7 @@ The `omc-slim:simplify` skill's scope, applied as review: detect here, hand the 
 - A comment restating the code, or contradicting it
 - **A silenced checker**: `@ts-ignore`, `@ts-nocheck`, `eslint-disable`, `noqa`, a lowered coverage floor, a relaxed compiler rule. The assertion still passes; the checker stopped looking, which is a different move and an easier one to miss. Tightening is silent, loosening is loud: only a change that lowers the bar is a finding
 - Comments the change added that narrate, address the reader, or record history: "as requested", "changed from X", a dated note, a banner divider. Delete them; git owns history
+- **Any comment the change added that the user did not ask for.** The bar is not "is it accurate", it is "was it requested": delete it, and delete the ones the change left standing in lines it touched
 - A `TODO` naming work this change finished
 - Dead code, unreachable branches, imports the change orphaned
 - Duplicated *knowledge* that must change together

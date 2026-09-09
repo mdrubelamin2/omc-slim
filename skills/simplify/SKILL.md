@@ -22,7 +22,7 @@ Cut complexity, preserve behaviour exactly. The goal is not fewer lines. It is c
 
 **2. Follow project conventions.** Read `AGENTS.md` / `CLAUDE.md`, and study how neighbouring code solves the same problem. Match its imports, naming, function style, error handling and type depth. Simplification that breaks consistency is churn. Conventions come from the repository, never from your preferred dialect.
 
-**3. Clarity over cleverness.** Explicit beats compact whenever compact needs a mental pause; keep a name that carries meaning even at a few extra lines. Delete comments restating the code, **keep comments that explain why**. Intent is the one thing code cannot say for itself. **Comment volume is its own smell.** A function needing a note every third line needs splitting or renaming instead. A comment surviving only because the name is bad goes *after* the rename.
+**3. Clarity over cleverness.** Explicit beats compact whenever compact needs a mental pause; keep a name that carries meaning even at a few extra lines. Delete comments restating the code, and **compress a comment that explains why to its shortest true line**. Intent is the one thing code cannot say for itself, so it survives at minimum length, never at its original. **Comment volume is its own smell.** A function needing a note every third line needs splitting or renaming instead. A comment surviving only because the name is bad goes *after* the rename.
 
 **4. Balance.** Over-simplification is real: do not inline away a meaningful name, merge unrelated logic, or optimise for line count. Do not remove an abstraction that earns its place, but **"serves extensibility" is not earning it.** One **pays rent when a second** implementation exists *today*, or a test really substitutes at that seam. One implementation and no substitution is the `yagni:` case: inline it. Evidence now, not a story about later.
 
@@ -108,7 +108,7 @@ Tag each finding. `delete:` dead code or speculative feature, replacement nothin
 | `usr`, `cfg`, `btn`, `evt` | Full words, unless universal (`id`, `url`, `api`) |
 | A `get*` that also mutates | Rename to what it does |
 | Comment restating the code | Delete |
-| Comment explaining *why* — intent, a constraint, a past incident | Keep |
+| Comment explaining *why* — intent, a constraint, a past incident | Compress to one line; delete it once a name carries it |
 | **Comment that contradicts the code** | Read both. Fix whichever is wrong; never leave the pair |
 | Narration — "first we validate", "now return the result" | Delete. The tell of generated code |
 | Docstring repeating the signature and nothing else | Delete. Keep one that names units, ranges or failure modes |
@@ -129,7 +129,7 @@ Tag each finding. `delete:` dead code or speculative feature, replacement nothin
 **Batch size is a ladder; take the lowest rung that fits the work.** One change at a time is the default: make the change, then check preservation with evidence proportionate to the risk. That is the pinned check for logic you touched, plus whatever the repository's release instructions require. Keep the change only while that evidence holds. Batch beyond one only what you can attribute: **if verification fails after several simplifications, bisect them rather than guessing.** Above roughly 500 lines, **stop hand-editing**: use a codemod or AST transform, verified on a sample before you trust the whole run. That top rung replaces the two below it, because a mechanical rewrite is attributed by its rule rather than by its edits.
 
 - Keep refactoring commits **separate from feature and bug-fix commits**. Mixed history is harder to review and revert.
-- **Mark any ceiling you deliberately leave**: a global lock, an O(n²) scan over a list you know stays small, a naive heuristic. Name the limit and the upgrade path in a comment — one of the two exceptions the output style's comment ban carves out, and the only one you invoke on your own.
+- **Name any ceiling you deliberately leave** — a global lock, an O(n²) scan over a list you know stays small, a naive heuristic — with its limit and its upgrade path, in the message to the user. Never in a comment: the ban has one exception and it is the user asking.
 
 ### 4. Verify
 

@@ -3,6 +3,28 @@
 Notable releases. Full reasoning for each is in
 [RESEARCH.md](./RESEARCH.md) and [MAINTAINERS.md](./MAINTAINERS.md).
 
+## v0.14.2
+
+One approval per deepwork run, and a comment ban with no second exception.
+
+Deepwork asked at every stage. Its own description called the per-stage step "a
+gate between stages", and a gate is somewhere you wait; the review offer at each
+checkpoint then ended the turn with a question. The map is now the only approval
+the run asks for. Past it, a passing check is one reported line and the next
+stage starts in the same turn. The four blockers are unchanged, and so are the
+surfacing conditions: a third waiver, a cascade past one level, a map past its
+ceiling.
+
+The comment ban had a second exception — a ceiling you deliberately left, named
+with its limit and its upgrade path. Almost any comment can be dressed as one,
+and users report the comments arriving anyway. The exception is gone: only the
+user asking puts a comment in a file. Ceilings go in the message to the user.
+Comments already in code being changed now come down with the change, compressed
+to their shortest true line or to zero, and `simplify` and the `review`
+checklist were re-pointed to match rather than left contradicting it.
+
+Cost: the always-on surface is 2,763 real tokens, 237 under the 3,000 ceiling.
+
 ## v0.14.1
 
 Deepwork stops dispatching, and the lane machinery goes with it.

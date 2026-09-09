@@ -163,7 +163,7 @@ measured 2026-08-29 against the installed v0.9.1, `claude plugin details` report
 basis measured **962** — roughly **42 tokens per component** of framing (name,
 type, list structure) that no measurement of the text can see. Across today's
 eleven-component roster that is about **462 tokens**, so the true always-on cost
-is nearer 3,343 than the ~2,696 this repository publishes.
+is nearer 3,343 than the ~2,763 this repository publishes.
 
 It is not folded into the headline, and the reason is a scar: 42 rests on a
 single observation of a number the harness itself labels an estimate, and this
@@ -237,7 +237,7 @@ session older skills are dropped entirely rather than truncated
 ([docs](https://code.claude.com/docs/en/skills)). Ten components against
 25,000 is the constraint that actually bites.
 
-The ceiling if every component fires once is **30,867 chars/4, ~27,768 corrected**.
+The ceiling if every component fires once is **31,045 chars/4, ~27,926 corrected**.
 
 Counting siblings is new, and it exposed an older understatement.
 `review/checklists.md` is read on **every** review — "read it now, before judging
@@ -338,7 +338,7 @@ For context on why that matters:
 |---|---|---|
 | Karpathy Skills | ~589 tok | +0.96pp at identical cost |
 | oh-my-claudecode | ~2,671 tok | +1.65pp at +43% cost |
-| **omc-slim** | **~3,053 tok** | see above |
+| **omc-slim** | **~3,129 tok** | see above |
 | Agent Skills | ~1,826 tok | −1.10pp |
 
 Source for the outer rows: [orcabot.com/benchmarks](https://orcabot.com/benchmarks),
@@ -347,7 +347,7 @@ the smallest pack won on efficiency, the largest lost to doing nothing. Our own
 result is consistent with it.
 
 omc-slim is the most expensive row in that table. It has grown on net across
-every release: 2,774 at v0.1.0 against 3,053 today, though not monotonically.
+every release: 2,774 at v0.1.0 against 3,129 today, though not monotonically.
 v0.6.9 cut 250 tokens and v0.7.6 cut 48. Each increase was individually
 justified — adopted behaviours, an anti-context-anxiety instruction, a skill
 roster the listing could not be trusted to provide — and they still sum. That is

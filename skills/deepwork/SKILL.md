@@ -1,6 +1,6 @@
 ---
 name: deepwork
-description: 'Runs a migration, rewrite or cross-cutting refactor as staged execution: a written stage map, parallel lanes, one failable check per stage, and a gate between stages.'
+description: 'Runs a migration, rewrite or cross-cutting refactor as staged execution: a stage map approved once, one failable check per stage, and no further approval until the report.'
 when_to_use: '"this touches everything", "big refactor", "migrate X to Y", "rewrite this", "do this properly". For work that is only correct once every layer lands together. Not routine multi-file edits, and not a plan someone else runs: this one executes the stages.'
 ---
 
@@ -20,13 +20,13 @@ Use it when one shot would plausibly miss something. Dependent phases, cross-cut
 
 ## Done
 
-**The run ends when every stage on the approved map carries its check or its waiver, and every phase that needed a gate has had one.** That is the whole condition. Not when nothing is left to improve — there is always something left to improve, and a run that waits for that state never ends.
+**The run ends when every stage on the approved map carries its check or its waiver.** That is the whole condition. Not when nothing is left to improve — there is always something left to improve, and a run that waits for that state never ends.
 
 Work found after the condition is met goes in the report as open, never into the map.
 
 ```
 Deepwork: <delivered | delivered with open risk | stopped for a decision>
-Stages: N of N checked, M waived. Gates: G opened of 6.
+Stages: N of N checked, M waived. Reviews: R opened of 6.
 Rulings: every decision taken on your behalf, one line each
 Open: what is unresolved, and what it would cost to close
 Next: the one action that follows, executable without reading this transcript
@@ -93,6 +93,8 @@ The map is living, not a contract. Update it when what you learn invalidates the
 
 **Show the map before you execute it.** One message: the stages, their checks, their commit points. Then start.
 
+**That is the only approval the run asks for.** Every stage on the approved map then runs to the end: a passing check is one reported line, and the next stage starts in the same turn. Only the four blockers below stop execution. Asking again per stage turns one approved plan into N approvals nobody agreed to give.
+
 Without this the map is written and never seen, and every later clause about the commit points the user saw is gated on a moment that never happened. It is a presentation, not a gate.
 
 ## 2. Run the stages
@@ -121,7 +123,7 @@ The loop runs backward too: **if a fix invalidates an earlier stage, re-run that
 
 **Every phase closes on its own failable check, not on a dispatch.** §3 already requires one: a test that runs, a file provably in the expected shape, output diffed against the spec. That check is yours to run and yours to report. A phase is verified when its check passes, not when another component has looked at it.
 
-**You do not open the `omc-slim:review` skill on your own.** Offer it in one line at the checkpoint and open it on a yes. The always-on layer's rule is the same one — "run the relevant checks yourself and offer the review skill in one line. Never silently dispatch" — and a staged run is where breaking it costs most: six phases that each opened a review is six skill bodies, their lanes and their adversarial passes, for work the user never asked to have reviewed six times.
+**You do not open the `omc-slim:review` skill on your own.** Offer it in one line at the checkpoint, start the next stage in the same turn, and open it only on a later yes. The offer is a reported line, never a question the run waits on. The always-on layer's rule is the same one — "run the relevant checks yourself and offer the review skill in one line. Never silently dispatch" — and a staged run is where breaking it costs most: six phases that each opened a review is six skill bodies, their lanes and their adversarial passes, for work the user never asked to have reviewed six times.
 
 **The content list makes the offer mandatory, not the dispatch.** Auth, money, permissions, secrets, a migration, a delete, a published response shape: on those you always offer, and you say which of them the phase touched. Everywhere else the offer is yours to judge and one line is the whole of it.
 
